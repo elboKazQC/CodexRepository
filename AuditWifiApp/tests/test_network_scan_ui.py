@@ -37,3 +37,14 @@ def test_export_scan_results(tmp_path, mock_tk_root):
         rows = list(csv.reader(f))
     assert rows[0] == ["SSID", "Signal(dBm)", "Canal", "Bande"]
     assert rows[1][0] == "AP1"
+
+
+def test_start_collection_triggers_scan(mock_tk_root):
+    """start_collection should scan WiFi networks after starting."""
+    with patch("runner.scan_wifi") as mock_scan, \
+         patch.object(NetworkAnalyzerUI, "update_data"), \
+         patch.object(NetworkAnalyzerUI, "update_status"):
+        ui = NetworkAnalyzerUI(mock_tk_root)
+        with patch.object(ui.analyzer, "start_analysis", return_value=True):
+            ui.start_collection()
+        mock_scan.assert_called_once()

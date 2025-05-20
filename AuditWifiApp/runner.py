@@ -283,6 +283,7 @@ class NetworkAnalyzerUI:
                 self.stop_button.config(state=tk.NORMAL)
                 self.update_data()
                 self.update_status("Collection en cours...")
+                self.scan_nearby_aps()
         except Exception as e:
             self.show_error(f"Erreur au démarrage: {str(e)}")
 
