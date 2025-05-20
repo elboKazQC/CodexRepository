@@ -3,6 +3,7 @@ Configuration and fixtures for pytest.
 """
 import pytest
 from unittest.mock import MagicMock, patch
+from contextlib import ExitStack
 from dotenv import load_dotenv
 import os
 
@@ -64,9 +65,14 @@ def mock_openai_response():
 
 @pytest.fixture
 def mock_tk_root():
-    """Mock Tkinter root window for UI tests"""
-    with patch('tkinter.Tk') as mock_tk:
-        root = mock_tk.return_value
+    """Mock root window for UI tests."""
+    try:
+        patch_target = 'ttkbootstrap.Window'
+        __import__('ttkbootstrap')
+    except Exception:
+        patch_target = 'tkinter.Tk'
+    with patch(patch_target) as mock_root:
+        root = mock_root.return_value
         yield root
 
 @pytest.fixture
@@ -93,8 +99,19 @@ def temp_log_file(tmp_path):
 
 @pytest.fixture(autouse=True)
 def patch_ttk_style():
-    """Patch ttk.Style to avoid initializing Tk in tests."""
-    with patch('tkinter.ttk.Style'), \
-         patch('tkinter.messagebox'), \
-         patch('log_manager.messagebox'):
+    """Patch style classes to avoid initializing real GUI elements."""
+    patches = [
+        patch('tkinter.ttk.Style'),
+        patch('tkinter.messagebox'),
+        patch('log_manager.messagebox'),
+    ]
+    try:
+        __import__('ttkbootstrap')
+        patches.append(patch('ttkbootstrap.Style'))
+        patches.append(patch('ttkbootstrap.Window'))
+    except Exception:
+        pass
+    with ExitStack() as stack:
+        for p in patches:
+            stack.enter_context(p)
         yield
