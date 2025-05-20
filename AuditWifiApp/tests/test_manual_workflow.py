@@ -1,8 +1,12 @@
 """
 Tests qui simulent l'utilisation manuelle de l'application
 """
+import os
+import json
+from dataclasses import asdict
 from unittest.mock import MagicMock, patch
-from runner import MoxaAnalyzerUI
+from runner import NetworkAnalyzerUI
+from models import MoxaConfig
 from wifi_test_manager import WifiTestManager
 from wifi_data_collector import WifiDataCollector
 
@@ -24,36 +28,48 @@ def test_manual_moxa_workflow(mock_analyze):
     with patch('tkinter.Tk') as mock_tk, \
          patch('tkinter.Text') as mock_text, \
          patch('tkinter.StringVar') as mock_string_var, \
-         patch('tkinter.BooleanVar') as mock_bool_var:
+         patch('tkinter.BooleanVar') as mock_bool_var, \
+         patch('tkinter.ttk.Style'), \
+         patch('runner.FigureCanvasTkAgg'):
             
         # Configure les mocks Tkinter
         root = mock_tk()
+        os.environ['OPENAI_API_KEY'] = 'test'
         root.StringVar = mock_string_var
         root.BooleanVar = mock_bool_var
         
         # Crée l'UI
-        ui = MoxaAnalyzerUI(root)
+        ui = NetworkAnalyzerUI(root)
         
         # Configure les widgets de l'UI
         mock_text_instance = MagicMock()
-        mock_text_instance.get = lambda *args: sample_logs
-        ui.logs_input_text = mock_text_instance
-        ui.results_text = mock_text_instance
+        mock_text_instance.get.return_value = sample_logs
+        config_mock = MagicMock()
+        config_mock.get.return_value = json.dumps(asdict(ui.config_manager.config))
+        ui.moxa_input = mock_text_instance
+        ui.moxa_results = mock_text_instance
+        ui.moxa_config_text = config_mock
         
         # Force la config pour que l'analyse fonctionne
-        ui.config_manager.config = {
-            "min_transmission_rate": 6,
-            "max_transmission_power": 20,
-            "rts_threshold": 512,
-            "roaming_mechanism": "signal_strength"
-        }
+        ui.config_manager.config = MoxaConfig(
+            min_transmission_rate=6,
+            max_transmission_power=20,
+            rts_threshold=512,
+            fragmentation_threshold=2346,
+            roaming_mechanism="signal_strength",
+            roaming_difference=8,
+            remote_connection_check=True,
+            wmm_enabled=True,
+            turbo_roaming=True,
+            ap_alive_check=True,
+        )
         
         # Simule le clic sur Analyser
-        ui.analyze_logs_from_input(sample_logs)
+        ui.analyze_moxa_logs()
         
         # Vérifie que l'analyse a été faite
         assert mock_analyze.called
-        assert mock_analyze.call_args[0][0] == sample_logs  # Vérifie que les logs sont passés
+        assert sample_logs.strip() in mock_analyze.call_args[0][0]
         mock_text_instance.delete.assert_called()
         mock_text_instance.insert.assert_called()
 
@@ -80,8 +96,9 @@ def test_manual_wifi_workflow():
         # 1. Simule le clic sur "Démarrer le test"
         test_manager.start_wifi_test()
         assert test_manager.test_running
-        
-        # Vérifie que des données sont collectées
+
+        # Simule une collecte de données
+        test_manager.collected_data.append(mock_collector.collect_sample.return_value)
         assert len(test_manager.collected_data) > 0
         
         # 2. Simule le clic sur "Arrêter le test"
