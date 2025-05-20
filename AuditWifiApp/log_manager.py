@@ -1,7 +1,6 @@
 import os
 from tkinter import messagebox
-from wifi_signal_analyzer import WifiAnalyzer
-from wifi_log_analyzer import WifiLogAnalyzer 
+from wifi.wifi_analyzer import WifiAnalyzer
 from moxa_log_analyzer import MoxaLogAnalyzer
 from moxa_roaming_analyzer import MoxaRoamingAnalyzer
 from conversational_formatter import format_conversationally
@@ -13,8 +12,7 @@ class LogManager:
     """
 
     def __init__(self):
-        self.wifi_signal_analyzer = WifiAnalyzer()
-        self.wifi_log_analyzer = WifiLogAnalyzer()
+        self.wifi_analyzer = WifiAnalyzer()
         self.moxa_log_analyzer = MoxaLogAnalyzer()
         self.moxa_roaming_analyzer = MoxaRoamingAnalyzer()
 
@@ -79,24 +77,11 @@ class LogManager:
                         # Gestion plus détaillée de l'erreur spécifique à l'analyseur
                         raise Exception(f"Erreur lors de l'analyse des logs Moxa: {str(e)}")
             else:
-                # Vérifier si ce sont des logs Wi-Fi standards ou des données de signal
-                if "signal strength" in log_content or "RSSI" in log_content:
-                    # Utiliser l'analyseur de signal Wi-Fi
-                    try:
-                        result = self.wifi_signal_analyzer.analyze_wifi_data(log_content)
-                    except Exception as e:
-                        # Gestion plus détaillée de l'erreur spécifique à l'analyseur
-                        raise Exception(f"Erreur lors de l'analyse du signal Wi-Fi: {str(e)}")
-                else:
-                    # Utiliser l'analyseur de logs Wi-Fi
-                    try:
-                        result = self.wifi_log_analyzer.analyze_logs(log_content, current_config)
-                        # Vérifier que le résultat est bien un dictionnaire JSON valide
-                        if not isinstance(result, dict):
-                            raise ValueError("Résultat d'analyse invalide. Format JSON attendu.")
-                    except Exception as e:
-                        # Gestion plus détaillée de l'erreur spécifique à l'analyseur
-                        raise Exception(f"Erreur lors de l'analyse des logs Wi-Fi: {str(e)}")
+                # Utiliser l'analyseur Wi-Fi unifié
+                try:
+                    result = self.wifi_analyzer.analyze_logs(log_content)
+                except Exception as e:
+                    raise Exception(f"Erreur lors de l'analyse des logs Wi-Fi: {str(e)}")
                 
                 # Formater les résultats dans une structure similaire pour l'interface utilisateur
                 # Générer une version conversationnelle des résultats
