@@ -94,3 +94,23 @@ def test_moxa_api_connection_error(sample_moxa_logs):
             analyze_moxa_logs(sample_moxa_logs, {})
         assert "Impossible de contacter le service OpenAI" in str(exc_info.value)
 
+
+def test_additional_params_in_prompt(sample_moxa_logs):
+    """Ensure additional parameters are injected in the prompt."""
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, timeout=60):
+        captured["prompt"] = json["messages"][0]["content"]
+        class R:
+            status_code = 200
+            def json(self):
+                return {"choices": [{"message": {"content": "ok"}}]}
+        return R()
+
+    session = MagicMock()
+    session.post.side_effect = fake_post
+    with patch('src.ai.simple_moxa_analyzer.create_retry_session', return_value=session):
+        analyze_moxa_logs(sample_moxa_logs, {}, "roaming=snr")
+
+    assert "roaming=snr" in captured["prompt"]
+

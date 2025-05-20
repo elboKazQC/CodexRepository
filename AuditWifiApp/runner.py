@@ -140,8 +140,17 @@ class NetworkAnalyzerUI:
         self.moxa_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.moxa_frame, text="Analyse Moxa")
 
-        # Zone de collage des logs
-        input_frame = ttk.LabelFrame(self.moxa_frame, text="Collez vos logs Moxa ici :", padding=10)
+        # PanedWindow pour rendre l'onglet ajustable
+        paned = ttk.Panedwindow(self.moxa_frame, orient=tk.VERTICAL)
+        paned.pack(fill=tk.BOTH, expand=True)
+
+        top_pane = ttk.Frame(paned)
+        bottom_pane = ttk.Frame(paned)
+        paned.add(top_pane, weight=1)
+        paned.add(bottom_pane, weight=1)
+
+        # --- Contenu du volet supérieur ---
+        input_frame = ttk.LabelFrame(top_pane, text="Collez vos logs Moxa ici :", padding=10)
         input_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         self.moxa_input = tk.Text(input_frame, wrap=tk.WORD)
@@ -150,9 +159,8 @@ class NetworkAnalyzerUI:
         self.moxa_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         input_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Zone d'édition de la configuration courante du Moxa
         config_frame = ttk.LabelFrame(
-            self.moxa_frame,
+            top_pane,
             text="Configuration Moxa actuelle (JSON) :",
             padding=10,
         )
@@ -165,23 +173,30 @@ class NetworkAnalyzerUI:
         cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
 
-        # Boutons de configuration
-        config_btn_frame = ttk.Frame(self.moxa_frame)
+        params_frame = ttk.LabelFrame(top_pane, text="Paramètres supplémentaires :", padding=10)
+        params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        self.moxa_params_text = tk.Text(params_frame, height=4, wrap=tk.WORD)
+        params_scroll = ttk.Scrollbar(params_frame, command=self.moxa_params_text.yview)
+        self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
+        self.moxa_params_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        config_btn_frame = ttk.Frame(top_pane)
         config_btn_frame.pack(pady=5)
         ttk.Button(config_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(config_btn_frame, text="Éditer config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
 
-        # Bouton d'analyse
         self.analyze_button = ttk.Button(
-            self.moxa_frame,
+            top_pane,
             text="🔍 Analyser les logs",
             style="Analyze.TButton",
             command=self.analyze_moxa_logs
         )
         self.analyze_button.pack(pady=10)
 
-        # Zone des résultats
-        results_frame = ttk.LabelFrame(self.moxa_frame, text="Résultats de l'analyse :", padding=10)
+        # --- Contenu du volet inférieur ---
+        results_frame = ttk.LabelFrame(bottom_pane, text="Résultats de l'analyse :", padding=10)
         results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         self.moxa_results = tk.Text(results_frame, wrap=tk.WORD)
@@ -190,9 +205,8 @@ class NetworkAnalyzerUI:
         self.moxa_results.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         results_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Bouton d'export
         self.export_button = ttk.Button(
-            self.moxa_frame,
+            bottom_pane,
             text="💾 Exporter l'analyse",
             command=self.export_data,
             state=tk.DISABLED
@@ -285,8 +299,11 @@ class NetworkAnalyzerUI:
                 )
                 return
 
+            # Récupérer les paramètres complémentaires saisis
+            params_text = self.moxa_params_text.get('1.0', tk.END).strip()
+
             # Appel à l'API OpenAI avec la configuration courante
-            analysis = analyze_moxa_logs(logs, self.current_config)
+            analysis = analyze_moxa_logs(logs, self.current_config, params_text or None)
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)
