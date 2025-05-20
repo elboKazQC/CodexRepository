@@ -61,7 +61,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         self.master = master
 
         # Initialize theme variable and style before parent initialization
-        self.theme_var = tk.StringVar(value=theme)
+        self.theme_var = tk.StringVar(master=self.master, value=theme)
         if BOOTSTRAP_AVAILABLE:
             self.style = Style(theme=theme)
 

@@ -9,13 +9,19 @@ import logging
 from wifi.wifi_analyzer import WifiAnalyzer, WifiAnalysis
 from wifi.wifi_collector import WifiCollector, WifiSample
 from moxa_log_analyzer import MoxaLogAnalyzer
+from config_manager import ConfigurationManager
+from app_config import CONFIG_PATH
 
 class NetworkAnalyzer:
     """
     Classe qui coordonne l'analyse WiFi en temps réel et l'analyse des logs Moxa
     """
 
-    def __init__(self):
+    def __init__(self, config_manager: ConfigurationManager | None = None):
+        """Initialise les analyseurs avec la configuration fournie."""
+        self.config_manager = config_manager or ConfigurationManager(path=CONFIG_PATH)
+        cfg = self.config_manager.get_config().get("network_analyzer", {})
+
         # Initialisation des analyseurs
         self.wifi_analyzer = WifiAnalyzer()
         self.wifi_collector = WifiCollector()
@@ -30,17 +36,20 @@ class NetworkAnalyzer:
         self.logger = self._setup_logging()
 
         # Patterns caractéristiques des logs Moxa
-        self.moxa_patterns = [
-            "[WLAN] Roaming from AP",
-            "Authentication request",
-            "Deauthentication from AP",
-            "SNR:",
-            "Noise floor:",
-            "TransferRingToThread",
-            "AUTH-RECEIVE",
-            "ASSOC-STATE",
-            "WLAN-RECEIVE"
-        ]
+        self.moxa_patterns = cfg.get(
+            "moxa_patterns",
+            [
+                "[WLAN] Roaming from AP",
+                "Authentication request",
+                "Deauthentication from AP",
+                "SNR:",
+                "Noise floor:",
+                "TransferRingToThread",
+                "AUTH-RECEIVE",
+                "ASSOC-STATE",
+                "WLAN-RECEIVE",
+            ],
+        )
 
     def _setup_logging(self) -> logging.Logger:
         """Configure le système de journalisation"""
@@ -115,13 +124,17 @@ class NetworkAnalyzer:
             preprocessed_logs = self.preprocess_moxa_log(log_content)
             self.logger.info("Logs prétraités avec succès")
 
-            # Configuration par défaut (à personnaliser plus tard via l'interface)
-            default_config = {
-                "min_transmission_rate": 6,
-                "max_transmission_power": 20,
-                "rts_threshold": 512,
-                "roaming_mechanism": "signal_strength"
-            }
+            # Charger la configuration Moxa depuis le gestionnaire
+            config = self.config_manager.get_config().get("network_analyzer", {})
+            default_config = config.get(
+                "default_moxa_config",
+                {
+                    "min_transmission_rate": 6,
+                    "max_transmission_power": 20,
+                    "rts_threshold": 512,
+                    "roaming_mechanism": "signal_strength",
+                },
+            )
 
             # Analyser avec l'IA
             analysis_results = self.moxa_analyzer.analyze_logs(preprocessed_logs, default_config)
