@@ -205,40 +205,14 @@ class NetworkAnalyzerUI:
                 )
                 return
 
-            # Vérifier la clé API OpenAI dans différentes sources
+            # Vérifier la clé API OpenAI dans l'environnement
             api_key = os.getenv("OPENAI_API_KEY")
-            
-            # Si pas dans les variables d'environnement, chercher dans le fichier de config
             if not api_key:
-                config_file = os.path.join(os.path.dirname(__file__), "config", "api_config.json")
-                if os.path.exists(config_file):
-                    try:
-                        with open(config_file, 'r') as f:
-                            config = json.load(f)
-                            api_key = config.get('api_key')
-                    except:
-                        pass
-
-            # Si toujours pas de clé, demander à l'utilisateur
-            if not api_key:
-                result = messagebox.askyesno(
-                    "Configuration requise",
-                    "La clé API OpenAI n'est pas configurée. Voulez-vous la configurer maintenant ?"
+                messagebox.showerror(
+                    "Clé API manquante",
+                    "La variable d'environnement OPENAI_API_KEY doit être définie pour utiliser l'analyse OpenAI."
                 )
-                if result:
-                    api_key = self.prompt_for_api_key()
-                    if not api_key:
-                        return
-                    
-                    # Sauvegarder la clé dans le fichier de config
-                    config_dir = os.path.join(os.path.dirname(__file__), "config")
-                    os.makedirs(config_dir, exist_ok=True)
-                    with open(os.path.join(config_dir, "api_config.json"), 'w') as f:
-                        json.dump({"api_key": api_key}, f, indent=2)
-                    
-                    os.environ["OPENAI_API_KEY"] = api_key
-                else:
-                    return
+                return
 
             # Mise à jour de l'interface
             self.moxa_results.delete('1.0', tk.END)
@@ -291,35 +265,6 @@ class NetworkAnalyzerUI:
         finally:
             self.analyze_button.config(state=tk.NORMAL)
 
-    def prompt_for_api_key(self):
-        """Demande à l'utilisateur sa clé API OpenAI"""
-        api_key = None
-        dialog = tk.Toplevel(self.master)
-        dialog.title("Configuration OpenAI")
-        dialog.transient(self.master)
-        dialog.grab_set()
-        
-        # Centrer la fenêtre
-        dialog.geometry("400x150")
-        
-        ttk.Label(dialog, text="Entrez votre clé API OpenAI:").pack(pady=10)
-        api_key_var = tk.StringVar()
-        entry = ttk.Entry(dialog, textvariable=api_key_var, width=50)
-        entry.pack(pady=5, padx=10)
-        
-        def submit():
-            nonlocal api_key
-            api_key = api_key_var.get().strip()
-            dialog.destroy()
-            
-        def cancel():
-            dialog.destroy()
-        
-        ttk.Button(dialog, text="OK", command=submit).pack(side=tk.LEFT, padx=10, pady=10)
-        ttk.Button(dialog, text="Annuler", command=cancel).pack(side=tk.RIGHT, padx=10, pady=10)
-        
-        dialog.wait_window()
-        return api_key
 
     def format_and_display_ai_analysis(self, analysis: str):
         """Formate et affiche l'analyse OpenAI dans l'interface"""

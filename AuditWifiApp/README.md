@@ -124,6 +124,17 @@ L'application utilise l'API OpenAI de manière simple et directe via deux points
 
 La réponse d'OpenAI est affichée directement dans l'interface, sans traitement supplémentaire. Cela permet une lecture facile des recommandations et une meilleure compréhension du raisonnement de l'IA.
 
+### Configuration de la clé API
+
+La clé d'accès à l'API OpenAI est désormais lue uniquement depuis la variable d'environnement `OPENAI_API_KEY`. Avant de lancer l'application ou les tests, définissez cette variable :
+
+```powershell
+$env:OPENAI_API_KEY="votre-cle"
+python runner.py
+```
+
+Le fichier `config/api_config.json` n'est plus utilisé et peut être ignoré.
+
 ## Questions pour clarifier le besoin
 
 1. **Concernant l'intégration avec l'API OpenAI:**
