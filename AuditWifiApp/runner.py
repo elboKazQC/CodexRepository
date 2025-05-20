@@ -438,7 +438,7 @@ class NetworkAnalyzerUI:
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)
-                
+
                 # Configuration des styles de texte
                 self.moxa_results.tag_configure("title", font=("Arial", 12, "bold"))
                 self.moxa_results.tag_configure("section", font=("Arial", 10, "bold"))
@@ -449,7 +449,7 @@ class NetworkAnalyzerUI:
 
                 # Affichage de l'analyse avec mise en forme
                 self.moxa_results.insert('end', "Analyse OpenAI des Logs Moxa\n\n", "title")
-                
+
                 # Formater et afficher la réponse d'OpenAI
                 self.format_and_display_ai_analysis(analysis)
 
@@ -546,7 +546,7 @@ class NetworkAnalyzerUI:
         if "score_global" in data:
             score = data["score_global"]
             self.moxa_results.insert('end', f"Score Global: {score}/100\n", "title")
-            
+
             if score >= 70:
                 self.moxa_results.insert('end', "✅ Configuration adaptée\n\n", "success")
             elif score >= 50:
@@ -582,7 +582,7 @@ class NetworkAnalyzerUI:
         """Affiche une analyse en format texte"""
         # Diviser le texte en sections basées sur les numéros ou les titres communs
         sections = text.split('\n\n')
-        
+
         for section in sections:
             if section.strip():
                 # Détecter si c'est un titre
@@ -590,7 +590,7 @@ class NetworkAnalyzerUI:
                     self.moxa_results.insert('end', f"\n{section}\n", "section")
                 else:
                     self.moxa_results.insert('end', f"{section}\n", "normal")
-                    
+
         self.moxa_results.see('1.0')  # Remonter au début
 
     def update_data(self):
@@ -767,9 +767,10 @@ class MoxaAnalyzerUI(NetworkAnalyzerUI):
 def main():
     """Point d'entrée de l'application"""
     try:
+        root = tk.Tk()
         from bootstrap_ui import BootstrapNetworkAnalyzerUI
-        app = BootstrapNetworkAnalyzerUI()
-        app.master.mainloop()
+        app = BootstrapNetworkAnalyzerUI(root, theme="darkly")
+        root.mainloop()
     except Exception as e:
         print(f"Erreur fatale: {str(e)}")
         messagebox.showerror("Erreur fatale", str(e))

@@ -1,10 +1,10 @@
 interface:
   refresh_rate: 2000
-  theme: darkly
+  theme: superhero
   window:
-    width: 500
     height: 650
-    title: "Audit Wifi App"
+    title: Audit Wifi App
+    width: 500
 logging:
   directory: logs
   enabled: true

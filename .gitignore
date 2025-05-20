@@ -1,24 +1,2 @@
-# Fichiers de configuration
-AuditWifiApp/config/api_config.json
-.env
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-
-# Environnements virtuels
-venv/
-env/
-.env/
-
-# Fichiers système
-.DS_Store
-Thumbs.db
 
