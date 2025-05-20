@@ -15,6 +15,7 @@ import os
 from network_analyzer import NetworkAnalyzer
 from wifi.wifi_collector import WifiSample
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
+from config_manager import ConfigurationManager
 
 class NetworkAnalyzerUI:
     def __init__(self, master: tk.Tk):
@@ -25,6 +26,33 @@ class NetworkAnalyzerUI:
         # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
         self.samples: List[WifiSample] = []
+
+        # Configuration par défaut pour l'analyse des logs Moxa
+        self.default_config = {
+            "min_transmission_rate": 12,
+            "max_transmission_power": 20,
+            "rts_threshold": 512,
+            "fragmentation_threshold": 2346,
+            "roaming_mechanism": "snr",
+            "roaming_difference": 8,
+            "remote_connection_check": True,
+            "wmm_enabled": True,
+            "turbo_roaming": True,
+            "ap_alive_check": True,
+        }
+
+        # Gestionnaire de configuration
+        self.config_manager = ConfigurationManager(self.default_config)
+        self.config_dir = os.path.join(os.path.dirname(__file__), "config")
+        os.makedirs(self.config_dir, exist_ok=True)
+        self.last_config_file = os.path.join(self.config_dir, "last_moxa_config.json")
+        if os.path.exists(self.last_config_file):
+            try:
+                with open(self.last_config_file, "r", encoding="utf-8") as f:
+                    self.config_manager.config = json.load(f)
+            except Exception:
+                pass
+        self.current_config = self.config_manager.get_config()
 
         # Configuration du style
         self.setup_style()
@@ -117,6 +145,12 @@ class NetworkAnalyzerUI:
         self.moxa_input.configure(yscrollcommand=input_scroll.set)
         self.moxa_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         input_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Boutons de configuration
+        config_btn_frame = ttk.Frame(self.moxa_frame)
+        config_btn_frame.pack(pady=5)
+        ttk.Button(config_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
+        ttk.Button(config_btn_frame, text="Éditer config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
 
         # Bouton d'analyse
         self.analyze_button = ttk.Button(
@@ -220,22 +254,8 @@ class NetworkAnalyzerUI:
             self.analyze_button.config(state=tk.DISABLED)
             self.moxa_results.update()
 
-            # Configuration par défaut pour l'exemple
-            current_config = {
-                'min_transmission_rate': 12,
-                'max_transmission_power': 20,
-                'rts_threshold': 512,
-                'fragmentation_threshold': 2346,
-                'roaming_mechanism': 'snr',
-                'roaming_difference': 8,
-                'remote_connection_check': True,
-                'wmm_enabled': True,
-                'turbo_roaming': True,
-                'ap_alive_check': True
-            }
-
-            # Appel à l'API OpenAI
-            analysis = analyze_moxa_logs(logs, current_config)
+            # Appel à l'API OpenAI avec la configuration courante
+            analysis = analyze_moxa_logs(logs, self.current_config)
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)
@@ -257,6 +277,7 @@ class NetworkAnalyzerUI:
                 # Activer le bouton d'export
                 self.export_button.config(state=tk.NORMAL)
                 messagebox.showinfo("Succès", "Analyse complétée par OpenAI !")
+                self.save_last_config()
             else:
                 self.moxa_results.insert('1.0', "❌ Aucun résultat d'analyse\n")
 
@@ -265,6 +286,63 @@ class NetworkAnalyzerUI:
         finally:
             self.analyze_button.config(state=tk.NORMAL)
 
+
+    def load_config(self):
+        """Charge un fichier de configuration JSON."""
+        filepath = filedialog.askopenfilename(
+            initialdir=self.config_dir,
+            filetypes=[("JSON", "*.json")],
+            title="Charger une configuration"
+        )
+        if filepath:
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    self.config_manager.config = json.load(f)
+                self.current_config = self.config_manager.get_config()
+                messagebox.showinfo("Configuration", f"Configuration chargée depuis {filepath}")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Impossible de charger la configuration:\n{e}")
+
+    def edit_config(self):
+        """Affiche un formulaire pour modifier la configuration."""
+        dialog = tk.Toplevel(self.master)
+        dialog.title("Éditer la configuration")
+        entries = {}
+
+        for row, (key, value) in enumerate(self.config_manager.get_config().items()):
+            ttk.Label(dialog, text=key).grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
+            var = tk.StringVar(value=str(value))
+            ttk.Entry(dialog, textvariable=var, width=20).grid(row=row, column=1, padx=5, pady=2)
+            entries[key] = var
+
+        def save():
+            for k, v in entries.items():
+                val = v.get()
+                if val.lower() in ("true", "false"):
+                    parsed = val.lower() == "true"
+                else:
+                    try:
+                        parsed = int(val)
+                    except ValueError:
+                        try:
+                            parsed = float(val)
+                        except ValueError:
+                            parsed = val
+                self.config_manager.update_config(k, parsed)
+            self.current_config = self.config_manager.get_config()
+            dialog.destroy()
+
+        ttk.Button(dialog, text="OK", command=save).grid(row=len(entries), column=0, padx=5, pady=10)
+        ttk.Button(dialog, text="Annuler", command=dialog.destroy).grid(row=len(entries), column=1, padx=5, pady=10)
+
+    def save_last_config(self):
+        """Sauvegarde la configuration actuelle pour réutilisation."""
+        try:
+            os.makedirs(self.config_dir, exist_ok=True)
+            with open(self.last_config_file, "w", encoding="utf-8") as f:
+                json.dump(self.config_manager.get_config(), f, indent=2)
+        except Exception:
+            pass
 
     def format_and_display_ai_analysis(self, analysis: str):
         """Formate et affiche l'analyse OpenAI dans l'interface"""
