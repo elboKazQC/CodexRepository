@@ -181,6 +181,10 @@ class NetworkAnalyzerUI:
         self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
         self.moxa_params_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Label(
+            params_frame,
+            text="Indiquez ici tout contexte supplémentaire (ex. roaming=snr)"
+        ).pack(anchor=tk.W, pady=(5, 0))
 
         config_btn_frame = ttk.Frame(top_pane)
         config_btn_frame.pack(pady=5)
