@@ -12,10 +12,11 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    ./setup.ps1
    ```
    On Linux/macOS you can run `bash setup.sh` instead.
-3. Set your OpenAI API key:
-   ```powershell
-   $env:OPENAI_API_KEY="your-key"
+3. Create a `.env` file at the project root containing your API key:
    ```
+   OPENAI_API_KEY=your-key
+   ```
+   The file is ignored by Git so your key persists locally.
 4. Launch the user interface:
    ```bash
    python AuditWifiApp/runner.py
