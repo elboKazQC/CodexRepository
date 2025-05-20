@@ -111,6 +111,13 @@ class WifiDataCollector:
             channel_val = int(wifi_data.get('Channel', '0'))
             band = wifi_data.get('Band', '2.4 GHz')  # Default to 2.4 GHz if not specified
 
+            noise_floor = wifi_data.get('NoiseFloor')
+            noise_floor = int(noise_floor) if noise_floor not in [None, ""] else None
+            snr_value = wifi_data.get('SNR')
+            snr_value = int(snr_value) if snr_value not in [None, ""] else None
+            if snr_value is None and noise_floor is not None:
+                snr_value = int(signal_dbm) - int(noise_floor)
+
             # Create measurement
             measurement = WifiMeasurement(
                 ssid=ssid,
@@ -122,7 +129,9 @@ class WifiDataCollector:
                 frequency=band,
                 frequency_mhz=_channel_to_frequency_mhz(channel_val),
                 is_connected=bool(ssid != 'N/A'),
-                channel_utilization=float(wifi_data.get('ChannelUtilization', '0').strip('%')) / 100
+                channel_utilization=float(wifi_data.get('ChannelUtilization', '0').strip('%')) / 100,
+                noise_floor=noise_floor,
+                snr=snr_value
             )
 
             self.logger.debug(f"Mesure WiFi créée: SSID={ssid}, "

@@ -17,14 +17,18 @@ class NetworkStatus(Enum):
 @dataclass
 class WifiMeasurement:
     """Mesure WiFi à un instant donné"""
-    bssid: str
     ssid: str
-    signal_strength: int
+    bssid: str
+    signal_percent: int
+    signal_dbm: int
     channel: int
-    frequency: str
     band: str
-    encryption: str
-    network_type: str
+    frequency: str
+    frequency_mhz: int
+    is_connected: bool
+    channel_utilization: float
+    noise_floor: Optional[int] = None
+    snr: Optional[int] = None
 
 @dataclass
 class PingMeasurement:
