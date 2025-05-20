@@ -1,37 +1,46 @@
-# -*- coding: utf-8 -*-
+"""Application entry point.
+
+This module instantiates the different UI views and orchestrates their
+interaction. The actual user interface components have been extracted
+into ``ui.wifi_view`` and ``ui.moxa_view`` for clarity.
+"""
+
+from __future__ import annotations
+
 import sys
-import json
-import logging
-from datetime import datetime
 import tkinter as tk
+
 from tkinter import ttk, messagebox, filedialog, simpledialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 from typing import List, Optional
+
 import os
 from dotenv import load_dotenv
 
-# Charger automatiquement les variables d'environnement depuis un fichier .env
-load_dotenv()
 
 from network_analyzer import NetworkAnalyzer
-from wifi.wifi_collector import WifiSample
-from src.ai.simple_moxa_analyzer import analyze_moxa_logs
-from config_manager import ConfigurationManager
+from ui.wifi_view import WifiView
+from ui.moxa_view import MoxaView
+from network_scanner import scan_wifi  # re-exported for tests
+
+
+load_dotenv()
+
 
 class NetworkAnalyzerUI:
+    """Main window coordinating the WiFi and Moxa views."""
+
     def __init__(self, master: tk.Tk):
         self.master = master
-        self.master.title("Analyseur Réseau WiFi & Moxa")
+        self.master.title("Analyseur R\u00e9seau WiFi & Moxa")
         self.master.state('zoomed')
 
-        # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
-        self.samples: List[WifiSample] = []
 
-        # Configuration par défaut pour l'analyse des logs Moxa
+        # Default configuration for the Moxa analyzer
         self.default_config = {
             "min_transmission_rate": 12,
             "max_transmission_power": 20,
@@ -45,49 +54,33 @@ class NetworkAnalyzerUI:
             "ap_alive_check": True,
         }
 
-        # Gestionnaire de configuration
-        self.config_manager = ConfigurationManager(self.default_config)
         self.config_dir = os.path.join(os.path.dirname(__file__), "config")
-        os.makedirs(self.config_dir, exist_ok=True)
-        self.last_config_file = os.path.join(self.config_dir, "last_moxa_config.json")
-        if os.path.exists(self.last_config_file):
-            try:
-                with open(self.last_config_file, "r", encoding="utf-8") as f:
-                    self.config_manager.config = json.load(f)
-            except Exception:
-                pass
-        self.current_config = self.config_manager.get_config()
 
-        # Configuration du style
-        self.setup_style()
-
-        # Création de l'interface
         self.create_interface()
 
-        # Configuration des graphiques
-        self.setup_graphs()
-
-        # Variables pour les mises à jour
-        self.update_interval = 1000  # ms
-        self.max_samples = 100
-
-    def setup_style(self):
-        """Configure le style de l'interface"""
-        style = ttk.Style()
-        style.configure("Title.TLabel", font=('Helvetica', 14, 'bold'))
-        style.configure("Alert.TLabel", foreground='red', font=('Helvetica', 12))
-        style.configure("Stats.TLabel", font=('Helvetica', 10))
-
-        # Style pour le bouton d'analyse
-        style.configure("Analyze.TButton",
-                       font=('Helvetica', 12),
-                       padding=10)
-
-    def create_interface(self):
-        """Crée l'interface principale"""
-        # Notebook pour les différentes vues
+    # ------------------------------------------------------------------
+    # Interface creation
+    # ------------------------------------------------------------------
+    def create_interface(self) -> None:
+        """Create notebook with WiFi and Moxa tabs."""
         self.notebook = ttk.Notebook(self.master)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+
+        self.wifi_view = WifiView(self.notebook, self.analyzer)
+        self.notebook.add(self.wifi_view.frame, text="Analyse WiFi")
+
+
+        self.moxa_view = MoxaView(self.notebook, self.config_dir, self.default_config)
+        self.notebook.add(self.moxa_view.frame, text="Analyse Moxa")
+
+        # Expose some attributes for backward compatibility with tests
+        self.start_button = self.wifi_view.start_button
+        self.stop_button = self.wifi_view.stop_button
+        self.scan_button = self.wifi_view.scan_button
+        self.export_scan_button = self.wifi_view.export_scan_button
+        self.scan_tree = self.wifi_view.scan_tree
+
 
         # === Onglet WiFi ===
         self.wifi_frame = ttk.Frame(self.notebook)
@@ -588,33 +581,17 @@ class NetworkAnalyzerUI:
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
     """Backward-compatible alias used in tests."""
 
-    def __init__(self, master: tk.Tk):
-        super().__init__(master)
-        # Provide legacy attribute names expected by older tests
-        self.logs_input_text = self.moxa_input
-        self.results_text = self.moxa_results
-
-    def analyze_logs_from_input(self, log_content=None):
-        """Compatibility wrapper calling analyze_moxa_logs."""
-        if log_content is not None:
-            self.logs_input_text.delete("1.0", tk.END)
-            self.logs_input_text.insert("1.0", log_content)
-        self.analyze_moxa_logs()
-
-    def _analyze_logs(self):
-        """Legacy private method used in tests."""
-        self.analyze_moxa_logs()
-
-def main():
-    """Point d'entrée de l'application"""
     try:
         root = tk.Tk()
-        app = NetworkAnalyzerUI(root)
+        # Instantiate the UI using the theme defined in the configuration
+        from bootstrap_ui import BootstrapNetworkAnalyzerUI
+        app = BootstrapNetworkAnalyzerUI(root)
         root.mainloop()
     except Exception as e:
         print(f"Erreur fatale: {str(e)}")
-        messagebox.showerror("Erreur fatale", str(e))
+        tk.messagebox.showerror("Erreur fatale", str(e))
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

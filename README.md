@@ -24,10 +24,37 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    python AuditWifiApp/runner.py
    ```
 
+## Configuration
+
+`AuditWifiApp/config.yaml` controls UI options and Wi-Fi thresholds. The new
+`wifi_thresholds` section defines when the connection is considered weak or
+critical.
+
+```yaml
+wifi_thresholds:
+  signal:
+    weak: -70      # dBm
+    critical: -80
+  packet_loss:
+    warning: 10    # percent
+    critical: 20
+  latency:
+    warning: 100   # ms
+    critical: 200
+```
+
+## Usage
+
+When analyzing Moxa logs, paste them in the dedicated tab. Optionally fill in
+the **Paramètres supplémentaires** field to give extra context to the AI. For
+example `roaming=snr` will hint that signal to noise ratio should drive the
+roaming logic.
+
 ## Running tests
 
 ```bash
 pytest -v
+npm test # run TypeScript unit tests
 ```
 
 ## Repository layout
@@ -36,5 +63,20 @@ pytest -v
 - `AuditWifiApp/tests/` – unit tests
 - `requirements.txt` – Python dependencies
 - `setup.ps1` / `setup.sh` – install scripts
-- `AuditWifiApp/config.yaml` – edit thresholds and UI settings
+- `AuditWifiApp/config.yaml` – UI settings and `wifi_thresholds` values
 - Backup files from previous versions live in `AuditWifiApp/archive/`
+
+## HistoryManager API
+
+Reports exported from the UI are automatically stored under `AuditWifiApp/logs`
+and indexed in `reports.db`. The ``HistoryManager`` class provides a simple API
+to manage these records:
+
+- `save_report(report: dict) -> str` – save a report and return the JSON path.
+- `list_reports() -> List[dict]` – get all stored reports with their identifier
+  and file location.
+- `load_report(report_id: int) -> Optional[dict]` – load a report from the
+  database.
+
+The UI exposes a new **Historique** tab that lists available reports and lets
+you open them with your default viewer.

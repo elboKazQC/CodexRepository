@@ -52,7 +52,7 @@ Application destinée à réaliser des audits WiFi dans des usines où l’on so
 ├── moxa_analyzer.py           # Analyseur spécialisé pour les logs Moxa
 ├── network_scanner.py         # Scanner réseau
 ├── runner.py                  # Point d'entrée principal de l'application
-├── wifi_analyzer.py           # Analyseur spécialisé pour les données WiFi
+├── wifi/wifi_analyzer.py      # Analyseur spécialisé pour les données WiFi
 ├── wifi_data_collector.py     # Collecteur de données WiFi
 ├── wifi_test_manager.py       # Gestionnaire des tests WiFi
 ├── archive/                   # Code archivé et anciennes versions
@@ -64,7 +64,7 @@ Application destinée à réaliser des audits WiFi dans des usines où l’on so
 ## Modules principaux
 - **config_manager.py**: Gère le chargement, la sauvegarde et la réinitialisation des configurations.
 - **log_manager.py**: Orchestrateur qui délègue les opérations d'analyse aux analyseurs spécialisés. Il reçoit les demandes d'analyse (WiFi ou Moxa), sélectionne le module d'analyse approprié, transmet les données à analyser, puis centralise et retourne les résultats à l'interface utilisateur.
-- **wifi_analyzer.py**: Analyse spécifique des données WiFi. Il reçoit les échantillons collectés (RSSI, SNR, etc.), identifie les zones à risque (ex : faible signal, perte de paquets, congestion), et génère des recommandations. L'analyse se fait en fin de collecte ou à la demande.
+- **wifi/wifi_analyzer.py**: Analyse spécifique des données WiFi. Il reçoit les échantillons collectés (RSSI, SNR, etc.), identifie les zones à risque (ex : faible signal, perte de paquets, congestion), et génère des recommandations. L'analyse se fait en fin de collecte ou à la demande.
 - **moxa_analyzer.py**: Analyse des logs Moxa. Il traite les fichiers de logs déposés, extrait les événements pertinents (roaming, déconnexions, erreurs), puis propose des optimisations de configuration pour améliorer le roaming. Peut s'appuyer sur des sous-modules spécialisés (ex : moxa_log_analyzer, moxa_roaming_analyzer).
 - **moxa_log_analyzer.py**: Analyse automatique des logs Moxa et génère des recommandations directes sur la configuration JSON (roaming_difference, max_transmission_power, rts_threshold, fragmentation_threshold, auth_timeout...). Les suggestions indiquent la valeur actuelle, la valeur proposée et la raison du changement.
 - **wifi_monitor.ps1**: Script PowerShell qui collecte les données WiFi en temps réel. Il fournit des informations détaillées sur la connexion WiFi (RSSI, BSSID, canal, bande, etc.) et peut fonctionner en mode interactif (affichage en temps réel) ou en mode API (retourne les données en JSON).
@@ -85,7 +85,7 @@ Application destinée à réaliser des audits WiFi dans des usines où l’on so
    - `runner.py` transmet la demande au `log_manager.py`, qui choisit l'analyseur adapté (WiFi ou Moxa).
 
 3. **Analyse** :
-   - L'analyseur (`wifi_analyzer.py` ou `moxa_analyzer.py`) traite les données reçues :
+  - L'analyseur (`wifi/wifi_analyzer.py` ou `moxa_analyzer.py`) traite les données reçues :
      - Pour le WiFi : détection des zones à risque, synthèse des métriques, génération de recommandations.
      - Pour Moxa : extraction des événements, analyse du roaming, suggestions d'optimisation.
    - Certains modules peuvent faire appel à l'IA (OpenAI) pour enrichir l'analyse (via les modules de la couche `src/ai/`).
@@ -217,6 +217,7 @@ Pour exécuter les tests, utilisez la commande suivante :
 
 ```bash
 pytest -v
+npm test
 ```
 
 Pour générer un rapport de couverture des tests :

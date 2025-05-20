@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 from datetime import datetime
 from dataclasses import dataclass
 from .wifi_collector import WifiSample
@@ -21,6 +21,23 @@ class WifiAnalyzer:
         self.signal_threshold = -70  # dBm
         self.quality_threshold = 40  # %
         self.stability_window = 10  # échantillons
+        # Seuils supplémentaires utilisés par les autres analyseurs
+        self.thresholds = {
+            "signal_strength": {
+                "excellent": -50,
+                "good": -60,
+                "fair": -70,
+                "poor": -80,
+            },
+            "ping_ms": 50,
+            "packet_loss_percent": 2,
+            "snr_db": {
+                "excellent": 25,
+                "good": 15,
+                "fair": 10,
+                "poor": 0,
+            },
+        }
 
     def analyze_samples(self, samples: List[WifiSample]) -> WifiAnalysis:
         """Analyse une liste d'échantillons WiFi"""
@@ -172,3 +189,154 @@ class WifiAnalyzer:
                     break
 
         return distribution
+
+    # ------------------------------------------------------------------
+    # Logic merged from the previous wifi_signal_analyzer implementation
+
+    def analyze_wifi_data(self, wifi_data: Dict) -> Dict:
+        """Analyse un dictionnaire de mesures WiFi simple."""
+        try:
+            results = {
+                "status": "ok",
+                "metrics": self._analyze_metrics(wifi_data),
+                "recommendations": self._generate_recommendations(wifi_data),
+            }
+            return results
+        except Exception as e:
+            return {"status": "error", "message": f"Erreur lors de l'analyse WiFi: {str(e)}"}
+
+    def _analyze_metrics(self, wifi_data: Dict) -> Dict:
+        """Analyse les métriques WiFi principales."""
+        return {
+            "signal_quality": self._evaluate_signal_quality(wifi_data.get("rssi", 0)),
+            "snr_quality": self._evaluate_snr(wifi_data.get("snr")),
+            "connection_stability": self._evaluate_connection_stability(
+                wifi_data.get("packet_loss", 0),
+                wifi_data.get("ping", 0),
+            ),
+            "statistics": {
+                "avg_signal": wifi_data.get("rssi", 0),
+                "avg_ping": wifi_data.get("ping", 0),
+                "packet_loss": wifi_data.get("packet_loss", 0),
+            },
+        }
+
+    def _evaluate_snr(self, snr: Optional[int]) -> str:
+        """Évalue la qualité du SNR."""
+        if snr is None:
+            return "Inconnu"
+        if snr >= self.thresholds["snr_db"]["excellent"]:
+            return "Excellent"
+        elif snr >= self.thresholds["snr_db"]["good"]:
+            return "Bon"
+        elif snr >= self.thresholds["snr_db"]["fair"]:
+            return "Moyen"
+        else:
+            return "Faible"
+
+    def _evaluate_signal_quality(self, rssi: float) -> str:
+        """Évalue la qualité du signal basée sur le RSSI."""
+        if rssi >= self.thresholds["signal_strength"]["excellent"]:
+            return "Excellent"
+        elif rssi >= self.thresholds["signal_strength"]["good"]:
+            return "Bon"
+        elif rssi >= self.thresholds["signal_strength"]["fair"]:
+            return "Faible"
+        else:
+            return "Critique"
+
+    def _evaluate_connection_stability(self, packet_loss: float, ping: float) -> str:
+        """Évalue la stabilité de la connexion."""
+        if packet_loss <= self.thresholds["packet_loss_percent"] and ping <= self.thresholds["ping_ms"]:
+            return "Stable"
+        elif packet_loss > self.thresholds["packet_loss_percent"] * 2 or ping > self.thresholds["ping_ms"] * 2:
+            return "Instable"
+        else:
+            return "Dégradée"
+
+    def _generate_recommendations(self, wifi_data: Dict) -> List[Dict]:
+        """Génère des recommandations basées sur l'analyse des données."""
+        recommendations = []
+        rssi = wifi_data.get("rssi", 0)
+        ping = wifi_data.get("ping", 0)
+        packet_loss = wifi_data.get("packet_loss", 0)
+
+        if rssi < self.thresholds["signal_strength"]["fair"]:
+            recommendations.append({
+                "type": "signal",
+                "severity": "high" if rssi < self.thresholds["signal_strength"]["poor"] else "medium",
+                "message": "Signal WiFi faible détecté. Actions recommandées:",
+                "actions": [
+                    "Rapprochez-vous du point d'accès",
+                    "Vérifiez les obstacles physiques",
+                    "Envisagez l'ajout d'un point d'accès supplémentaire",
+                ],
+            })
+
+        if ping > self.thresholds["ping_ms"] or packet_loss > self.thresholds["packet_loss_percent"]:
+            recommendations.append({
+                "type": "stability",
+                "severity": "high" if packet_loss > self.thresholds["packet_loss_percent"] * 2 else "medium",
+                "message": "Problèmes de stabilité détectés. Actions recommandées:",
+                "actions": [
+                    "Vérifiez les interférences WiFi",
+                    "Optimisez la configuration du point d'accès",
+                    "Considérez un changement de canal WiFi",
+                ],
+            })
+
+        return recommendations
+
+    # ------------------------------------------------------------------
+    # Logic merged from WifiLogAnalyzer for basic log inspection
+
+    def analyze_logs(self, log_data: str) -> Dict:
+        """Analyse des logs WiFi génériques."""
+        try:
+            metrics = self._extract_log_metrics(log_data)
+            return {
+                "status": "success",
+                "metrics": metrics,
+                "issues": self._identify_log_issues(metrics),
+                "recommendations": self._generate_log_recommendations(metrics),
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Erreur lors de l'analyse: {str(e)}"}
+
+    def _extract_log_metrics(self, log_data: str) -> Dict:
+        """Extrait quelques métriques simples des logs WiFi."""
+        return {
+            "signal_strength": self._log_analyze_signal_strength(log_data),
+            "connection_stability": self._log_analyze_stability(log_data),
+            "performance_metrics": self._log_analyze_performance(log_data),
+        }
+
+    def _log_analyze_signal_strength(self, log_data: str) -> Dict:
+        """Analyse la force du signal dans les logs (implémentation simplifiée)."""
+        return {"average": -65, "min": -75, "max": -55}
+
+    def _log_analyze_stability(self, log_data: str) -> Dict:
+        """Analyse la stabilité de la connexion dans les logs (exemple)."""
+        return {"disconnections": 1, "reconnection_time_avg": 2.5}
+
+    def _log_analyze_performance(self, log_data: str) -> Dict:
+        """Analyse les performances réseau dans les logs (exemple)."""
+        return {"latency_avg": 45, "packet_loss": 0.5}
+
+    def _identify_log_issues(self, metrics: Dict) -> List[str]:
+        """Identifie des problèmes potentiels à partir des métriques."""
+        issues = []
+        if metrics["signal_strength"]["average"] < self.thresholds["signal_strength"]["fair"]:
+            issues.append("Signal moyen inférieur au seuil acceptable")
+        if metrics["performance_metrics"]["packet_loss"] > self.thresholds["packet_loss_percent"]:
+            issues.append("Taux de perte de paquets élevé")
+        return issues
+
+    def _generate_log_recommendations(self, metrics: Dict) -> List[str]:
+        """Génère des recommandations à partir des métriques de log."""
+        recos = []
+        if metrics["signal_strength"]["average"] < self.thresholds["signal_strength"]["fair"]:
+            recos.append("Améliorer la couverture WiFi ou repositionner l'antenne")
+        if metrics["performance_metrics"]["packet_loss"] > self.thresholds["packet_loss_percent"]:
+            recos.append("Vérifier les interférences et la qualité du lien")
+        return recos

@@ -6,9 +6,21 @@ Envoie simplement les logs et la configuration à OpenAI et retourne la réponse
 import os
 import json
 import requests
+from datetime import datetime
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from pathlib import Path
+from typing import Optional
+
+
+def _sanitize_additional_params(params: str, max_length: int = 500) -> str:
+    """Return params stripped of non-printable chars and validated by length."""
+    cleaned = "".join(ch for ch in params if ch.isprintable())
+    if len(cleaned) > max_length:
+        raise ValueError(
+            f"Paramètres supplémentaires trop longs (max {max_length} caractères)"
+        )
+    return cleaned
 
 def create_retry_session(
     retries=3,
@@ -30,6 +42,15 @@ def create_retry_session(
     session.mount('https://', adapter)
     return session
 
+def _log_error(msg: str) -> None:
+    """Append API errors to api_errors.log."""
+    try:
+        with open("api_errors.log", "a", encoding="utf-8") as f:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            f.write(f"{timestamp} - SIMPLE_MOXA_ANALYZER - {msg}\n")
+    except Exception:
+        pass
+
 def truncate_logs(logs, max_length=8000):
     """Tronque les logs de manière intelligente pour rester dans les limites de l'API"""
     if len(logs) <= max_length:
@@ -48,13 +69,15 @@ def get_api_key():
         )
     return api_key
 
-def analyze_moxa_logs(logs, current_config):
+def analyze_moxa_logs(logs, current_config, additional_params: str | None = None):
     """
     Envoie les logs Moxa et la configuration à OpenAI pour analyse.
     
     Args:
         logs (str): Les logs Moxa à analyser
         current_config (dict): La configuration actuelle du Moxa
+        additional_params (str | None): Informations facultatives fournies par
+            l'utilisateur pour préciser la configuration ou le contexte.
         
     Returns:
         str: La réponse brute d'OpenAI
@@ -67,11 +90,17 @@ def analyze_moxa_logs(logs, current_config):
     # Tronquer les logs si nécessaire
     truncated_logs = truncate_logs(logs)
 
-    prompt = f"""Analysez ces logs Moxa et la configuration actuelle. 
+    sanitized_params: Optional[str] = None
+    if additional_params:
+        sanitized_params = _sanitize_additional_params(additional_params)
+
+    extra = f"\nParamètres supplémentaires:\n{sanitized_params}" if sanitized_params else ""
+
+    prompt = f"""Analysez ces logs Moxa et la configuration actuelle.
 Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.
 
 Configuration actuelle:
-{json.dumps(current_config, indent=2)}
+{json.dumps(current_config, indent=2)}{extra}
 
 Logs à analyser:
 {truncated_logs}
@@ -96,20 +125,46 @@ Donnez une analyse détaillée avec:
                 "temperature": 0.2,
                 "max_tokens": 2000
             },
-            timeout=60  # Augmentation du timeout à 60 secondes
+            timeout=60
         )
-        
-        response.raise_for_status()
+
+        if response.status_code != 200:
+            error_detail = response.json().get('error', {}).get('message', '')
+            msg = f"Erreur API OpenAI ({response.status_code}): {error_detail}"
+            _log_error(msg)
+            raise Exception(msg)
+
         result = response.json()
-        
         if "choices" in result and len(result["choices"]) > 0:
             return result["choices"][0]["message"]["content"]
         else:
-            raise Exception("Réponse invalide de l'API OpenAI")
-            
+            msg = "Réponse invalide de l'API OpenAI"
+            _log_error(msg)
+            raise Exception(msg)
+
     except requests.exceptions.Timeout:
-        raise Exception("Le délai d'attente de l'API est dépassé. Essayez avec moins de logs ou réessayez plus tard.")
+        msg = (
+            "Le délai d'attente de l'API OpenAI est dépassé. "
+            "Essayez avec moins de logs ou réessayez plus tard."
+        )
+        _log_error(msg)
+        raise Exception(msg)
+    except requests.exceptions.ConnectionError:
+        msg = (
+            "Impossible de contacter le service OpenAI. "
+            "Vérifiez votre connexion internet ou votre clé API."
+        )
+        _log_error(msg)
+        raise Exception(msg)
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Erreur lors de la communication avec l'API OpenAI: {str(e)}")
+        msg = f"Erreur lors de la communication avec l'API OpenAI: {str(e)}"
+        _log_error(msg)
+        raise Exception(msg)
+    except json.JSONDecodeError:
+        msg = "Réponse invalide de l'API OpenAI"
+        _log_error(msg)
+        raise Exception(msg)
     except Exception as e:
-        raise Exception(f"Erreur inattendue lors de l'analyse: {str(e)}")
+        msg = f"Erreur inattendue lors de l'analyse: {str(e)}"
+        _log_error(msg)
+        raise Exception(msg)

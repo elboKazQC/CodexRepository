@@ -3,6 +3,7 @@ Tests for WiFi data collection and analysis functionality.
 """
 import pytest
 from unittest.mock import MagicMock, patch
+import requests
 import time
 from src.ai.simple_wifi_analyzer import analyze_wifi_data
 from wifi_test_manager import WifiTestManager
@@ -136,3 +137,11 @@ def test_wifi_data_persistence(temp_log_file, mock_wifi_collector):
     assert len(loaded_data) > 0
     assert loaded_data[0]["rssi"] == -65
     assert loaded_data[0]["channel"] == 6
+
+
+def test_wifi_api_connection_error():
+    """User should get a friendly message when the API is unreachable."""
+    with patch('src.ai.simple_wifi_analyzer.requests.post', side_effect=requests.exceptions.ConnectionError()):
+        with pytest.raises(Exception) as exc_info:
+            analyze_wifi_data({"signal": -70})
+        assert "Impossible de contacter le service OpenAI" in str(exc_info.value)
