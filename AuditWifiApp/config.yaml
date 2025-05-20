@@ -1,23 +1,17 @@
-# config.yaml
-# Paramètres dynamiques
-# Ce script est pour PowerShell, ne pas utiliser &&
-
-# Configuration de l'application AuditWifiApp
-seuils:
-  rssi:
-    excellent: -65  # > -65 dBm : Excellent (vert)
-    bon: -75       # > -75 dBm : Bon (jaune)
-    faible: -85    # ≤ -85 dBm : Faible (rouge)
-  ping: 100        # Seuil de ping en ms
-
 interface:
-  refresh_rate: 2000  # Taux de rafraîchissement en ms
+  refresh_rate: 2000
+  theme: darkly
   window:
     width: 500
     height: 650
     title: "Audit Wifi App"
-
 logging:
+  directory: logs
   enabled: true
-  directory: "logs"
-  format: "csv"
+  format: csv
+seuils:
+  ping: 100
+  rssi:
+    bon: -75
+    excellent: -65
+    faible: -85

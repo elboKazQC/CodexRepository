@@ -12,6 +12,7 @@ import tkinter as tk
 from typing import Optional, Union, cast
 
 from runner import NetworkAnalyzerUI
+from app_config import load_config, save_config
 
 try:
     import ttkbootstrap
@@ -24,7 +25,16 @@ except ImportError:  # pragma: no cover - library may be missing
 class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
     """UI using ttkbootstrap for improved styling."""
 
-    def __init__(self, master: Optional[Union[tk.Tk, 'ttkbootstrap.Window']] = None, theme: str = "darkly"):
+    def __init__(
+        self,
+        master: Optional[Union[tk.Tk, 'ttkbootstrap.Window']] = None,
+        theme: Optional[str] = None,
+    ):
+        # Load theme from YAML config if not provided
+        self._config = load_config()
+        if theme is None:
+            theme = self._config.get("interface", {}).get("theme", "darkly")
+
         if master is None:
             if BOOTSTRAP_AVAILABLE:
                 self.root = ttkbootstrap.Window(themename=theme)
@@ -37,6 +47,25 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
         # Cast master to tk.Tk pour satisfaire le type hint du parent
         super().__init__(cast(tk.Tk, master))
+
+    # ------------------------------------------------------------------
+    # Theme handling
+    # ------------------------------------------------------------------
+    def save_theme(self, theme: str) -> None:
+        """Persist the selected theme to the YAML configuration."""
+        self._config.setdefault("interface", {})["theme"] = theme
+        save_config(self._config)
+
+    def change_theme(self, theme: str) -> None:
+        """Apply a new theme at runtime and persist it."""
+        if not self._use_bootstrap:
+            return
+        self._theme = theme
+        if hasattr(self, "theme_var"):
+            self.theme_var.set(theme)
+        self.root.style.theme_use(theme)
+        self.setup_style()
+        self.save_theme(theme)
 
     def setup_style(self) -> None:
         """Configure styles for the interface."""
@@ -77,6 +106,21 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Appeler create_interface parent mais avec les styles bootstrap
         super().create_interface()
 
+        # Ajout d'un menu pour changer de thème
+        top_frame = ttkbootstrap.Frame(self.master)
+        top_frame.pack(fill=tk.X, pady=2)
+        ttkbootstrap.Label(top_frame, text="Thème :").pack(side=tk.LEFT)
+        self.theme_var = tk.StringVar(master=self.master, value=self._theme)
+        themes = self.root.style.theme_names()
+        self.theme_menu = ttkbootstrap.OptionMenu(
+            top_frame,
+            self.theme_var,
+            self._theme,
+            *themes,
+            command=self.change_theme,
+        )
+        self.theme_menu.pack(side=tk.LEFT, padx=5)
+
         # Mettre à jour les styles des boutons existants avec les styles ttkbootstrap
         if hasattr(self, 'start_button') and BOOTSTRAP_AVAILABLE:
             self.start_button.configure(style="success.TButton")
@@ -89,7 +133,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
 def main() -> None:
     """Point d'entrée autonome pour le test de l'interface bootstrap."""
-    app = BootstrapNetworkAnalyzerUI(theme="darkly")
+    app = BootstrapNetworkAnalyzerUI()
     app.master.mainloop()
 
 if __name__ == "__main__":
