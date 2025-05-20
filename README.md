@@ -45,3 +45,18 @@ pytest -v
 - `setup.ps1` / `setup.sh` – install scripts
 - `AuditWifiApp/config.yaml` – edit thresholds and UI settings
 - Backup files from previous versions live in `AuditWifiApp/archive/`
+
+## HistoryManager API
+
+Reports exported from the UI are automatically stored under `AuditWifiApp/logs`
+and indexed in `reports.db`. The ``HistoryManager`` class provides a simple API
+to manage these records:
+
+- `save_report(report: dict) -> str` – save a report and return the JSON path.
+- `list_reports() -> List[dict]` – get all stored reports with their identifier
+  and file location.
+- `load_report(report_id: int) -> Optional[dict]` – load a report from the
+  database.
+
+The UI exposes a new **Historique** tab that lists available reports and lets
+you open them with your default viewer.
