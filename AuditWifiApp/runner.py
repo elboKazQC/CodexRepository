@@ -577,6 +577,27 @@ class NetworkAnalyzerUI:
         messagebox.showerror("Erreur", message)
         self.update_status(f"ERREUR: {message}")
 
+
+class MoxaAnalyzerUI(NetworkAnalyzerUI):
+    """Backward-compatible alias used in tests."""
+
+    def __init__(self, master: tk.Tk):
+        super().__init__(master)
+        # Provide legacy attribute names expected by older tests
+        self.logs_input_text = self.moxa_input
+        self.results_text = self.moxa_results
+
+    def analyze_logs_from_input(self, log_content=None):
+        """Compatibility wrapper calling analyze_moxa_logs."""
+        if log_content is not None:
+            self.logs_input_text.delete("1.0", tk.END)
+            self.logs_input_text.insert("1.0", log_content)
+        self.analyze_moxa_logs()
+
+    def _analyze_logs(self):
+        """Legacy private method used in tests."""
+        self.analyze_moxa_logs()
+
 def main():
     """Point d'entrée de l'application"""
     try:

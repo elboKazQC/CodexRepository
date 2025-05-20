@@ -1,4 +1,4 @@
-﻿# config.yaml
+# config.yaml
 # Paramètres dynamiques
 # Ce script est pour PowerShell, ne pas utiliser &&
 
@@ -7,7 +7,7 @@ seuils:
   rssi:
     excellent: -65  # > -65 dBm : Excellent (vert)
     bon: -75       # > -75 dBm : Bon (jaune)
-    faible: -75    # ≤ -75 dBm : Faible (rouge)
+    faible: -85    # ≤ -85 dBm : Faible (rouge)
   ping: 100        # Seuil de ping en ms
 
 interface:
