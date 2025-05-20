@@ -36,7 +36,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Liste des thèmes disponibles
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
-            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero"]
+            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero", "noovelia"]
         }
 
         # Load theme from YAML config if not provided
@@ -60,12 +60,6 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         self._theme = theme
 
 
-        # Initialize theme variable and style before parent initialization
-        self.theme_var = tk.StringVar(master=self.master, value=theme)
-        if BOOTSTRAP_AVAILABLE:
-            self.style = Style(theme=theme)
-
-
         # Call parent class constructor first to ensure a Tk root exists
         super().__init__(cast(tk.Tk, master))
 
@@ -74,6 +68,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         self.theme_var = tk.StringVar(master=self.master, value=theme)
         if BOOTSTRAP_AVAILABLE:
             self.style = Style(theme=theme)
+            self._register_noovelia_theme()
 
         # Setup theme handling after parent initialization
         if BOOTSTRAP_AVAILABLE:
@@ -109,6 +104,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
             # Create new style with the selected theme
             self.style = Style(theme=theme)
+            self._register_noovelia_theme()
 
             # Apply styles to widgets
             self.apply_bootstrap_styles()
@@ -233,6 +229,41 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             self.theme_category_label.config(text=f"({category})")
         except Exception as e:
             print(f"Error updating theme category: {e}")
+
+    def _register_noovelia_theme(self) -> None:
+        """Register a custom Noovelia dark theme if not already available."""
+        if not self._use_bootstrap:
+            return
+        try:
+            if "noovelia" not in self.style.theme_names():
+                self.style.theme_create(
+                    "noovelia",
+                    parent="darkly",
+                    settings={
+                        ".": {
+                            "configure": {
+                                "background": "#1d1f21",
+                                "foreground": "#e0e0e0",
+                                "font": ("Segoe UI", 10),
+                            }
+                        },
+                        "TButton": {
+                            "configure": {
+                                "foreground": "white",
+                                "background": "#0a7cff",
+                                "font": ("Segoe UI", 10, "bold"),
+                            },
+                            "map": {
+                                "background": [
+                                    ("active", "#095ab7"),
+                                    ("disabled", "#4a4a4a"),
+                                ]
+                            },
+                        },
+                    },
+                )
+        except Exception as exc:  # pragma: no cover - defensive
+            print(f"Error creating Noovelia theme: {exc}")
 
 def main() -> None:
     """Point d'entrée autonome pour le test de l'interface bootstrap."""

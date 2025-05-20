@@ -810,8 +810,9 @@ def main():
     """Point d'entrée de l'application"""
     try:
         root = tk.Tk()
+        # Instantiate the UI using the theme defined in the configuration
         from bootstrap_ui import BootstrapNetworkAnalyzerUI
-        app = BootstrapNetworkAnalyzerUI(root, theme="darkly")
+        app = BootstrapNetworkAnalyzerUI(root)
         root.mainloop()
     except Exception as e:
         print(f"Erreur fatale: {str(e)}")

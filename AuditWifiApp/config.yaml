@@ -1,6 +1,6 @@
 interface:
   refresh_rate: 2000
-  theme: superhero
+  theme: noovelia
   window:
     height: 650
     title: Audit Wifi App
