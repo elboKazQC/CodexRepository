@@ -1,6 +1,6 @@
 # AuditWifiApp
 
-AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. It collects signal information, analyses Moxa logs with AI and highlights weak Wi-Fi zones so that AMRs remain connected.
+AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. It collects signal information, analyses Moxa logs with AI and highlights weak Wi-Fi zones so that AMRs remain connected. The latest version also suggests concrete updates to your Moxa JSON configuration whenever issues are detected.
 
 ## Setup
 
@@ -12,11 +12,13 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    ./setup.ps1
    ```
    On Linux/macOS you can run `bash setup.sh` instead.
-3. Create a `.env` file at the project root containing your API key:
-   ```
+3. Copy `.env.example` to `.env` at the project root and place your API key inside:
+   ```bash
+   cp .env.example .env
+   # then edit .env and set your key
    OPENAI_API_KEY=your-key
    ```
-   The file is ignored by Git so your key persists locally.
+   `.env` is ignored by Git so your key stays local.
 4. Launch the user interface:
    ```bash
    python AuditWifiApp/runner.py

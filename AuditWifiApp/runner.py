@@ -577,6 +577,7 @@ class NetworkAnalyzerUI:
         messagebox.showerror("Erreur", message)
         self.update_status(f"ERREUR: {message}")
 
+
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
     """Backward-compatible alias used in tests."""
 

@@ -4,11 +4,13 @@ Configuration and fixtures for pytest.
 import pytest
 from unittest.mock import MagicMock, patch
 from dotenv import load_dotenv
+import os
 
 # Charger les variables d'environnement de test
 def pytest_configure(config):
     """Configure l'environnement de test."""
     load_dotenv('.env.test')
+    os.environ.setdefault('OPENAI_API_KEY', 'test-key')
 
 @pytest.fixture
 def sample_moxa_logs():
@@ -88,3 +90,11 @@ def temp_log_file(tmp_path):
     log_file = tmp_path / "test_log.txt"
     log_file.write_text("Test log content")
     return log_file
+
+@pytest.fixture(autouse=True)
+def patch_ttk_style():
+    """Patch ttk.Style to avoid initializing Tk in tests."""
+    with patch('tkinter.ttk.Style'), \
+         patch('tkinter.messagebox'), \
+         patch('log_manager.messagebox'):
+        yield

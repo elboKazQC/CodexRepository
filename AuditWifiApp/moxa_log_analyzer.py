@@ -38,8 +38,10 @@ class MoxaLogAnalyzer:
             "authentication_failures": 0,
             "snr_drops": [],
             "ap_changes": [],
+
             "deauth_requests": {"total": 0, "per_ap": {}},
             "duration_minutes": 1,
+
         }
 
         # Initialize weights for scoring
@@ -158,8 +160,10 @@ class MoxaLogAnalyzer:
             "roaming_success_rate": 0,
             "snr_drops": [],
             "ap_changes": [],
+
             "deauth_requests": {"total": 0, "per_ap": {}},
             "duration_minutes": 1,
+
         }
 
     def _process_log_line(self, line):
@@ -471,6 +475,7 @@ class MoxaLogAnalyzer:
                     "reason": "SNR trop bas"
                 })
 
+
         if self.metrics["deauth_requests"]["total"] > 3:
             recommendations.append({
                 "probleme": f"Nombre élevé de deauthentications ({self.metrics['deauth_requests']['total']})",
@@ -478,6 +483,7 @@ class MoxaLogAnalyzer:
                 "priorite": 2,
                 "parametres": {}
             })
+
 
         return recommendations, config_changes
 

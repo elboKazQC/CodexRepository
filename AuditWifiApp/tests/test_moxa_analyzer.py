@@ -72,6 +72,7 @@ def test_moxa_ui_integration():
         assert "Analyse" in result
 
 
+
 def test_deauth_metrics(moxa_logs_with_deauth):
     """Verify that deauthentication events are counted"""
     from moxa_log_analyzer import MoxaLogAnalyzer
@@ -81,3 +82,4 @@ def test_deauth_metrics(moxa_logs_with_deauth):
 
     assert result["analyse_detaillee"]["deauth_requests"]["total"] == 1
     assert result["analyse_detaillee"]["deauth_requests"]["par_ap"]["aa:bb:cc:dd:ee:ff"] == 1
+
