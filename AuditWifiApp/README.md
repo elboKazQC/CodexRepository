@@ -126,12 +126,13 @@ La réponse d'OpenAI est affichée directement dans l'interface, sans traitement
 
 ### Configuration de la clé API
 
-La clé d'accès à l'API OpenAI est désormais lue uniquement depuis la variable d'environnement `OPENAI_API_KEY`. Avant de lancer l'application ou les tests, définissez cette variable :
+Créez un fichier `.env` à la racine du projet pour stocker la clé API :
 
-```powershell
-$env:OPENAI_API_KEY="votre-cle"
-python runner.py
+```dotenv
+OPENAI_API_KEY=votre-cle
 ```
+
+Ce fichier est ignoré par Git. L'application charge automatiquement cette valeur avec `python-dotenv`.
 
 Le fichier `config/api_config.json` n'est plus utilisé et peut être ignoré.
 

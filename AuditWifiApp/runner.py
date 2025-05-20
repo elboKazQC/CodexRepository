@@ -11,6 +11,10 @@ from matplotlib.figure import Figure
 import numpy as np
 from typing import List, Optional
 import os
+from dotenv import load_dotenv
+
+# Charger automatiquement les variables d'environnement depuis un fichier .env
+load_dotenv()
 
 from network_analyzer import NetworkAnalyzer
 from wifi.wifi_collector import WifiSample
