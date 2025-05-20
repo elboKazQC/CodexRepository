@@ -601,9 +601,9 @@ class MoxaAnalyzerUI(NetworkAnalyzerUI):
 def main():
     """Point d'entrée de l'application"""
     try:
-        root = tk.Tk()
-        app = NetworkAnalyzerUI(root)
-        root.mainloop()
+        from bootstrap_ui import BootstrapNetworkAnalyzerUI
+        app = BootstrapNetworkAnalyzerUI()
+        app.master.mainloop()
     except Exception as e:
         print(f"Erreur fatale: {str(e)}")
         messagebox.showerror("Erreur fatale", str(e))
