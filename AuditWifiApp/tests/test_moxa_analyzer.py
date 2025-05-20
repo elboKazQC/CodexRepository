@@ -3,6 +3,7 @@ Tests for Moxa log analysis functionality.
 """
 import pytest
 from unittest.mock import MagicMock, patch
+import requests
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
 from log_manager import LogManager
 
@@ -82,4 +83,14 @@ def test_deauth_metrics(moxa_logs_with_deauth):
 
     assert result["analyse_detaillee"]["deauth_requests"]["total"] == 1
     assert result["analyse_detaillee"]["deauth_requests"]["par_ap"]["aa:bb:cc:dd:ee:ff"] == 1
+
+
+def test_moxa_api_connection_error(sample_moxa_logs):
+    """Ensure a friendly message is raised when the API is unreachable."""
+    session = MagicMock()
+    session.post.side_effect = requests.exceptions.ConnectionError()
+    with patch('src.ai.simple_moxa_analyzer.create_retry_session', return_value=session):
+        with pytest.raises(Exception) as exc_info:
+            analyze_moxa_logs(sample_moxa_logs, {})
+        assert "Impossible de contacter le service OpenAI" in str(exc_info.value)
 
