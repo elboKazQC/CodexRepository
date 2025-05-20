@@ -81,11 +81,11 @@ class NetworkAnalyzer:
 
         return logger
 
-    def start_analysis(self) -> bool:
-        """Démarre l'analyse réseau complète"""
+    def start_analysis(self, location_tag: str = "") -> bool:
+        """Démarre l'analyse réseau complète pour le tag de localisation fourni."""
         try:
             # Démarrer la collecte WiFi
-            if not self.wifi_collector.start_collection():
+            if not self.wifi_collector.start_collection(location_tag=location_tag):
                 self.logger.error("Échec du démarrage de la collecte WiFi")
                 return False
 
