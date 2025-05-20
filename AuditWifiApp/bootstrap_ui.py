@@ -68,20 +68,25 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
         # Initialize theme variable
         self.theme_var = tk.StringVar(value=theme)
-        if BOOTSTRAP_AVAILABLE:
-            self.theme_var.trace_add("write", self._on_theme_change)    def create_interface(self) -> None:
+        if BOOTSTRAP_AVAILABLE:            self.theme_var.trace_add("write", lambda *args: self._on_theme_change())
+
+    def create_interface(self) -> None:
         """Override to create the interface with bootstrap styles."""
-        # Create main interface first
+        # First make sure we have our style properly initialized
+        if self._use_bootstrap and not self.style and BOOTSTRAP_AVAILABLE:
+            self.style = Style(theme=self._theme)
+            
+        # Now create the main interface from parent class
         super().create_interface()
 
+        # Exit if bootstrap is not available
         if not self._use_bootstrap:
             return
 
-        # Add theme selector
-        self.create_theme_selector()
-
-        # Apply bootstrap styles
-        self.apply_bootstrap_styles()
+        # Now add our bootstrap-specific UI elements
+        if hasattr(self, 'control_frame'):
+            self.create_theme_selector()
+            self.apply_bootstrap_styles()
 
     def apply_bootstrap_styles(self) -> None:
         """Apply bootstrap styles to widgets."""
@@ -135,26 +140,24 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
             # Configure theme selector styles
             self.style.configure("ThemeSelector.TLabel",
-                               font=("Helvetica", 10),
-                               padding=5)
+                             font=("Helvetica", 10),
+                             padding=5)
             self.style.configure("ThemeSelector.TCombobox",
-                               font=("Helvetica", 10),
-                               padding=2)
+                             font=("Helvetica", 10),
+                             padding=2)
 
             # Create and pack theme selector widgets
             ttk.Label(theme_frame,
                      text="Theme:",
                      style="ThemeSelector.TLabel").pack(side=tk.LEFT, padx=5)
 
-            themes = [theme for themes in self.available_themes.values()
-                     for theme in themes]
+            themes = sorted([theme for themes in self.available_themes.values()
+                           for theme in themes])
             theme_combo = ttk.Combobox(theme_frame,
                                      values=themes,
                                      textvariable=self.theme_var,
                                      style="ThemeSelector.TCombobox")
             theme_combo.pack(side=tk.LEFT)
-            theme_combo.bind('<<ComboboxSelected>>',
-                           lambda _: self.change_theme(self.theme_var.get()))
 
         except Exception as e:
             print(f"Error creating theme selector: {e}")
@@ -173,7 +176,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             self._theme = theme
             if BOOTSTRAP_AVAILABLE:
                 self.style = Style(theme=theme)
-                
+
             # Save theme preference
             if 'interface' not in self._config:
                 self._config['interface'] = {}
@@ -182,16 +185,19 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
         except Exception as e:
             print(f"Error changing theme: {e}")
-              def _on_theme_change(self, *args) -> None:
+
+    def _on_theme_change(self) -> None:
         """Handle theme change events"""
         if self.theme_var and self.theme_var.get():
             self.change_theme(self.theme_var.get())
-            
-        """Point d'entrée autonome pour le test de l'interface bootstrap."""def main() -> None:
+
+
+def main() -> None:
     """Point d'entrée autonome pour le test de l'interface bootstrap."""
     root = ttkbootstrap.Window(themename="darkly") if BOOTSTRAP_AVAILABLE else tk.Tk()
     app = BootstrapNetworkAnalyzerUI(master=root, theme="darkly")
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
