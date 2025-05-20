@@ -92,13 +92,11 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         try:
             # Validate theme
             all_themes = [t for themes in self.available_themes.values() for t in themes]
-            if theme not in all_themes:
+            if self._theme not in all_themes:
                 return
 
-            self._theme = theme
-
             # Create new style with the selected theme
-            self.style = Style(theme=theme)
+            self.style = Style(theme=self._theme)
             self._register_noovelia_theme()
 
             # Apply styles to widgets
