@@ -9,8 +9,9 @@ import logging
 from wifi.wifi_analyzer import WifiAnalyzer, WifiAnalysis
 from wifi.wifi_collector import WifiCollector, WifiSample
 from moxa_log_analyzer import MoxaLogAnalyzer
-from config_manager import ConfigurationManager
-from app_config import CONFIG_PATH
+
+from history_manager import HistoryManager
+
 
 class NetworkAnalyzer:
     """
@@ -34,6 +35,8 @@ class NetworkAnalyzer:
 
         # Configuration du logging
         self.logger = self._setup_logging()
+        # Gestionnaire d'historique
+        self.history_manager = HistoryManager()
 
         # Patterns caractéristiques des logs Moxa
         self.moxa_patterns = cfg.get(
@@ -226,6 +229,12 @@ class NetworkAnalyzer:
             # Sauvegarder en JSON
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(report, f, indent=2, ensure_ascii=False)
+
+            # Enregistrer dans l'historique
+            try:
+                self.history_manager.save_report(report)
+            except Exception as exc:  # pragma: no cover - best effort
+                self.logger.warning("Impossible d'enregistrer l'historique: %s", exc)
 
             self.logger.info(f"Données exportées vers {filename}")
             return filename

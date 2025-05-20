@@ -17,6 +17,7 @@ from unittest.mock import MagicMock
 import yaml
 
 from heatmap_generator import generate_heatmap
+import subprocess
 
 # Charger automatiquement les variables d'environnement depuis un fichier .env
 load_dotenv()
@@ -283,6 +284,20 @@ class NetworkAnalyzerUI:
             state=tk.DISABLED
         )
         self.export_button.pack(pady=5)
+
+        # === Onglet Historique ===
+        self.history_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.history_frame, text="Historique")
+
+        columns = ("id", "timestamp", "file")
+        self.history_tree = ttk.Treeview(self.history_frame, columns=columns, show="headings")
+        for col, title in zip(columns, ["ID", "Horodatage", "Fichier"]):
+            self.history_tree.heading(col, text=title)
+            self.history_tree.column(col, width=140)
+        self.history_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        ttk.Button(self.history_frame, text="Ouvrir", command=self.open_selected_report).pack(pady=5)
+        self.refresh_history_list()
 
     def setup_graphs(self):
         """Configure les graphiques"""
@@ -713,6 +728,9 @@ class NetworkAnalyzerUI:
                     f"Les données ont été exportées vers :\n{filepath}"
                 )
 
+                # Rafraîchir l'historique
+                self.refresh_history_list()
+
                 # Génère également une heatmap basée sur les enregistrements
                 try:
                     tag_map_path = os.path.join(self.config_dir, "tag_map.yaml")
@@ -742,6 +760,30 @@ class NetworkAnalyzerUI:
         """Affiche une erreur"""
         messagebox.showerror("Erreur", message)
         self.update_status(f"ERREUR: {message}")
+
+    def refresh_history_list(self) -> None:
+        """Recharge la liste des rapports sauvegardés."""
+        records = self.analyzer.history_manager.list_reports()
+        for row in self.history_tree.get_children():
+            self.history_tree.delete(row)
+        for rec in records:
+            self.history_tree.insert("", "end", values=(rec["id"], rec["timestamp"], rec["file"]))
+
+    def open_selected_report(self) -> None:
+        """Ouvre le rapport sélectionné avec l'application associée."""
+        sel = self.history_tree.selection()
+        if not sel:
+            return
+        file_path = self.history_tree.item(sel[0])["values"][2]
+        try:
+            if sys.platform.startswith("win"):
+                os.startfile(file_path)
+            elif sys.platform == "darwin":
+                subprocess.call(["open", file_path])
+            else:
+                subprocess.call(["xdg-open", file_path])
+        except Exception as exc:  # pragma: no cover - best effort
+            messagebox.showerror("Ouverture impossible", str(exc))
 
 
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
