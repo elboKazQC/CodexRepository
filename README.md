@@ -24,6 +24,13 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    python AuditWifiApp/runner.py
    ```
 
+## Usage
+
+When analyzing Moxa logs, paste them in the dedicated tab. Optionally fill in
+the **Paramètres supplémentaires** field to give extra context to the AI. For
+example `roaming=snr` will hint that signal to noise ratio should drive the
+roaming logic.
+
 ## Running tests
 
 ```bash
