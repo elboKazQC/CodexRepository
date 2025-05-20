@@ -18,6 +18,12 @@ def sample_moxa_logs():
 2023-12-15 10:00:02 [INFO] Channel: 6 (2.4 GHz)
 2023-12-15 10:01:00 [WARNING] Roaming initiated"""
 
+
+@pytest.fixture
+def moxa_logs_with_deauth(sample_moxa_logs):
+    """Sample logs containing a deauthentication event"""
+    return sample_moxa_logs + "\n2023-12-15 10:02:00 [WARNING] Deauthentication from AP [MAC: AA:BB:CC:DD:EE:FF]"
+
 @pytest.fixture
 def sample_wifi_data():
     """Sample WiFi data for testing"""

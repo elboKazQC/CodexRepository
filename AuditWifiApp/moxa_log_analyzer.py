@@ -3,6 +3,7 @@
 import json
 import requests
 import os
+import re
 
 class MoxaLogAnalyzer:
     """
@@ -36,7 +37,9 @@ class MoxaLogAnalyzer:
             "ping_pong_events": 0,
             "authentication_failures": 0,
             "snr_drops": [],
-            "ap_changes": []
+            "ap_changes": [],
+            "deauth_requests": {"total": 0, "per_ap": {}},
+            "duration_minutes": 1,
         }
 
         # Initialize weights for scoring
@@ -91,7 +94,7 @@ class MoxaLogAnalyzer:
             # Préparer les résultats finaux
             score = self._calculate_score()
             details = self._get_detailed_analysis()
-            recommendations = self._generate_recommendations()
+            recommendations, config_changes = self._generate_recommendations()
 
             return {
                 "score_global": score,
@@ -117,8 +120,8 @@ class MoxaLogAnalyzer:
                         }
                     },
                     "deauth_requests": {
-                        "total": 0,  # À implémenter comptage des deauth
-                        "par_ap": {},  # À remplir avec les stats par AP
+                        "total": self.metrics["deauth_requests"]["total"],
+                        "par_ap": self.metrics["deauth_requests"]["per_ap"],
                         "details": {
                             "raisons": ["inactivite", "surcharge"] if self.metrics["failed_roaming"] > 0 else [],
                             "impact": "À évaluer selon le nombre d'événements"
@@ -126,6 +129,7 @@ class MoxaLogAnalyzer:
                     }
                 },
                 "recommandations": recommendations,
+                "config_changes": config_changes,
                 "parametres_actuels": {
                     "turbo_roaming_correct": self._evaluate_turbo_roaming(),
                     "roaming_mechanism_correct": self._evaluate_roaming_mechanism(),
@@ -138,7 +142,8 @@ class MoxaLogAnalyzer:
                 "error": f"Erreur lors de l'analyse: {str(e)}",
                 "score_global": 0,
                 "analyse_detaillee": {},
-                "recommandations": []
+                "recommandations": [],
+                "config_changes": []
             }
 
     def _reset_metrics(self):
@@ -152,7 +157,9 @@ class MoxaLogAnalyzer:
             "authentication_failures": 0,
             "roaming_success_rate": 0,
             "snr_drops": [],
-            "ap_changes": []
+            "ap_changes": [],
+            "deauth_requests": {"total": 0, "per_ap": {}},
+            "duration_minutes": 1,
         }
 
     def _process_log_line(self, line):
@@ -248,9 +255,21 @@ class MoxaLogAnalyzer:
         if "authentication timeout" in context.lower():
             self.metrics["authentication_failures"] += 1
 
-        if "deauthentication" in context.lower():
-            # TODO: Implémenter l'analyse des deauth requests
-            pass
+        if "deauthentication" in context.lower() or "deauth request" in context.lower():
+            for line in context.split("\n"):
+                lowered = line.lower()
+                if "deauthentication" in lowered or "deauth request" in lowered:
+                    self.metrics["deauth_requests"]["total"] += 1
+                    mac = None
+                    if "[mac:" in lowered:
+                        mac = lowered.split("[mac:")[1].split("]")[0].strip()
+                    else:
+                        mac_match = re.search(r"([0-9a-f]{2}:){5}[0-9a-f]{2}", lowered)
+                        if mac_match:
+                            mac = mac_match.group(0)
+                    if mac:
+                        self.metrics["deauth_requests"]["per_ap"].setdefault(mac, 0)
+                        self.metrics["deauth_requests"]["per_ap"][mac] += 1
 
     def _calculate_score(self):
         """Calcule un score global basé sur les métriques avec un système pondéré."""
@@ -371,6 +390,7 @@ class MoxaLogAnalyzer:
     def _generate_recommendations(self):
         """Génère des recommandations basées sur l'analyse."""
         recommendations = []
+        config_changes = []
 
         if self.metrics["ping_pong_events"] > 0:
             recommendations.append({
@@ -381,6 +401,14 @@ class MoxaLogAnalyzer:
                     "roaming_difference": "Augmenter de 2-3 dB"
                 }
             })
+            current = self.current_config.get("roaming_difference", 8)
+            if current < 12:
+                config_changes.append({
+                    "param": "roaming_difference",
+                    "current": current,
+                    "suggested": 12,
+                    "reason": "Roaming instable"
+                })
 
         if self.metrics["authentication_failures"] > 0:
             recommendations.append({
@@ -391,6 +419,12 @@ class MoxaLogAnalyzer:
                     "auth_timeout": "Augmenter à 10 secondes",
                     "turbo_roaming": "Activer"
                 }
+            })
+            config_changes.append({
+                "param": "auth_timeout",
+                "current": self.current_config.get("auth_timeout"),
+                "suggested": 10,
+                "reason": "Échecs d'authentification"
             })
 
         if self.metrics["handoff_times"]:
@@ -404,6 +438,20 @@ class MoxaLogAnalyzer:
                         "turbo_roaming": "Activer"
                     }
                 })
+                rts = self.current_config.get("rts_threshold", 2346)
+                frag = self.current_config.get("fragmentation_threshold", 2346)
+                config_changes.append({
+                    "param": "rts_threshold",
+                    "current": rts,
+                    "suggested": min(rts, 1024),
+                    "reason": "Latence d'association élevée"
+                })
+                config_changes.append({
+                    "param": "fragmentation_threshold",
+                    "current": frag,
+                    "suggested": min(frag, 1024),
+                    "reason": "Latence d'association élevée"
+                })
 
         if self.metrics["snr_drops"]:
             recommendations.append({
@@ -414,8 +462,24 @@ class MoxaLogAnalyzer:
                     "max_transmission_power": "Augmenter si < 20 dBm"
                 }
             })
+            power = self.current_config.get("max_transmission_power", 10)
+            if power < 20:
+                config_changes.append({
+                    "param": "max_transmission_power",
+                    "current": power,
+                    "suggested": 20,
+                    "reason": "SNR trop bas"
+                })
 
-        return recommendations
+        if self.metrics["deauth_requests"]["total"] > 3:
+            recommendations.append({
+                "probleme": f"Nombre élevé de deauthentications ({self.metrics['deauth_requests']['total']})",
+                "solution": "Analyser les causes possibles (interférences, configuration de sécurité) et vérifier les AP concernés",
+                "priorite": 2,
+                "parametres": {}
+            })
+
+        return recommendations, config_changes
 
     def _evaluate_turbo_roaming(self):
         """Évalue si la configuration du Turbo Roaming est correcte."""
