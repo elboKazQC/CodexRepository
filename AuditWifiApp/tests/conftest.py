@@ -66,13 +66,13 @@ def mock_openai_response():
 @pytest.fixture
 def mock_tk_root():
     """Mock root window for UI tests."""
-    try:
-        patch_target = 'ttkbootstrap.Window'
-        __import__('ttkbootstrap')
-    except Exception:
-        patch_target = 'tkinter.Tk'
-    with patch(patch_target) as mock_root:
+    patch_target = 'tkinter.Tk'
+    with patch(patch_target) as mock_root, \
+         patch('tkinter._get_default_root', return_value=mock_root.return_value):
         root = mock_root.return_value
+        root.tk = MagicMock()
+        root.tk.call = MagicMock(return_value=None)
+        root.__str__ = lambda self=root: "mock"
         yield root
 
 @pytest.fixture
@@ -100,17 +100,52 @@ def temp_log_file(tmp_path):
 @pytest.fixture(autouse=True)
 def patch_ttk_style():
     """Patch style classes to avoid initializing real GUI elements."""
+    class DummyTreeview:
+        def __init__(self, *args, **kwargs):
+            self._items = []
+            self.headings = {}
+
+        def heading(self, col, text=None):
+            self.headings[col] = text
+
+        def column(self, col, width=None):
+            pass
+
+        def pack(self, *args, **kwargs):
+            pass
+
+        def insert(self, parent, index, values=()):
+            self._items.append(values)
+            return str(len(self._items))
+
+        def get_children(self):
+            return [str(i + 1) for i in range(len(self._items))]
+
+        def item(self, iid):
+            return {"values": self._items[int(iid) - 1]}
+
+    class DummyButton:
+        def __init__(self, *args, **kwargs):
+            self.options = {"state": kwargs.get("state")}
+
+        def pack(self, *args, **kwargs):
+            pass
+
+        def config(self, **kwargs):
+            self.options.update(kwargs)
+
+        def __getitem__(self, key):
+            return self.options.get(key)
+
     patches = [
         patch('tkinter.ttk.Style'),
         patch('tkinter.messagebox'),
         patch('log_manager.messagebox'),
+        patch('matplotlib.backends.backend_tkagg.FigureCanvasTkAgg'),
+        patch('runner.FigureCanvasTkAgg'),
+        patch('tkinter.ttk.Treeview', DummyTreeview),
+        patch('tkinter.ttk.Button', DummyButton),
     ]
-    try:
-        __import__('ttkbootstrap')
-        patches.append(patch('ttkbootstrap.Style'))
-        patches.append(patch('ttkbootstrap.Window'))
-    except Exception:
-        pass
     with ExitStack() as stack:
         for p in patches:
             stack.enter_context(p)
