@@ -6,3 +6,5 @@
 2025-05-18 16:49:27,466 - NetworkAnalyzer - ERROR - Erreur lors de l'analyse des logs Moxa: 'MoxaLogAnalyzer' object has no attribute 'analyze_logs'
 2025-05-20 11:57:33,499 - NetworkAnalyzer - INFO - Analyse réseau démarrée
 2025-05-20 11:57:38,394 - NetworkAnalyzer - INFO - Analyse réseau arrêtée
+2025-05-20 13:15:14,800 - NetworkAnalyzer - INFO - Analyse réseau démarrée
+2025-05-20 13:15:22,913 - NetworkAnalyzer - INFO - Analyse réseau arrêtée

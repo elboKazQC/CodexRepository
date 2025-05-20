@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sys
 import tkinter as tk
+from tkinter import ttk  # Add ttk import
 from typing import Optional, Union, cast
 
 from runner import NetworkAnalyzerUI
@@ -16,10 +17,11 @@ from app_config import load_config, save_config
 
 try:
     import ttkbootstrap
+    from ttkbootstrap.constants import *
+    from ttkbootstrap.style import Bootstyle
     BOOTSTRAP_AVAILABLE = True
 except ImportError:  # pragma: no cover - library may be missing
     BOOTSTRAP_AVAILABLE = False
-    import tkinter.ttk as ttk
 
 
 class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
@@ -43,7 +45,12 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
                 master = tk.Tk()
 
         self._use_bootstrap = BOOTSTRAP_AVAILABLE
-        self._theme = theme
+        self._theme = theme if theme is not None else "darkly"
+
+        # Initialize theme variable for dynamic theme switching
+        if BOOTSTRAP_AVAILABLE:
+            self.theme_var = tk.StringVar(value=self._theme)
+            self.theme_var.trace_add("write", lambda *args: self.change_theme(self.theme_var.get()))
 
         # Cast master to tk.Tk pour satisfaire le type hint du parent
         super().__init__(cast(tk.Tk, master))
@@ -70,30 +77,58 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
     def setup_style(self) -> None:
         """Configure styles for the interface."""
         if self._use_bootstrap:
-            # Utiliser le style de bootstrap
+            # Définir les styles avec ttkbootstrap
             style = ttkbootstrap.Style()
 
-            # Configuration des styles de base
+            # Style des labels
             style.configure("TLabel", font=("Helvetica", 10))
-            style.configure("TButton", font=("Helvetica", 10))
+            style.configure("Title.TLabel", font=("Helvetica", 14, "bold"))
 
-            # Styles personnalisés avec ttkbootstrap
+            # Style des boutons
             style.configure("primary.TButton",
-                          font=("Helvetica", 12),
-                          padding=10)
+                          font=("Helvetica", 11),
+                          padding=5)
 
             style.configure("success.TButton",
-                          font=("Helvetica", 12),
-                          padding=10)
+                          font=("Helvetica", 11),
+                          padding=5)
 
             style.configure("danger.TButton",
-                          font=("Helvetica", 12),
-                          padding=10)
+                          font=("Helvetica", 11),
+                          padding=5)
 
-            # Style pour le bouton d'analyse
             style.configure("info.TButton",
-                          font=("Helvetica", 12, "bold"),
-                          padding=10)
+                          font=("Helvetica", 11, "bold"),
+                          padding=5)
+
+            # Style des frames
+            style.configure("TFrame", padding=2)
+            style.configure("TLabelframe", padding=5)
+
+            # Style du Notebook
+            style.configure("TNotebook", padding=2)
+            style.configure("TNotebook.Tab", padding=(10, 2))
+
+            # Style pour les zones de texte
+            if "dark" in self._theme.lower():
+                bg_color = "#2f2f2f"
+                fg_color = "#ffffff"
+                select_bg = "#007bff"
+
+                widget_names = ["stats_text", "wifi_alert_text",
+                              "moxa_input", "moxa_config_text",
+                              "moxa_params_text", "moxa_results"]
+
+                for widget_name in widget_names:
+                    widget = getattr(self, widget_name, None)
+                    if widget is not None:
+                        widget.configure(
+                            background=bg_color,
+                            foreground=fg_color,
+                            insertbackground=fg_color,
+                            selectbackground=select_bg
+                        )
+
         else:
             super().setup_style()
 
@@ -103,33 +138,25 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             super().create_interface()
             return
 
-        # Appeler create_interface parent mais avec les styles bootstrap
+        # Buttons styles mapping
+        button_styles = {
+            'start_button': 'success.TButton',
+            'stop_button': 'danger.TButton',
+            'scan_button': 'info.TButton',
+            'export_scan_button': 'primary.TButton',
+            'analyze_button': 'primary.TButton',
+            'export_button': 'info.TButton'
+        }
+
+        # Créer l'interface de base
         super().create_interface()
 
-        # Ajout d'un menu pour changer de thème
-        top_frame = ttkbootstrap.Frame(self.master)
-        top_frame.pack(fill=tk.X, pady=2)
-        ttkbootstrap.Label(top_frame, text="Thème :").pack(side=tk.LEFT)
-        self.theme_var = tk.StringVar(master=self.master, value=self._theme)
-        themes = self.root.style.theme_names()
-        self.theme_menu = ttkbootstrap.OptionMenu(
-            top_frame,
-            self.theme_var,
-            self._theme,
-            *themes,
-            command=self.change_theme,
-        )
-        self.theme_menu.pack(side=tk.LEFT, padx=5)
-
-        # Mettre à jour les styles des boutons existants avec les styles ttkbootstrap
-        if hasattr(self, 'start_button') and BOOTSTRAP_AVAILABLE:
-            self.start_button.configure(style="success.TButton")
-        if hasattr(self, 'stop_button') and BOOTSTRAP_AVAILABLE:
-            self.stop_button.configure(style="danger.TButton")
-        if hasattr(self, 'analyze_button') and BOOTSTRAP_AVAILABLE:
-            self.analyze_button.configure(style="primary.TButton")
-        if hasattr(self, 'export_button') and BOOTSTRAP_AVAILABLE:
-            self.export_button.configure(style="info.TButton")
+        # Mettre à jour les styles des boutons
+        for btn_name, style_name in button_styles.items():
+            if hasattr(self, btn_name):
+                btn = getattr(self, btn_name)
+                if isinstance(btn, (ttk.Button, ttkbootstrap.Button)):
+                    btn.configure(style=style_name)
 
 def main() -> None:
     """Point d'entrée autonome pour le test de l'interface bootstrap."""
