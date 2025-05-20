@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
+import csv
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -18,6 +19,7 @@ load_dotenv()
 
 from network_analyzer import NetworkAnalyzer
 from wifi.wifi_collector import WifiSample
+from network_scanner import scan_wifi
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
 from config_manager import ConfigurationManager
 
@@ -30,6 +32,7 @@ class NetworkAnalyzerUI:
         # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
         self.samples: List[WifiSample] = []
+        self.scan_results: List[dict] = []
 
         # Configuration par défaut pour l'analyse des logs Moxa
         self.default_config = {
@@ -113,6 +116,21 @@ class NetworkAnalyzerUI:
         )
         self.stop_button.pack(fill=tk.X, pady=5)
 
+        self.scan_button = ttk.Button(
+            control_frame,
+            text="\U0001F50D Scanner",
+            command=self.scan_nearby_aps
+        )
+        self.scan_button.pack(fill=tk.X, pady=5)
+
+        self.export_scan_button = ttk.Button(
+            control_frame,
+            text="\U0001F4C3 Exporter le scan",
+            command=self.export_scan_results,
+            state=tk.DISABLED
+        )
+        self.export_scan_button.pack(fill=tk.X, pady=5)
+
         # Zone de statistiques
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=10)
@@ -121,17 +139,27 @@ class NetworkAnalyzerUI:
         self.stats_text.pack(fill=tk.X, pady=5)
 
         # Panneau des graphiques et alertes (droite)
-        viz_frame = ttk.Frame(self.wifi_frame)
-        viz_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.viz_frame = ttk.Frame(self.wifi_frame)
+        self.viz_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
+        self.scan_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
+
+        columns = ("ssid", "signal", "channel", "band")
+        self.scan_tree = ttk.Treeview(self.scan_frame, columns=columns, show="headings", height=8)
+        for col, title in zip(columns, ["SSID", "Signal (dBm)", "Canal", "Bande"]):
+            self.scan_tree.heading(col, text=title)
+            self.scan_tree.column(col, width=100)
+        self.scan_tree.pack(fill=tk.BOTH, expand=True)
 
         # Les graphiques seront ajoutés ici par setup_graphs()
 
         # Zone d'alertes
-        alerts_frame = ttk.LabelFrame(viz_frame, text="Zones problématiques détectées", padding=5)
-        alerts_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
+        self.alerts_frame = ttk.LabelFrame(self.viz_frame, text="Zones problématiques détectées", padding=5)
+        self.alerts_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
 
-        self.wifi_alert_text = tk.Text(alerts_frame, height=4, wrap=tk.WORD)
-        wifi_scroll = ttk.Scrollbar(alerts_frame, command=self.wifi_alert_text.yview)
+        self.wifi_alert_text = tk.Text(self.alerts_frame, height=4, wrap=tk.WORD)
+        wifi_scroll = ttk.Scrollbar(self.alerts_frame, command=self.wifi_alert_text.yview)
         self.wifi_alert_text.configure(yscrollcommand=wifi_scroll.set)
         self.wifi_alert_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         wifi_scroll.pack(side=tk.RIGHT, fill=tk.Y)
@@ -238,8 +266,13 @@ class NetworkAnalyzerUI:
         self.ax2.legend()
 
         # Canvas Matplotlib
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.wifi_frame)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        parent = getattr(self, "viz_frame", self.wifi_frame)
+        before_widget = getattr(self, "alerts_frame", None)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
+        pack_opts = {"fill": tk.BOTH, "expand": True, "padx": 5, "pady": 5}
+        if before_widget is not None:
+            pack_opts["before"] = before_widget
+        self.canvas.get_tk_widget().pack(**pack_opts)
 
     def start_collection(self):
         """Démarre la collecte WiFi"""
@@ -260,6 +293,60 @@ class NetworkAnalyzerUI:
         self.stop_button.config(state=tk.DISABLED)
         self.export_button.config(state=tk.NORMAL)
         self.update_status("Collection arrêtée")
+
+    def scan_nearby_aps(self):
+        """Scanne les points d'accès WiFi proches et met à jour la liste."""
+        try:
+            results = scan_wifi()
+            self.scan_results = results
+
+            for row in self.scan_tree.get_children():
+                self.scan_tree.delete(row)
+
+            for ap in results:
+                self.scan_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        ap.get("ssid", ""),
+                        ap.get("signal", ""),
+                        ap.get("channel", ""),
+                        ap.get("frequency", ""),
+                    ),
+                )
+
+            if results:
+                self.export_scan_button.config(state=tk.NORMAL)
+        except Exception as e:
+            self.show_error(f"Erreur lors du scan: {e}")
+
+    def export_scan_results(self):
+        """Exporte les résultats du scan WiFi au format CSV."""
+        if not self.scan_results:
+            messagebox.showinfo("Export", "Aucun résultat à exporter")
+            return
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("Fichiers CSV", "*.csv")],
+            title="Exporter le scan",
+        )
+        if filepath:
+            try:
+                with open(filepath, "w", encoding="utf-8", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["SSID", "Signal(dBm)", "Canal", "Bande"])
+                    for ap in self.scan_results:
+                        writer.writerow(
+                            [
+                                ap.get("ssid", ""),
+                                ap.get("signal", ""),
+                                ap.get("channel", ""),
+                                ap.get("frequency", ""),
+                            ]
+                        )
+                messagebox.showinfo("Export", f"Résultats exportés vers {filepath}")
+            except Exception as e:
+                self.show_error(f"Erreur export CSV: {e}")
 
     def analyze_moxa_logs(self):
         """Analyse les logs Moxa collés avec OpenAI"""

@@ -11,6 +11,8 @@ function Get-WifiStatus {
         Status            = "Disconnected"
         TransmitRate      = "0 Mbps"
         ReceiveRate       = "0 Mbps"
+        NoiseFloor        = $null
+        SNR               = $null
     }
 
     try {
@@ -66,6 +68,21 @@ function Get-WifiStatus {
                 }
                 if ($wifiInfo -match "Transmit rate \(Mbps\)\s*:\s*(\d+)") {
                     $result.TransmitRate = "$($matches[1]) Mbps"
+                }
+
+                # Noise floor if available
+                if ($wifiInfo -match "Noise\s*:\s*(-?\d+)\s*dBm") {
+                    $result.NoiseFloor = [int]$matches[1]
+                }
+
+                # SNR if provided directly
+                if ($wifiInfo -match "SNR\s*:\s*(\d+)\s*dB") {
+                    $result.SNR = [int]$matches[1]
+                }
+
+                # Compute SNR if not provided but noise and signal are present
+                if ($null -ne $result.NoiseFloor -and $null -eq $result.SNR) {
+                    $result.SNR = [int]($result.SignalStrengthDBM - $result.NoiseFloor)
                 }
             }
         }
