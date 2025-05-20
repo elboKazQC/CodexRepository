@@ -33,16 +33,16 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         master: Optional[Union[tk.Tk, 'ttkbootstrap.Window']] = None,
         theme: Optional[str] = None,
     ):
+        # Load theme from YAML config if not provided
+        self._config = load_config()
+        if theme is None:
+            theme = self._config.get("interface", {}).get("theme", "darkly")
+
         # Liste des thèmes disponibles
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
             "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero"]
         }
-
-        # Load theme from YAML config if not provided
-        self._config = load_config()
-        if theme is None:
-            theme = self._config.get("interface", {}).get("theme", "darkly")
 
         # Validate theme
         all_themes = [t for themes in self.available_themes.values() for t in themes]
@@ -54,28 +54,16 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             if BOOTSTRAP_AVAILABLE:
                 master = ttkbootstrap.Window(themename=theme)
             else:  # fallback to classic Tk
-                master = tk.Tk()
-
+                master = tk.Tk()        # Initialize bootstrap flags and style first
         self._use_bootstrap = BOOTSTRAP_AVAILABLE
         self._theme = theme
+        self.style = Style(theme=theme) if BOOTSTRAP_AVAILABLE else None
 
-
-        # Initialize theme variable and style before parent initialization
-        self.theme_var = tk.StringVar(master=self.master, value=theme)
-        if BOOTSTRAP_AVAILABLE:
-            self.style = Style(theme=theme)
-
-
-        # Call parent class constructor first to ensure a Tk root exists
+        # Call parent class constructor with properly initialized master
         super().__init__(cast(tk.Tk, master))
 
-        # Initialize theme variable and style after parent initialization
-
-        self.theme_var = tk.StringVar(master=self.master, value=theme)
-        if BOOTSTRAP_AVAILABLE:
-            self.style = Style(theme=theme)
-
-        # Setup theme handling after parent initialization
+        # Initialize theme variable after parent initialization
+        self.theme_var = tk.StringVar(value=theme)
         if BOOTSTRAP_AVAILABLE:
             self.theme_var.trace_add("write", self._on_theme_change)
 
