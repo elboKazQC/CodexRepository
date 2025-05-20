@@ -82,6 +82,51 @@ class NetworkAnalyzerUI:
         self.scan_tree = self.wifi_view.scan_tree
 
 
+    # ------------------------------------------------------------------
+    # Delegated methods used by tests or other modules
+    # ------------------------------------------------------------------
+    def setup_graphs(self) -> None:
+        self.wifi_view.setup_graphs()
+
+    def start_collection(self) -> None:
+        self.wifi_view.start_collection()
+
+    def stop_collection(self) -> None:
+        self.wifi_view.stop_collection()
+
+    def scan_nearby_aps(self) -> None:
+        self.wifi_view.scan_nearby_aps()
+
+    def export_scan_results(self) -> None:
+        self.wifi_view.export_scan_results()
+
+    def export_data(self) -> None:
+        self.wifi_view.export_data()
+
+    # Moxa view delegations
+    def analyze_moxa_logs(self) -> None:
+        self.moxa_view.analyze_moxa_logs()
+
+    def load_config(self) -> None:
+        self.moxa_view.load_config()
+
+    def edit_config(self) -> None:
+        self.moxa_view.edit_config()
+
+    # Utility wrappers
+    def update_status(self, message: str) -> None:
+        self.wifi_view.update_status(message)
+
+    def update_data(self) -> None:
+        """Delegate to WifiView to refresh displayed data."""
+        self.wifi_view.update_data()
+
+    def show_error(self, message: str) -> None:
+        self.wifi_view.show_error(message)
+
+
+
+
         # === Onglet WiFi ===
         self.wifi_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.wifi_frame, text="Analyse WiFi")

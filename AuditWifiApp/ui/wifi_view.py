@@ -81,22 +81,22 @@ class WifiView:
 
     def create_interface(self) -> None:
         """Create all widgets used in the WiFi tab."""
-        control_frame = ttk.LabelFrame(self.frame, text="Contr\u00f4les", padding=10)
-        control_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        self.control_frame = ttk.LabelFrame(self.frame, text="Contr\u00f4les", padding=10)
+        self.control_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
 
-        self.start_button = ttk.Button(control_frame, text="\u25B6 D\u00e9marrer l'analyse", command=self.start_collection)
+        self.start_button = ttk.Button(self.control_frame, text="\u25B6 D\u00e9marrer l'analyse", command=self.start_collection)
         self.start_button.pack(fill=tk.X, pady=5)
 
-        self.stop_button = ttk.Button(control_frame, text="\u23F9 Arr\u00eater l'analyse", command=self.stop_collection, state=tk.DISABLED)
+        self.stop_button = ttk.Button(self.control_frame, text="\u23F9 Arr\u00eater l'analyse", command=self.stop_collection, state=tk.DISABLED)
         self.stop_button.pack(fill=tk.X, pady=5)
 
-        self.scan_button = ttk.Button(control_frame, text="\U0001F50D Scanner", command=self.scan_nearby_aps)
+        self.scan_button = ttk.Button(self.control_frame, text="\U0001F50D Scanner", command=self.scan_nearby_aps)
         self.scan_button.pack(fill=tk.X, pady=5)
 
-        self.export_scan_button = ttk.Button(control_frame, text="\U0001F4C3 Exporter le scan", command=self.export_scan_results, state=tk.DISABLED)
+        self.export_scan_button = ttk.Button(self.control_frame, text="\U0001F4C3 Exporter le scan", command=self.export_scan_results, state=tk.DISABLED)
         self.export_scan_button.pack(fill=tk.X, pady=5)
 
-        stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
+        stats_frame = ttk.LabelFrame(self.control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=10)
         self.stats_text = tk.Text(stats_frame, height=6, width=30)
         self.stats_text.pack(fill=tk.X, pady=5)

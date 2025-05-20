@@ -70,9 +70,8 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         if BOOTSTRAP_AVAILABLE:
             self.style = Style(theme=theme)
             self._register_noovelia_theme()
-
-        # Setup theme handling after parent initialization
-        if BOOTSTRAP_AVAILABLE:
+            self.apply_bootstrap_styles()
+            self.create_theme_selector()
             self.theme_var.trace_add("write", self._on_theme_change)
 
 
@@ -90,7 +89,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             return
 
         try:
-            # Validate theme
+            # Validate current theme
             all_themes = [t for themes in self.available_themes.values() for t in themes]
             if self._theme not in all_themes:
                 return
@@ -152,7 +151,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
         try:
             # Create theme selector frame
-            theme_frame = ttk.Frame(self.control_frame)
+            theme_frame = ttk.Frame(self.wifi_view.control_frame)
             theme_frame.pack(side=tk.RIGHT, padx=10, pady=5)
 
             # Configure theme selector styles
