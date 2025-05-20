@@ -1,0 +1,112 @@
+# filepath: c:\Users\vcasaubon.NOOVELIA\OneDrive - Noovelia\Desktop\AuditWifiApp\log_manager.py
+import os
+import json
+from tkinter import messagebox
+from wifi_analyzer import WifiAnalyzer
+from moxa_analyzer import MoxaLogAnalyzer
+
+class LogManager:
+    """
+    Gère les opérations liées aux logs, y compris l'analyse et la gestion de la mémoire contextuelle.
+    Délègue l'analyse spécifique à WifiAnalyzer ou MoxaLogAnalyzer selon le type de logs à analyser.
+    """
+
+    def __init__(self, memory_file="logs/analysis_memory.json"):
+        self.memory_file = memory_file
+        self.wifi_analyzer = WifiAnalyzer()
+        self.moxa_analyzer = MoxaLogAnalyzer(memory_file="logs/moxa_analysis_memory.json")
+
+    def load_memory(self, moxa=False):
+        """
+        Charge la mémoire contextuelle à partir d'un fichier JSON.
+        
+        Args:
+            moxa (bool): Si True, charge la mémoire des analyses Moxa, sinon charge la mémoire générale
+        
+        Returns:
+            list: Mémoire contextuelle chargée
+        """
+        if moxa:
+            return self.moxa_analyzer.load_memory()
+            
+        if os.path.exists(self.memory_file):
+            try:
+                with open(self.memory_file, "r", encoding="utf-8") as file:
+                    return json.load(file)
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors du chargement de la mémoire : {str(e)}")
+        return []
+
+    def save_memory(self, memory, moxa=False):
+        """
+        Sauvegarde la mémoire contextuelle dans un fichier JSON.
+        
+        Args:
+            memory (list): Mémoire à sauvegarder
+            moxa (bool): Si True, sauvegarde dans la mémoire des analyses Moxa
+        """
+        if moxa:
+            self.moxa_analyzer.save_memory(memory)
+            return
+            
+        try:
+            os.makedirs(os.path.dirname(self.memory_file), exist_ok=True)
+            with open(self.memory_file, "w", encoding="utf-8") as file:
+                json.dump(memory, file, indent=2)
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde de la mémoire : {str(e)}")
+
+    def reset_memory(self, moxa=False):
+        """
+        Réinitialise la mémoire contextuelle en supprimant le fichier de mémoire.
+        
+        Args:
+            moxa (bool): Si True, réinitialise la mémoire des analyses Moxa
+        """
+        if moxa:
+            self.moxa_analyzer.reset_memory()
+            return
+            
+        if os.path.exists(self.memory_file):
+            try:
+                os.remove(self.memory_file)
+                messagebox.showinfo("Succès", "La mémoire contextuelle a été réinitialisée.")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de la réinitialisation de la mémoire : {str(e)}")
+        else:
+            messagebox.showinfo("Info", "Aucune mémoire contextuelle à réinitialiser.")
+    
+    def analyze_logs(self, log_content, current_config, analysis_memory, is_moxa_log=False):
+        """
+        Analyse les logs et fournit des recommandations, en utilisant l'analyseur approprié.
+        
+        Args:
+            log_content (str): Contenu des logs à analyser
+            current_config (dict): Configuration actuelle
+            analysis_memory (list): Mémoire des analyses précédentes
+            is_moxa_log (bool): Si True, utilise l'analyseur de logs Moxa, sinon utilise l'analyseur WiFi général
+            
+        Returns:
+            dict|str: Résultats de l'analyse
+        """
+        try:
+            if is_moxa_log:
+                # Utiliser l'analyseur de logs Moxa
+                return self.moxa_analyzer.analyze_logs(log_content, current_config, analysis_memory)
+            else:
+                # Utiliser l'analyseur WiFi général
+                result = self.wifi_analyzer.analyze_wifi_data(log_content)
+                
+                # Formater les résultats dans une structure similaire pour l'interface utilisateur
+                return {
+                    "raw_response": result,
+                    "analysis": result  # Pour maintenir la compatibilité avec l'affichage existant
+                }
+                
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de l'analyse des logs : {str(e)}")
+            # Retourner un résultat minimal en cas d'échec
+            return {
+                "error": str(e),
+                "recommendations": ["Impossible d'analyser les logs. Veuillez vérifier votre connexion et votre clé API."]
+            }

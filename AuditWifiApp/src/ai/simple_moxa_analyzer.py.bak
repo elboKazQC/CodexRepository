@@ -1,0 +1,62 @@
+"""
+Module simplifié pour l'analyse Moxa via OpenAI.
+Envoie simplement les logs et la configuration à OpenAI et retourne la réponse brute.
+"""
+
+import os
+import json
+import requests
+
+def analyze_moxa_logs(logs, current_config):
+    """
+    Envoie les logs Moxa et la configuration à OpenAI pour analyse.
+    
+    Args:
+        logs (str): Les logs Moxa à analyser
+        current_config (dict): La configuration actuelle du Moxa
+        
+    Returns:
+        str: La réponse brute d'OpenAI
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise Exception("Clé API OpenAI non trouvée dans les variables d'environnement")
+
+    prompt = f"""Analysez ces logs Moxa et la configuration actuelle. 
+Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.
+
+Configuration actuelle:
+{json.dumps(current_config, indent=2)}
+
+Logs à analyser:
+{logs}
+
+Donnez une analyse détaillée avec:
+1. Les problèmes détectés
+2. Les recommandations d'ajustements de configuration
+3. Une explication de l'impact attendu de ces changements"""
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "gpt-4",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.2,
+                "max_tokens": 2000
+            },
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            # Retourne la réponse brute
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            raise Exception(f"Erreur API OpenAI: {response.status_code}")
+
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'analyse: {str(e)}")

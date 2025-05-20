@@ -1,0 +1,26 @@
+{
+  "score": 72,
+  "roaming_metrics": {
+    "roaming_count": 29,
+    "average_roaming_time": 2198.69,
+    "max_roaming_time": 19769,
+    "min_roaming_time": 58
+  },
+  "recommendations": {
+    "roaming_threshold_value": -60,
+    "roaming_difference": 15,
+    "turbo_roaming": true,
+    "min_transmission_rate": 12,
+    "max_transmission_power": 18,
+    "rts_threshold": 2347,
+    "fragmentation_threshold": 2346
+  },
+  "problematic_aps": [
+    "A2:05:D6:D7:1A:91",
+    "A2:05:D6:D7:3E:C1"
+  ],
+  "last_roaming_status": "Successful",
+  "instability_score": 28,
+  "analysis": "La configuration actuelle a permis un taux de roaming \u00e9lev\u00e9 avec un temps de roaming moyen de 2198.69 ms. Cela indique une instabilit\u00e9 dans la connexion Wi-Fi. Les points d'acc\u00e8s avec les adresses MAC A2:05:D6:D7:1A:91 et A2:05:D6:D7:3E:C1 ont pos\u00e9 probl\u00e8me lors du roaming. Il est recommand\u00e9 d'ajuster les param\u00e8tres de roaming_threshold_value \u00e0 -60, roaming_difference \u00e0 15, max_transmission_power \u00e0 18, min_transmission_rate \u00e0 12, rts_threshold \u00e0 2347 et fragmentation_threshold \u00e0 2346 pour am\u00e9liorer la stabilit\u00e9 de la connexion.",
+  "changes": "Les param\u00e8tres recommand\u00e9s doivent \u00eatre appliqu\u00e9s pour am\u00e9liorer la stabilit\u00e9 du r\u00e9seau Wi-Fi."
+}

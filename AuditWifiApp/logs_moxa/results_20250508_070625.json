@@ -1,0 +1,147 @@
+{
+  "score": 32,
+  "max_score": 100,
+  "details": {
+    "handoff_time": {
+      "value": 71.42857142857143,
+      "ideal_value": 50,
+      "max_score": 15,
+      "status": "warning",
+      "score": 9.0
+    },
+    "snr_improvement": {
+      "value": 12.428571428571429,
+      "ideal_value": 10,
+      "max_score": 15,
+      "status": "ok",
+      "score": 15
+    },
+    "roaming_stability": {
+      "value": "100.0%",
+      "max_score": 8,
+      "status": "ok",
+      "score": 8
+    }
+  },
+  "recommendations": [
+    "Le temps de basculement moyen (71.4 ms) est acceptable mais pourrait être amélioré. Viser moins de 50 ms pour des performances optimales."
+  ],
+  "config_changes": [],
+  "passed": false,
+  "log_type": "events",
+  "roaming_metrics": {
+    "total_roaming_events": 7,
+    "avg_handoff_time": 71.42857142857143,
+    "max_handoff_time": 132,
+    "min_handoff_time": 46,
+    "avg_snr_before_roaming": 18.428571428571427,
+    "avg_snr_after_roaming": 30.857142857142858,
+    "snr_improvement": 12.428571428571429,
+    "avg_association_time": 420380.14285714284,
+    "roaming_reason_distribution": {
+      "snr_drop": 3,
+      "connection_loss": 0,
+      "unknown": 4
+    }
+  },
+  "roaming_events": [
+    {
+      "id": 2971,
+      "timestamp": "2025/05/06 13:50:28",
+      "source_ap": "B2:46:9D:1D:D8:69",
+      "source_snr": 19,
+      "source_noise": -95,
+      "target_ap": "B2:46:9D:1D:D8:6A",
+      "target_snr": 29,
+      "target_noise": -95,
+      "handoff_time": 62,
+      "association_time": 696519,
+      "snr_improvement": 10,
+      "reason": "snr_drop"
+    },
+    {
+      "id": 2975,
+      "timestamp": "2025/05/06 13:55:00",
+      "source_ap": "B2:46:9D:1D:D8:6A",
+      "source_snr": 25,
+      "source_noise": -95,
+      "target_ap": "B2:46:9D:1D:D8:74",
+      "target_snr": 35,
+      "target_noise": -95,
+      "handoff_time": 70,
+      "association_time": 271378,
+      "snr_improvement": 10,
+      "reason": "unknown"
+    },
+    {
+      "id": 2980,
+      "timestamp": "2025/05/06 13:59:12",
+      "source_ap": "B2:46:9D:1D:D8:74",
+      "source_snr": 24,
+      "source_noise": -94,
+      "target_ap": "16:7B:C8:E1:26:CC",
+      "target_snr": 36,
+      "target_noise": -94,
+      "handoff_time": 46,
+      "association_time": 252371,
+      "snr_improvement": 12,
+      "reason": "unknown"
+    },
+    {
+      "id": 2984,
+      "timestamp": "2025/05/06 14:00:33",
+      "source_ap": "16:7B:C8:E1:26:CC",
+      "source_snr": 18,
+      "source_noise": -95,
+      "target_ap": "B2:46:9D:1D:D8:69",
+      "target_snr": 27,
+      "target_noise": -95,
+      "handoff_time": 50,
+      "association_time": 80960,
+      "snr_improvement": 9,
+      "reason": "snr_drop"
+    },
+    {
+      "id": 2988,
+      "timestamp": "2025/05/06 14:01:32",
+      "source_ap": "B2:46:9D:1D:D8:69",
+      "source_snr": 20,
+      "source_noise": -94,
+      "target_ap": "B2:46:9D:1D:D8:65",
+      "target_snr": 33,
+      "target_noise": -97,
+      "handoff_time": 70,
+      "association_time": 59164,
+      "snr_improvement": 13,
+      "reason": "unknown"
+    },
+    {
+      "id": 2992,
+      "timestamp": "2025/05/06 14:02:29",
+      "source_ap": "B2:46:9D:1D:D8:65",
+      "source_snr": 23,
+      "source_noise": -97,
+      "target_ap": "B2:46:9D:1D:D8:64",
+      "target_snr": 30,
+      "target_noise": -94,
+      "handoff_time": 70,
+      "association_time": 57230,
+      "snr_improvement": 7,
+      "reason": "unknown"
+    },
+    {
+      "id": 2996,
+      "timestamp": "2025/05/06 14:27:54",
+      "source_ap": "B2:46:9D:1D:D8:64",
+      "source_snr": 0,
+      "source_noise": -94,
+      "target_ap": "16:7B:C8:E1:27:A8",
+      "target_snr": 26,
+      "target_noise": -94,
+      "handoff_time": 132,
+      "association_time": 1525039,
+      "snr_improvement": 26,
+      "reason": "snr_drop"
+    }
+  ]
+}

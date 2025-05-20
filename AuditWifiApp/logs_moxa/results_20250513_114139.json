@@ -1,0 +1,31 @@
+{
+  "score": 65,
+  "roaming_metrics": {
+    "total_roaming_events": 23,
+    "average_roaming_time": 500,
+    "max_roaming_time": 1425,
+    "min_roaming_time": 58,
+    "last_roaming_time": 167
+  },
+  "recommendations": [
+    "Augmenter la valeur de 'roaming_difference' pour r\u00e9duire le nombre de roaming inutiles.",
+    "Augmenter la valeur de 'roaming_threshold_value' pour \u00e9viter les d\u00e9connexions dues \u00e0 un signal faible.",
+    "Activer le 'turbo_roaming' pour acc\u00e9l\u00e9rer le processus de roaming."
+  ],
+  "problematic_aps": [
+    "A2:05:D6:D7:3E:C1",
+    "A2:05:D6:D7:77:F1"
+  ],
+  "last_roaming_status": "Success",
+  "instability_score": 35,
+  "analysis": "Les logs montrent un nombre \u00e9lev\u00e9 de roaming, ce qui peut causer des perturbations dans la communication. De plus, certains points d'acc\u00e8s semblent poser probl\u00e8me, comme 'A2:05:D6:D7:3E:C1' et 'A2:05:D6:D7:77:F1', qui ont envoy\u00e9 des requ\u00eates de d\u00e9sauthentification ou ont \u00e9chou\u00e9 \u00e0 r\u00e9pondre aux requ\u00eates d'authentification.",
+  "changes": {
+    "roaming_difference": 20,
+    "roaming_threshold_value": -60
+  },
+  "conseils_experts": [
+    "V\u00e9rifier la couverture du signal Wi-Fi pour s'assurer qu'il n'y a pas de zones mortes ou de chevauchements excessifs entre les points d'acc\u00e8s.",
+    "V\u00e9rifier la configuration des points d'acc\u00e8s probl\u00e9matiques pour s'assurer qu'ils sont correctement configur\u00e9s et qu'ils ne sont pas surcharg\u00e9s.",
+    "Consid\u00e9rer l'utilisation d'un outil de gestion de r\u00e9seau pour surveiller et diagnostiquer les probl\u00e8mes de r\u00e9seau en temps r\u00e9el."
+  ]
+}

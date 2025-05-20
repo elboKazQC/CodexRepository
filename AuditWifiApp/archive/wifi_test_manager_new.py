@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import threading
+import time
+from typing import List, Optional, Callable
+from wifi_data_collector import WifiDataCollector, WifiSample
+
+class WifiTestManager:
+    """
+    Gère les tests Wi-Fi, y compris le démarrage, l'arrêt et la collecte des résultats.
+    """
+
+    def __init__(self, data_collector: WifiDataCollector) -> None:
+        """Initialise le gestionnaire de test Wi-Fi"""
+        self.data_collector: WifiDataCollector = data_collector
+        self.test_running: bool = False
+        self.collected_data: List[WifiSample] = []
+        self.test_thread: Optional[threading.Thread] = None
+        self.wifi_test_running: bool = False
+        self.current_zone: str = "Non spécifiée"
+        self.callback: Optional[Callable[[WifiSample], None]] = None
+        self.error_count: int = 0
+        self.max_errors: int = 3
+
+    def start_wifi_test(self, callback: Optional[Callable[[WifiSample], None]] = None) -> None:
+        """Démarre un nouveau test WiFi avec callback optionnel pour les résultats"""
+        if not self.test_running:
+            self.callback = callback
+            self.test_running = True
+            self.collected_data = []
+            self.error_count = 0
+            self.test_thread = threading.Thread(target=self._run_test)
+            self.test_thread.daemon = True
+            self.test_thread.start()
+
+    def _run_test(self) -> None:
+        """Exécute le test WiFi en collectant des données"""
+        while self.test_running and self.error_count < self.max_errors:
+            try:
+                # Collecter un échantillon de données
+                sample = self.data_collector.collect_sample()
+                if sample:
+                    self.collected_data.append(sample)
+                    if self.callback:
+                        self.callback(sample)
+                    self.error_count = 0  # Réinitialiser le compteur d'erreurs en cas de succès
+                else:
+                    self.error_count += 1
+                    print(f"Échantillon non valide. Tentative {self.error_count}/{self.max_errors}")
+                
+                # Pause courte entre les échantillons
+                time.sleep(2)  # Augmenté à 2 secondes pour réduire la charge
+                
+            except Exception as e:
+                self.error_count += 1
+                print(f"Erreur lors de la collecte (tentative {self.error_count}/{self.max_errors}): {e}")
+                if self.error_count >= self.max_errors:
+                    print("Trop d'erreurs consécutives, arrêt du test")
+                    self.test_running = False
+                time.sleep(5)  # Attendre plus longtemps en cas d'erreur
+
+    def stop_wifi_test(self) -> List[WifiSample]:
+        """Arrête le test WiFi en cours"""
+        self.test_running = False
+        if self.test_thread and self.test_thread.is_alive():
+            self.test_thread.join(timeout=2.0)
+        return self.collected_data
+
+    def set_zone(self, zone_name: str) -> None:
+        """Définit la zone actuelle pour les tests"""
+        self.current_zone = zone_name
+        if hasattr(self.data_collector, 'current_zone'):
+            self.data_collector.current_zone = zone_name

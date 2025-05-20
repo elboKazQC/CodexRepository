@@ -1,0 +1,38 @@
+{
+  "roaming_metrics": {
+    "total_events": 8,
+    "avg_handoff_time": 70,
+    "min_handoff_time": 46,
+    "max_handoff_time": 132,
+    "avg_snr_before": 19,
+    "avg_snr_after": 30,
+    "snr_improvement": 11
+  },
+  "score": 7,
+  "recommendations": [
+    "Augmenter la valeur de 'roaming_threshold_value' pour r\u00e9duire le nombre de roaming inutiles.",
+    "Augmenter la valeur de 'roaming_difference' pour \u00e9viter les changements fr\u00e9quents entre les points d'acc\u00e8s.",
+    "Activer la fonction 'ap_alive_check' pour \u00e9viter les d\u00e9connexions inutiles."
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_threshold_value",
+      "current": -70,
+      "recommended": -65,
+      "reason": "R\u00e9duire le nombre de roaming inutiles"
+    },
+    {
+      "param": "roaming_difference",
+      "current": 9,
+      "recommended": 15,
+      "reason": "\u00c9viter les changements fr\u00e9quents entre les points d'acc\u00e8s"
+    },
+    {
+      "param": "ap_alive_check",
+      "current": true,
+      "recommended": false,
+      "reason": "\u00c9viter les d\u00e9connexions inutiles"
+    }
+  ],
+  "analysis": "Le roaming semble fonctionner correctement, mais il y a des am\u00e9liorations possibles. Le temps de handoff est assez bon, mais il y a des variations importantes. Le SNR s'am\u00e9liore apr\u00e8s chaque roaming, ce qui est bon. Cependant, le nombre total d'\u00e9v\u00e9nements de roaming est assez \u00e9lev\u00e9, ce qui pourrait indiquer que le seuil de roaming est trop bas. De plus, la diff\u00e9rence de roaming pourrait \u00eatre augment\u00e9e pour \u00e9viter les changements fr\u00e9quents entre les points d'acc\u00e8s. Enfin, la fonction 'ap_alive_check' pourrait \u00eatre d\u00e9sactiv\u00e9e pour \u00e9viter les d\u00e9connexions inutiles."
+}

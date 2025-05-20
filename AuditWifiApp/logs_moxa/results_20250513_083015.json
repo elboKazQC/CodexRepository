@@ -1,0 +1,53 @@
+{
+  "roaming_metrics": {
+    "total_events": 8,
+    "avg_handoff_time": 65,
+    "min_handoff_time": 46,
+    "max_handoff_time": 132,
+    "avg_snr_before": 19,
+    "avg_snr_after": 30,
+    "snr_improvement": 11
+  },
+  "score": 70,
+  "recommendations": [
+    "Augmenter 'roaming_threshold_value' \u00e0 -65 dBm pour \u00e9viter les changements fr\u00e9quents d'AP.",
+    "Repositionner les AP pour une couverture optimale et \u00e9viter les zones de faible signal."
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_threshold_value",
+      "current": "-70",
+      "recommended": "-65",
+      "reason": "Pour \u00e9viter les changements fr\u00e9quents d'AP et am\u00e9liorer la stabilit\u00e9 de la connexion."
+    }
+  ],
+  "problematic_aps": [
+    {
+      "ap_mac": "B2:46:9D:1D:D8:69",
+      "occurrences": 3,
+      "avg_snr": 22
+    }
+  ],
+  "last_roaming_status": {
+    "handoff_time": 132,
+    "target_range": "50-80",
+    "improvement_steps": "R\u00e9duire le temps de handoff en ajustant les param\u00e8tres de roaming et en optimisant la couverture des AP."
+  },
+  "instability_score": {
+    "frequent_changes": 3,
+    "time_window": "2 min",
+    "impact": "Impact possible sur la connectivit\u00e9 temps r\u00e9el",
+    "mitigation": "Augmenter 'roaming_difference' \u00e0 12 pour \u00e9viter les effets de ping-pong."
+  },
+  "behavioral_patterns": {
+    "loops_detected": 0,
+    "unnecessary_scans": 0,
+    "impact": "Pas d'impact significatif identifi\u00e9 sur les performances r\u00e9seau.",
+    "mitigation": "Pas de mitigation n\u00e9cessaire pour le moment."
+  },
+  "analysis": "Les performances de roaming sont g\u00e9n\u00e9ralement bonnes, avec un temps de handoff moyen de 65 ms. Cependant, il y a eu un certain nombre de changements d'AP dans un court laps de temps, ce qui pourrait indiquer une instabilit\u00e9 du r\u00e9seau. L'AP avec MAC 'B2:46:9D:1D:D8:69' a \u00e9t\u00e9 utilis\u00e9 \u00e0 plusieurs reprises, ce qui pourrait indiquer un probl\u00e8me avec cet AP ou avec la couverture du r\u00e9seau dans cette zone.",
+  "score_adjustment": {
+    "reason": "Le score a \u00e9t\u00e9 ajust\u00e9 pour tenir compte de l'instabilit\u00e9 potentielle du r\u00e9seau et des changements fr\u00e9quents d'AP. Cependant, le temps de handoff est g\u00e9n\u00e9ralement bon et il n'y a pas de boucles ou de scans inutiles identifi\u00e9s.",
+    "adjusted_score": 65
+  }
+}

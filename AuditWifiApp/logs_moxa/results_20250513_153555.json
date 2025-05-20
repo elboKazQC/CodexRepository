@@ -1,0 +1,22 @@
+{
+  "adapte_flotte_AMR": false,
+  "score_global": 65,
+  "analyse": "Le signal Wi-Fi est stable avec une force de signal constante de -50 dBm (87%) sur la majorit\u00e9 des scans. Cependant, une baisse significative \u00e0 -60 dBm (62%) a \u00e9t\u00e9 observ\u00e9e lors du scan #10, ce qui peut indiquer des probl\u00e8mes de couverture ou d'interf\u00e9rence. Le d\u00e9bit de r\u00e9ception est faible (6 Mbits/s), tandis que le d\u00e9bit de transmission est acceptable (108 Mbits/s). Aucun roaming n'a \u00e9t\u00e9 observ\u00e9 pendant le test, donc la performance de roaming ne peut pas \u00eatre \u00e9valu\u00e9e. Dans l'ensemble, le r\u00e9seau pourrait ne pas \u00eatre adapt\u00e9 pour une flotte de robots mobiles en raison de la faible r\u00e9ception et de la baisse occasionnelle de la force du signal.",
+  "signaux": {
+    "min_dbm": -60,
+    "max_dbm": -50,
+    "stabilite": "moyenne"
+  },
+  "roaming": {
+    "performance": "inconnue",
+    "temps_moyen_ms": null
+  },
+  "problemes": [
+    "Baisse occasionnelle de la force du signal",
+    "Faible d\u00e9bit de r\u00e9ception"
+  ],
+  "recommendations": [
+    "Am\u00e9liorer la couverture du r\u00e9seau Wi-Fi pour \u00e9viter les baisses de signal",
+    "Augmenter le d\u00e9bit de r\u00e9ception pour am\u00e9liorer les performances du r\u00e9seau"
+  ]
+}

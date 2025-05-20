@@ -1,0 +1,296 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import os
+import sys
+import tkinter as tk
+from tkinter import ttk, messagebox, PhotoImage
+import subprocess
+import time
+
+class AppSelector:
+    """
+    Classe de sélection d'applications pour l'outil d'audit WiFi
+    Permet de lancer soit l'application d'audit WiFi, soit l'optimiseur Moxa, soit les deux.
+    """
+    
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("AuditWifiApp - Sélecteur d'applications")
+        self.root.geometry("800x600")
+        self.root.resizable(True, True)
+        
+        # Configuration du style
+        self.setup_styles()
+        
+        # Créer l'interface utilisateur
+        self.create_ui()
+        
+    def setup_styles(self):
+        """Configure les styles pour l'interface utilisateur"""
+        self.style = ttk.Style()
+        
+        # Style général
+        self.style.configure("TFrame", background="#f5f5f5")
+        self.style.configure("TLabel", background="#f5f5f5", font=("Arial", 10))
+        self.style.configure("Header.TLabel", font=("Arial", 16, "bold"), foreground="#0066cc")
+        self.style.configure("Subheader.TLabel", font=("Arial", 12, "bold"), foreground="#333333")
+        
+        # Style des boutons
+        self.style.configure("TButton", font=("Arial", 10), padding=6)
+        self.style.configure("Launch.TButton", font=("Arial", 11, "bold"), padding=10)
+        self.style.configure("Combined.TButton", font=("Arial", 11, "bold"), padding=10, background="#4CAF50")
+        
+        # Style des cartes d'application
+        self.style.configure("Card.TFrame", background="white", relief="raised", borderwidth=1)
+        self.style.configure("CardTitle.TLabel", background="white", font=("Arial", 12, "bold"), foreground="#0066cc")
+        self.style.configure("CardText.TLabel", background="white", font=("Arial", 10), wraplength=300)
+        
+    def create_ui(self):
+        """Crée l'interface utilisateur principale"""
+        # Conteneur principal
+        main_frame = ttk.Frame(self.root, padding=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # En-tête
+        header_frame = ttk.Frame(main_frame)
+        header_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        title_label = ttk.Label(
+            header_frame, 
+            text="AuditWifiApp - Suite d'outils d'audit WiFi",
+            style="Header.TLabel"
+        )
+        title_label.pack(side=tk.LEFT)
+        
+        # Description
+        description_frame = ttk.Frame(main_frame)
+        description_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        description_text = (
+            "Cette suite d'outils vous permet d'effectuer des audits WiFi complets pour l'implantation d'AMR en "
+            "environnement industriel. Vous pouvez analyser la qualité du signal WiFi et optimiser la configuration "
+            "des périphériques Moxa pour un roaming optimal."
+        )
+        
+        description_label = ttk.Label(
+            description_frame, 
+            text=description_text,
+            wraplength=760
+        )
+        description_label.pack(anchor="w")
+        
+        # Sous-titre
+        subtitle_label = ttk.Label(
+            main_frame, 
+            text="Choisissez une application à lancer:",
+            style="Subheader.TLabel"
+        )
+        subtitle_label.pack(anchor="w", pady=(0, 15))
+        
+        # Cartes d'applications
+        cards_frame = ttk.Frame(main_frame)
+        cards_frame.pack(fill=tk.BOTH, expand=True)
+        cards_frame.columnconfigure(0, weight=1)
+        cards_frame.columnconfigure(1, weight=1)
+        
+        # Carte Audit WiFi
+        audit_card = self.create_app_card(
+            parent=cards_frame,
+            title="Audit WiFi",
+            description=(
+                "Collectez et analysez les données WiFi dans votre environnement industriel. "
+                "Mesurez la qualité du signal, les taux de ping, et identifiez les points faibles "
+                "pour l'implantation d'AMR."
+            ),
+            icon="📊",
+            button_text="Lancer l'Audit WiFi",
+            button_command=self.launch_audit_app,
+            grid_position=(0, 0)
+        )
+        
+        # Carte Optimiseur Moxa
+        moxa_card = self.create_app_card(
+            parent=cards_frame,
+            title="Optimiseur Moxa",
+            description=(
+                "Analysez les logs des périphériques Moxa et optimisez leur configuration pour "
+                "améliorer les performances de roaming. Identifiez les paramètres idéaux pour "
+                "votre environnement spécifique."
+            ),
+            icon="⚙️",
+            button_text="Lancer l'Optimiseur Moxa",
+            button_command=self.launch_moxa_optimizer,
+            grid_position=(0, 1)
+        )
+        
+        # Bouton pour lancer les deux applications
+        combined_frame = ttk.Frame(main_frame, padding=(0, 20, 0, 0))
+        combined_frame.pack(fill=tk.X)
+        
+        combined_button = ttk.Button(
+            combined_frame,
+            text="Lancer les deux applications",
+            command=self.launch_both_apps,
+            style="Combined.TButton",
+            width=30
+        )
+        combined_button.pack(anchor="center", pady=10)
+        
+        # Pied de page
+        footer_frame = ttk.Frame(main_frame, padding=(0, 20, 0, 0))
+        footer_frame.pack(fill=tk.X)
+        
+        footer_text = "© 2025 Noovelia - Version 1.1.0"
+        footer_label = ttk.Label(footer_frame, text=footer_text)
+        footer_label.pack(side=tk.RIGHT)
+        
+    def create_app_card(self, parent, title, description, icon, button_text, button_command, grid_position):
+        """Crée une carte d'application avec titre, description et bouton de lancement"""
+        row, column = grid_position
+        padding = 10
+        
+        # Créer la carte
+        card_frame = ttk.Frame(parent, style="Card.TFrame", padding=15)
+        card_frame.grid(row=row, column=column, padx=padding, pady=padding, sticky="nsew")
+        
+        # Titre avec icône
+        title_frame = ttk.Frame(card_frame, style="Card.TFrame")
+        title_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        icon_label = ttk.Label(title_frame, text=icon, font=("Arial", 24), background="white")
+        icon_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+        title_label = ttk.Label(title_frame, text=title, style="CardTitle.TLabel")
+        title_label.pack(side=tk.LEFT)
+        
+        # Description
+        description_label = ttk.Label(card_frame, text=description, style="CardText.TLabel")
+        description_label.pack(fill=tk.X, pady=(0, 15))
+        
+        # Bouton de lancement
+        button = ttk.Button(
+            card_frame,
+            text=button_text,
+            command=button_command,
+            style="Launch.TButton",
+            width=25
+        )
+        button.pack(pady=(5, 0))
+        
+        return card_frame
+        
+    def launch_audit_app(self):
+        """Lance l'application d'audit WiFi"""
+        try:
+            # S'assurer que le module principal existe
+            if not os.path.exists("main.py"):
+                messagebox.showerror(
+                    "Erreur", 
+                    "Le fichier main.py est introuvable dans le répertoire courant."
+                )
+                return
+                
+            # Minimiser la fenêtre principale
+            self.root.iconify()
+            
+            # Lancer l'application d'audit
+            audit_process = subprocess.Popen([sys.executable, "main.py"])
+            
+            # Surveiller le processus
+            self.root.after(1000, lambda: self.monitor_process(audit_process))
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de lancer l'application d'audit: {str(e)}")
+            self.root.deiconify()  # Restaurer la fenêtre principale en cas d'erreur
+            
+    def launch_moxa_optimizer(self):
+        """Lance l'optimiseur de configuration Moxa"""
+        try:
+            # Vérifier si nous pouvons lancer directement le module moxa_config_analyzer
+            # ou s'il faut utiliser un script wrapper
+            if os.path.exists("run_moxa_optimizer.py"):
+                script_path = "run_moxa_optimizer.py"
+            elif os.path.exists("moxa_config_analyzer.py"):
+                script_path = "moxa_config_analyzer.py"
+            else:
+                messagebox.showerror(
+                    "Erreur", 
+                    "Les fichiers Moxa sont introuvables dans le répertoire courant."
+                )
+                return
+                
+            # Minimiser la fenêtre principale
+            self.root.iconify()
+            
+            # Lancer l'optimiseur Moxa
+            moxa_process = subprocess.Popen([sys.executable, script_path])
+            
+            # Surveiller le processus
+            self.root.after(1000, lambda: self.monitor_process(moxa_process))
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de lancer l'optimiseur Moxa: {str(e)}")
+            self.root.deiconify()  # Restaurer la fenêtre principale en cas d'erreur
+            
+    def launch_both_apps(self):
+        """Lance les deux applications simultanément"""
+        try:
+            # Vérifier que les deux scripts existent
+            main_exists = os.path.exists("main.py")
+            moxa_exists = os.path.exists("run_moxa_optimizer.py") or os.path.exists("moxa_config_analyzer.py")
+            
+            if not main_exists or not moxa_exists:
+                missing = []
+                if not main_exists:
+                    missing.append("main.py")
+                if not moxa_exists:
+                    missing.append("moxa_config_analyzer.py ou run_moxa_optimizer.py")
+                    
+                messagebox.showerror(
+                    "Erreur", 
+                    f"Les fichiers suivants sont introuvables: {', '.join(missing)}"
+                )
+                return
+                
+            # Déterminer le script Moxa à utiliser
+            moxa_script = "run_moxa_optimizer.py" if os.path.exists("run_moxa_optimizer.py") else "moxa_config_analyzer.py"
+            
+            # Minimiser la fenêtre principale
+            self.root.iconify()
+            
+            # Lancer les deux applications
+            audit_process = subprocess.Popen([sys.executable, "main.py"])
+            moxa_process = subprocess.Popen([sys.executable, moxa_script])
+            
+            # Surveiller les deux processus
+            self.root.after(1000, lambda: self.monitor_both(audit_process, moxa_process))
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de lancer les applications: {str(e)}")
+            self.root.deiconify()  # Restaurer la fenêtre principale en cas d'erreur
+            
+    def monitor_process(self, process):
+        """Surveille un processus et réaffiche la fenêtre principale quand il se termine"""
+        if process.poll() is None:  # Le processus est toujours en cours d'exécution
+            self.root.after(1000, lambda: self.monitor_process(process))
+        else:
+            self.root.deiconify()  # Réaffiche la fenêtre principale
+            
+    def monitor_both(self, audit_process, moxa_process):
+        """Surveille deux processus et réaffiche la fenêtre principale quand les deux se terminent"""
+        audit_running = audit_process.poll() is None
+        moxa_running = moxa_process.poll() is None
+        
+        if audit_running or moxa_running:  # Au moins un processus est toujours en cours d'exécution
+            self.root.after(1000, lambda: self.monitor_both(audit_process, moxa_process))
+        else:
+            self.root.deiconify()  # Réaffiche la fenêtre principale
+            
+    def run(self):
+        """Lance l'application"""
+        self.root.mainloop()
+
+
+if __name__ == "__main__":
+    app = AppSelector()
+    app.run()

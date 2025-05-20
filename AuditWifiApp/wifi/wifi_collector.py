@@ -1,0 +1,190 @@
+import os
+import json
+import logging
+import subprocess
+from datetime import datetime
+from typing import Optional, Dict, List
+from dataclasses import dataclass
+
+@dataclass
+class WifiSample:
+    timestamp: str
+    ssid: str
+    bssid: str
+    signal_strength: int  # en dBm
+    quality: int  # en %
+    channel: int
+    band: str
+    status: str
+    transmit_rate: str
+    receive_rate: str
+    raw_data: Dict
+
+    @classmethod
+    def from_powershell_data(cls, data: Dict) -> 'WifiSample':
+        """Crée un échantillon à partir des données PowerShell"""
+        # Convertit le pourcentage en valeur numérique
+        signal_str = data.get('SignalStrength', '0%').replace('%', '')
+        quality = int(signal_str) if signal_str.isdigit() else 0
+
+        return cls(
+            timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),
+            ssid=data.get('SSID', 'N/A'),
+            bssid=data.get('BSSID', '00:00:00:00:00:00'),
+            signal_strength=int(data.get('SignalStrengthDBM', -100)),
+            quality=quality,
+            channel=int(data.get('Channel', 0)),
+            band=data.get('Band', 'N/A'),
+            status=data.get('Status', 'Disconnected'),
+            transmit_rate=data.get('TransmitRate', '0 Mbps'),
+            receive_rate=data.get('ReceiveRate', '0 Mbps'),
+            raw_data=data
+        )
+
+class WifiCollector:
+    def __init__(self, script_path: str = None):
+        self.script_path = script_path or os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wifi_monitor.ps1')
+        self.is_collecting = False
+        self.samples: List[WifiSample] = []
+        self.error_count = 0
+        self.max_errors = 5
+        self.logger = self._setup_logging()
+
+    def _setup_logging(self) -> logging.Logger:
+        """Configure le système de journalisation avec rotation des fichiers"""
+        logger = logging.getLogger('WifiCollector')
+        logger.setLevel(logging.DEBUG)
+
+        # Nettoyage des handlers existants
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+        # Handler pour la console avec couleurs
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%H:%M:%S'
+        )
+        console_handler.setFormatter(console_formatter)
+        logger.addHandler(console_handler)
+
+        # Handler pour le fichier avec rotation
+        log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+
+        file_handler = logging.FileHandler(
+            os.path.join(log_dir, 'wifi_collector.log'),
+            encoding='utf-8'
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+        )
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+
+        return logger
+
+    def start_collection(self) -> bool:
+        """Démarre la collecte WiFi"""
+        try:
+            if not os.path.exists(self.script_path):
+                raise FileNotFoundError(f"Script PowerShell introuvable: {self.script_path}")
+
+            self.logger.info("Démarrage de la collecte WiFi")
+            self.error_count = 0
+            self.is_collecting = True
+            self.samples = []
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Erreur lors du démarrage de la collecte: {str(e)}")
+            return False
+
+    def collect_sample(self) -> Optional[WifiSample]:
+        """Collecte un échantillon de données WiFi via PowerShell"""
+        if not self.is_collecting:
+            return None
+
+        try:
+            # Exécute le script PowerShell
+            result = subprocess.run(
+                ['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', self.script_path],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            # Parse le JSON retourné
+            data = json.loads(result.stdout)
+
+            # Si nous sommes connectés, créer l'échantillon
+            if data.get('Status') == 'Connected':
+                sample = WifiSample.from_powershell_data(data)
+                self.samples.append(sample)
+                self.error_count = 0  # Réinitialise le compteur d'erreurs
+                self.logger.debug(f"Échantillon collecté: {sample.ssid} - {sample.signal_strength}dBm")
+                return sample
+            else:
+                self.logger.warning(f"Pas de connexion WiFi: {data.get('Status')}")
+                return None
+
+        except subprocess.CalledProcessError as e:
+            self.error_count += 1
+            self.logger.error(f"Erreur lors de l'exécution du script PowerShell: {e}")
+            if self.error_count >= self.max_errors:
+                self.logger.critical("Trop d'erreurs consécutives, arrêt de la collecte")
+                self.stop_collection()
+            return None
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Erreur de parsing JSON: {e}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Erreur inattendue: {e}")
+            return None
+
+    def _handle_error(self, message: str) -> None:
+        """Gère les erreurs de collecte"""
+        self.error_count += 1
+        self.logger.error(f"{message} ({self.error_count}/{self.max_errors})")
+
+        if self.error_count >= self.max_errors:
+            self.logger.critical(
+                "Nombre maximum d'erreurs atteint, arrêt de la collecte"
+            )
+            self.stop_collection()
+
+    def stop_collection(self) -> List[WifiSample]:
+        """Arrête la collecte et retourne les échantillons collectés"""
+        self.logger.info("Arrêt de la collecte WiFi")
+        self.is_collecting = False
+        return self.samples
+
+    def get_latest_sample(self) -> Optional[WifiSample]:
+        """Retourne le dernier échantillon collecté"""
+        return self.samples[-1] if self.samples else None
+
+    def export_samples(self, filename: str = None) -> str:
+        """Exporte les échantillons au format JSON"""
+        if not filename:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"wifi_samples_{timestamp}.json"
+
+        export_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+        os.makedirs(export_dir, exist_ok=True)
+        export_path = os.path.join(export_dir, filename)
+
+        try:
+            with open(export_path, 'w', encoding='utf-8') as f:
+                json.dump(
+                    [vars(sample) for sample in self.samples],
+                    f,
+                    indent=2,
+                    ensure_ascii=False
+                )
+            self.logger.info(f"Données exportées vers {export_path}")
+            return export_path
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'export: {str(e)}")
+            return ""

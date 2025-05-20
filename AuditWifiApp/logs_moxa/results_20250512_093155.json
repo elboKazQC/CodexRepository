@@ -1,0 +1,45 @@
+{
+  "roaming_metrics": {
+    "total_events": 8,
+    "avg_handoff_time": 65,
+    "min_handoff_time": 46,
+    "max_handoff_time": 132,
+    "avg_snr_before": 19,
+    "avg_snr_after": 30,
+    "snr_improvement": 11
+  },
+  "score": 70,
+  "recommendations": [
+    "Il est recommand\u00e9 d'augmenter la valeur du 'roaming_threshold_value' pour r\u00e9duire le nombre de roaming inutiles.",
+    "Il est recommand\u00e9 de v\u00e9rifier l'emplacement et la configuration des points d'acc\u00e8s pour am\u00e9liorer la qualit\u00e9 du signal."
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_threshold_value",
+      "current": "-70",
+      "recommended": "-65",
+      "reason": "Pour r\u00e9duire le nombre de roaming inutiles et am\u00e9liorer la stabilit\u00e9 de la connexion."
+    }
+  ],
+  "problematic_aps": [
+    {
+      "ap_mac": "B2:46:9D:1D:D8:69",
+      "occurrences": 3,
+      "avg_snr": 22
+    }
+  ],
+  "last_roaming_status": {
+    "handoff_time": 132,
+    "target_range": "50-80"
+  },
+  "instability_score": {
+    "frequent_changes": 3,
+    "time_window": "11 min",
+    "impact": "Ces changements fr\u00e9quents peuvent avoir un impact sur la connectivit\u00e9 en temps r\u00e9el et la qualit\u00e9 du service."
+  },
+  "analysis": "L'analyse des logs montre que le roaming se produit fr\u00e9quemment, ce qui peut indiquer une mauvaise couverture du signal ou une configuration de seuil de roaming trop basse. Le temps de handoff est g\u00e9n\u00e9ralement bon, mais il y a eu un \u00e9v\u00e9nement o\u00f9 il a atteint 132 ms, ce qui est au-dessus de la plage cible. Cela peut indiquer un probl\u00e8me avec le point d'acc\u00e8s sp\u00e9cifique ou un probl\u00e8me de congestion du r\u00e9seau \u00e0 ce moment-l\u00e0.",
+  "score_adjustment": {
+    "reason": "Le score a \u00e9t\u00e9 ajust\u00e9 \u00e0 la baisse en raison du nombre \u00e9lev\u00e9 d'\u00e9v\u00e9nements de roaming et du temps de handoff occasionnellement \u00e9lev\u00e9. Cependant, la qualit\u00e9 du signal semble g\u00e9n\u00e9ralement s'am\u00e9liorer apr\u00e8s le roaming, ce qui indique que le m\u00e9canisme de roaming fonctionne comme pr\u00e9vu.",
+    "adjusted_score": 60
+  }
+}

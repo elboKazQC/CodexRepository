@@ -1,0 +1,332 @@
+2025-05-18 12:21:06,879 - INFO - [wifi_collector.py:71] - Démarrage de la collecte WiFi
+2025-05-18 12:21:06,879 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:26:09,931 - INFO - [wifi_collector.py:71] - Démarrage de la collecte WiFi
+2025-05-18 12:26:09,932 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:28:10,769 - INFO - [wifi_collector.py:149] - Arrêt de la collecte WiFi
+2025-05-18 12:36:52,266 - INFO - [wifi_collector.py:71] - Démarrage de la collecte WiFi
+2025-05-18 12:36:52,266 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:36:52,950 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:36:54,011 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:36:54,583 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:36:55,643 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:36:56,237 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:36:57,290 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:36:57,874 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:36:58,931 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:36:59,579 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:00,640 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:01,229 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:02,286 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:02,855 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:03,912 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:04,502 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:05,592 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:06,225 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:07,286 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:07,871 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:08,924 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:09,501 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:10,561 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:11,167 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:12,226 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:12,847 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:13,919 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:14,509 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:15,568 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:16,143 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:17,202 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:17,834 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:18,899 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:19,510 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:20,602 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:21,182 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:22,253 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:22,844 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:23,907 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:24,540 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:25,629 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:26,241 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:27,326 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:27,900 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:28,962 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:29,594 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:30,666 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:31,331 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:32,407 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:32,991 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:34,054 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:34,662 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:35,729 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:36,349 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:37,414 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:38,073 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:39,139 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:39,749 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:40,820 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:41,401 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:42,466 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:43,087 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:44,154 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:44,805 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:45,869 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:46,489 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:47,558 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:48,151 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:37:49,219 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:37:49,823 - INFO - [wifi_collector.py:121] - Données collectées: SSID=Sonia&Vincent, Signal=0dBm, Qualité=0%
+2025-05-18 12:39:08,687 - INFO - [wifi_collector.py:71] - Démarrage de la collecte WiFi
+2025-05-18 12:39:08,687 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:09,287 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:39:10,347 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:10,946 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:39:12,005 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:12,602 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:39:13,658 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:14,289 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:39:15,356 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:15,958 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:39:17,013 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:17,593 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:18,651 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:19,273 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:20,330 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:20,902 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:21,993 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:22,590 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:23,650 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:24,222 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:25,277 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:25,923 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:26,978 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:27,560 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:28,618 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:29,242 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:30,304 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:30,920 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:31,983 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:32,625 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:33,685 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:34,284 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:35,347 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:35,923 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:36,984 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:37,598 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:38,661 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:39,275 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:40,348 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:40,959 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:42,023 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:42,595 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:43,660 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:44,284 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:45,347 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:45,940 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:47,017 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:47,621 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:48,683 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:49,260 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:50,322 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:50,963 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:52,026 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:52,598 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:53,660 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:54,264 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:55,332 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:55,942 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:57,017 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:57,655 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:39:58,728 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:39:59,338 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:00,401 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:00,969 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:02,042 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:02,635 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:03,700 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:04,318 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:05,379 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:06,025 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:07,094 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:07,672 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:08,740 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:09,351 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:10,421 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:11,043 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:12,110 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:12,699 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:13,765 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:14,331 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:15,398 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:16,015 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:17,084 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:17,703 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:18,793 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:19,375 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:20,445 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:21,025 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:22,094 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:22,723 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:23,797 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:24,416 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:25,494 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:26,099 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:27,173 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:27,781 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:28,843 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:29,552 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:30,656 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:31,354 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:32,439 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:34,311 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-54dBm, Qualité=92%
+2025-05-18 12:40:35,950 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:37,285 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:38,866 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:39,697 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:40,781 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:41,469 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:42,538 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:44,117 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-52.5dBm, Qualité=95%
+2025-05-18 12:40:45,220 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:45,990 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-53dBm, Qualité=94%
+2025-05-18 12:40:47,056 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:47,680 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-53dBm, Qualité=94%
+2025-05-18 12:40:48,753 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:49,442 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-53dBm, Qualité=94%
+2025-05-18 12:40:50,505 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:51,083 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-53dBm, Qualité=94%
+2025-05-18 12:40:52,160 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:52,838 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-53dBm, Qualité=94%
+2025-05-18 12:40:53,906 - DEBUG - [wifi_collector.py:87] - Exécution du script PowerShell pour collecte
+2025-05-18 12:40:54,482 - INFO - [wifi_collector.py:125] - Données collectées: SSID=Sonia&Vincent, Signal=-53dBm, Qualité=94%
+2025-05-18 12:47:04,409 - INFO - [wifi_collector.py:95] - Démarrage de la collecte WiFi
+2025-05-18 12:47:05,001 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -53dBm
+2025-05-18 12:47:06,650 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:08,289 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:09,922 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:11,574 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:13,232 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:14,856 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:16,483 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:18,119 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:19,811 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:47:20,475 - INFO - [wifi_collector.py:160] - Arrêt de la collecte WiFi
+2025-05-18 12:52:13,808 - INFO - [wifi_collector.py:95] - Démarrage de la collecte WiFi
+2025-05-18 12:52:14,765 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:16,450 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:18,066 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:19,704 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:21,336 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:22,954 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:24,631 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:26,264 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:27,944 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:29,617 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:31,315 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:32,966 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:34,653 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:36,279 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:37,911 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:39,592 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:41,240 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:42,895 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:44,519 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:46,228 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:47,855 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:49,500 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:51,123 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:52,832 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:54,458 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 12:52:55,202 - INFO - [wifi_collector.py:160] - Arrêt de la collecte WiFi
+2025-05-18 16:47:15,954 - INFO - [wifi_collector.py:95] - Démarrage de la collecte WiFi
+2025-05-18 16:47:16,549 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:18,131 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:19,711 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:21,289 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:22,873 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:24,454 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:26,035 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:27,617 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:29,225 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:30,834 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:32,423 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:34,003 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:35,590 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:37,168 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:38,745 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:40,325 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:41,936 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:43,511 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:45,083 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:46,659 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:48,243 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:49,817 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:51,399 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:52,975 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:54,564 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:56,149 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:57,783 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:47:59,461 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:48:01,065 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:48:02,654 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:48:04,272 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:48:05,962 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -57dBm
+2025-05-18 16:48:06,241 - INFO - [wifi_collector.py:160] - Arrêt de la collecte WiFi
+2025-05-18 17:13:01,638 - INFO - [wifi_collector.py:95] - Démarrage de la collecte WiFi
+2025-05-18 17:13:02,321 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:13:03,951 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:13:05,569 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:13:07,215 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:13:08,847 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:13:10,468 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:13:12,083 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:13,710 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:15,344 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:16,972 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:18,595 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:20,215 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:21,864 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -54dBm
+2025-05-18 17:13:22,259 - INFO - [wifi_collector.py:160] - Arrêt de la collecte WiFi
+2025-05-18 17:55:57,467 - INFO - [wifi_collector.py:95] - Démarrage de la collecte WiFi
+2025-05-18 17:55:58,898 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:00,471 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:02,042 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:03,610 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:05,181 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:06,748 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:08,313 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:09,882 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:11,450 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:13,029 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:14,595 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:16,166 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:17,749 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:19,310 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:20,876 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:22,443 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:24,005 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:25,566 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:27,131 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:28,701 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:30,286 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:31,874 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:33,436 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:35,004 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:36,571 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:38,138 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:39,698 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:41,259 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:42,825 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:44,386 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:45,948 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:47,519 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:49,082 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:50,645 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:52,211 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:53,785 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:55,348 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 17:56:56,229 - INFO - [wifi_collector.py:160] - Arrêt de la collecte WiFi
+2025-05-18 18:34:58,677 - INFO - [wifi_collector.py:95] - Démarrage de la collecte WiFi
+2025-05-18 18:34:59,553 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 18:35:01,128 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 18:35:02,699 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 18:35:04,266 - DEBUG - [wifi_collector.py:127] - Échantillon collecté: Sonia&Vincent - -56dBm
+2025-05-18 18:35:04,960 - INFO - [wifi_collector.py:160] - Arrêt de la collecte WiFi

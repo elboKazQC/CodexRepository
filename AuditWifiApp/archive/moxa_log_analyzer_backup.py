@@ -1,0 +1,198 @@
+﻿#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import os
+import json
+import requests
+
+class MoxaLogAnalyzer:
+    """
+    Analyse les logs Moxa via l'API OpenAI pour fournir des recommandations 
+    d'optimisation des paramÃ¨tres Moxa. Utilise l'API GPT-4 pour analyser
+    les patterns dans les logs et gÃ©nÃ©rer des suggestions d'amÃ©lioration.
+    """
+
+    def __init__(self):
+        self.api_key = os.getenv("OPENAI_API_KEY")
+
+    def analyze_logs(self, log_content, current_config):
+        """
+        Analyse les logs Moxa via l'API OpenAI pour identifier les problÃ¨mes
+        et gÃ©nÃ©rer des recommandations d'optimisation.
+        
+        Args:
+            log_content (str): Contenu des logs Ã  analyser
+            current_config (dict): Configuration Moxa actuelle
+            
+        Returns:
+            dict: RÃ©sultat de l'analyse contenant les problÃ¨mes dÃ©tectÃ©s
+                et les recommandations d'optimisation
+            
+        Raises:
+            ValueError: Si les logs sont vides ou la clÃ© API n'est pas configurÃ©e
+            Exception: En cas d'erreur avec l'API OpenAI ou le traitement des logs
+        """
+        if not log_content:
+            raise ValueError("Les logs sont vides")
+
+        if not self.api_key:
+            raise ValueError("ClÃ© API OpenAI non configurÃ©e")
+
+        # Nettoyer et prÃ©parer les logs
+        clean_logs = log_content.replace("\r\n", "\n").strip()
+        
+        # Ajouter la configuration actuelle au prompt pour permettre Ã  l'IA de l'Ã©valuer
+        config_text = json.dumps(current_config, indent=2)
+        
+        # CrÃ©er le prompt pour l'analyse
+        prompt = (
+            "En tant qu'expert Wi-Fi industriel, analyser ces logs en dÃ©tail en recherchant spÃ©cifiquement:\n"
+            "1. Effet 'ping-pong' : roaming rapide et rÃ©pÃ©tÃ© entre les mÃªmes points d'accÃ¨s\n"
+            "2. ProblÃ¨mes de SNR : dÃ©tecter les cas oÃ¹ le SNR tombe Ã  0 ou en-dessous de 10 avant le roaming\n"
+            "3. ProblÃ¨mes d'authentification : timeouts et Ã©checs\n"
+            "4. Performance du handoff : analyser les temps de roaming variables\n"
+            "5. StabilitÃ© de l'interface WLAN : dÃ©tecter les redÃ©marrages\n"
+            "6. DÃ©connexions forcÃ©es : identifier les deauth requests des APs\n\n"
+            f"CONFIGURATION ACTUELLE:\n{config_text}\n\n"
+            "INSTRUCTIONS IMPORTANTES:\n"
+            "1. Analyser chaque problÃ¨me spÃ©cifique et fournir des mÃ©triques prÃ©cises\n"
+            "2. Ã‰valuer si le rÃ©seau est adaptÃ© pour une flotte d'AMR (robots mobiles)\n"
+            "3. Ã‰valuer si chaque paramÃ¨tre de configuration actuel est correct\n"
+            "4. Fournir une conclusion dÃ©taillÃ©e sur la performance globale\n"
+            "5. RÃ‰PONDRE UNIQUEMENT EN FORMAT JSON VALIDE avec la structure suivante:\n"
+            "{\n"
+            "  \"adapte_flotte_AMR\": true|false,\n"
+            "  \"score_global\": 0-100,\n"
+            "  \"analyse_detaillee\": {\n"
+            "    \"ping_pong\": {\n"
+            "      \"detecte\": true|false,\n"
+            "      \"occurrences\": [\"AP1-AP2: X fois en Y sec\"],\n"
+            "      \"gravite\": 1-10,\n"
+            "      \"details\": {\n"
+            "        \"temps_min_entre_roaming\": \"X sec\",\n"
+            "        \"paires_ap_affectees\": [\"AP1-AP2\", \"AP2-AP3\"]\n"
+            "      }\n"
+            "    },\n"
+            "    \"problemes_snr\": {\n"
+            "      \"aps_snr_zero\": [\"AP: X occurrences\"],\n"
+            "      \"seuil_roaming_inadapte\": true|false,\n"
+            "      \"details\": {\n"
+            "        \"seuil_actuel\": \"X dB\",\n"
+            "        \"seuil_recommande\": \"Y dB\",\n"
+            "        \"episodes_critiques\": [\n"
+            "          {\"ap\": \"AP1\", \"snr\": 0, \"timestamp\": \"HH:MM:SS\"},\n"
+            "          {\"ap\": \"AP2\", \"snr\": 5, \"timestamp\": \"HH:MM:SS\"}\n"
+            "        ]\n"
+            "      }\n"
+            "    },\n"
+            "    \"authentification\": {\n"
+            "      \"timeouts\": X,\n"
+            "      \"echecs\": Y,\n"
+            "      \"temps_moyen_ms\": Z,\n"
+            "      \"details\": {\n"
+            "        \"causes_principales\": [\"timeout\", \"echec_auth\"],\n"
+            "        \"aps_concernes\": [\"AP1: X fois\", \"AP2: Y fois\"]\n"
+            "      }\n"
+            "    },\n"
+            "    \"handoff\": {\n"
+            "      \"min_ms\": X,\n"
+            "      \"max_ms\": Y,\n"
+            "      \"moyen_ms\": Z,\n"
+            "      \"distribution\": [\"0-50ms: X\", \"51-100ms: Y\"],\n"
+            "      \"details\": {\n"
+            "        \"performances_par_ap\": [\n"
+            "          {\"ap\": \"AP1\", \"temps_moyen\": X, \"succes\": Y},\n"
+            "          {\"ap\": \"AP2\", \"temps_moyen\": X, \"succes\": Y}\n"
+            "        ]\n"
+            "      }\n"
+            "    },\n"
+            "    \"stabilite_wlan\": {\n"
+            "      \"redemarrages\": X,\n"
+            "      \"intervalle_moyen_min\": Y,\n"
+            "      \"details\": {\n"
+            "        \"causes\": [\"driver\", \"ap_disconnect\"],\n"
+            "        \"timestamps\": [\"HH:MM:SS\"]\n"
+            "      }\n"
+            "    },\n"
+            "    \"deauth_requests\": {\n"
+            "      \"total\": X,\n"
+            "      \"par_ap\": {\"AP1\": X, \"AP2\": Y},\n"
+            "      \"details\": {\n"
+            "        \"raisons\": [\"inactivite\", \"surcharge\"],\n"
+            "        \"impact\": \"description de l'impact\"\n"
+            "      }\n"
+            "    }\n"            "  },\n"
+            "  \"parametres_actuels\": {\n"
+            "    \"turbo_roaming_correct\": true|false,\n"
+            "    \"roaming_mechanism_correct\": true|false,\n"
+            "    \"roaming_difference_correct\": true|false,\n"
+            "    \"auth_timeout_correct\": true|false\n"
+            "  },\n"
+            "  \"recommandations\": [\n"
+            "    {\n"
+            "      \"probleme\": \"Description du problÃ¨me\",\n"
+            "      \"solution\": \"Solution proposÃ©e\",\n"
+            "      \"priorite\": 1-5,\n"
+            "      \"parametres\": {\n"
+            "        \"param1\": \"valeur1\",\n"
+            "        \"param2\": \"valeur2\"\n"
+            "      }\n"
+            "    }\n"
+            "  ],\n"
+            "  \"details_configuration\": {\n"
+            "    \"suggestions\": {\n"
+            "      \"min_transmission_rate\": X,\n"
+            "      \"roaming_difference\": Y,\n"
+            "      \"auth_timeout\": Z\n"
+            "    },\n"
+            "    \"justifications\": [\n"
+            "      \"Raison 1 pour les changements\",\n"
+            "      \"Raison 2 pour les changements\"\n"
+            "    ]\n"
+            "  },\n"            "  \"conclusion\": \"Une conclusion dÃ©taillÃ©e sur l'Ã©tat gÃ©nÃ©ral de la configuration et son adÃ©quation pour les AMRs\"\n"
+            "}\n\n"
+            f"LOGS Ã€ ANALYSER:\n{clean_logs}"
+        )
+
+        try:
+            # Appeler l'API OpenAI avec un timeout explicite pour Ã©viter les blocages
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "gpt-4",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                    "max_tokens": 2000
+                },
+                timeout=30  # Timeout de 30 secondes pour Ã©viter les blocages indÃ©finis
+            )            if response.status_code != 200:
+                # Si l'API renvoie une erreur, on lÃ¨ve une exception avec les dÃ©tails
+                error_detail = response.json().get('error', {}).get('message', 'Unknown error')
+                raise Exception(f"Erreur API OpenAI ({response.status_code}): {error_detail}")
+                
+            # Retourner directement la rÃ©ponse d'OpenAI
+            result = response.json()["choices"][0]["message"]["content"]
+            
+            # VÃ©rifier si le rÃ©sultat n'est pas vide et qu'il s'agit bien d'un JSON valide
+            if not result or not result.strip():
+                raise Exception("RÃ©ponse vide reÃ§ue de l'API OpenAI")
+                
+            try:
+                # Tentative de parsing en mode strict
+                parsed_result = json.loads(result)
+                return parsed_result
+            except json.JSONDecodeError as json_err:
+                # En cas d'Ã©chec, afficher le contenu reÃ§u dans l'erreur pour faciliter le dÃ©bogage
+                raise Exception(f"Erreur de dÃ©codage JSON: {str(json_err)}. Contenu reÃ§u: {result[:200]}...")
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Erreur de connexion Ã  l'API OpenAI: {str(e)}")
+        except json.JSONDecodeError as e:
+            raise Exception(f"Erreur de dÃ©codage JSON: {str(e)}")
+        except KeyError as e:
+            raise Exception(f"Structure de rÃ©ponse inattendue de l'API OpenAI: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Erreur lors de l'analyse des logs: {str(e)}")

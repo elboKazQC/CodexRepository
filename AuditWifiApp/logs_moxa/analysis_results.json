@@ -1,0 +1,56 @@
+{
+  "score": 70,
+  "max_score": 100,
+  "roaming_metrics": {
+    "total_events": 8,
+    "avg_handoff_time": 77.5,
+    "min_handoff_time": 46,
+    "max_handoff_time": 132,
+    "avg_snr_before": 20.25,
+    "avg_snr_after": 30.75,
+    "snr_improvement": 10.5
+  },
+  "recommendations": [
+    "Considérez l'utilisation du SNR comme mécanisme de roaming pour une meilleure fiabilité",
+    "Augmentez le seuil de roaming pour réduire la fréquence des événements de roaming",
+    "Augmentez le taux de transmission minimum pour améliorer la fiabilité des transmissions"
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_mechanism",
+      "current": "signal_strength",
+      "recommended": "SNR",
+      "reason": "Le SNR est généralement plus fiable que la force du signal dans les environnements industriels"
+    },
+    {
+      "param": "roaming_threshold_value",
+      "current": -70,
+      "recommended": -75,
+      "reason": "Un seuil de roaming plus élevé peut réduire la fréquence des événements de roaming"
+    },
+    {
+      "param": "min_transmission_rate",
+      "current": 6,
+      "recommended": 12,
+      "reason": "Un taux de transmission plus élevé peut améliorer la fiabilité des transmissions"
+    }
+  ],
+  "analysis": "La configuration actuelle du Moxa semble généralement performante, avec un temps de handoff rapide et une amélioration notable du SNR après le roaming. Cependant, le roaming se produit fréquemment, ce qui pourrait être dû à un seuil de roaming trop bas. De plus, l'utilisation de la force du signal comme mécanisme de roaming peut ne pas être idéale dans un environnement industriel. Enfin, le taux de transmission minimum pourrait être augmenté pour améliorer la fiabilité des transmissions.",
+  "current_config": {
+    "min_transmission_rate": 6,
+    "max_transmission_power": 20,
+    "rts_threshold": 512,
+    "fragmentation_threshold": 2346,
+    "roaming_mechanism": "signal_strength",
+    "roaming_difference": 9,
+    "remote_connection_check": true,
+    "wmm_enabled": true,
+    "turbo_roaming": true,
+    "ap_alive_check": true,
+    "roaming_threshold_type": "signal_strength",
+    "roaming_threshold_value": -70,
+    "ap_candidate_threshold_type": "signal_strength",
+    "ap_candidate_threshold_value": -70
+  },
+  "timestamp": "2025-05-08T19:58:05.534Z"
+}

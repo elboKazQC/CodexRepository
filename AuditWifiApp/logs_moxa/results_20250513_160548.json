@@ -1,0 +1,21 @@
+{
+  "adapte_flotte_AMR": true,
+  "score_global": 85,
+  "analyse": "Le r\u00e9seau semble stable avec un signal constant et une bonne performance de roaming. Cependant, le d\u00e9bit pourrait \u00eatre am\u00e9lior\u00e9 pour une utilisation optimale avec une flotte d'AMR.",
+  "signaux": {
+    "min_dbm": -50,
+    "max_dbm": -50,
+    "stabilite": "bonne"
+  },
+  "roaming": {
+    "performance": "bonne",
+    "temps_moyen_ms": null
+  },
+  "problemes": [
+    "D\u00e9bit de transmission et de r\u00e9ception pourrait \u00eatre am\u00e9lior\u00e9"
+  ],
+  "recommendations": [
+    "Mettre \u00e0 jour les pilotes de l'adaptateur Wi-Fi",
+    "Consid\u00e9rer l'utilisation d'un canal moins encombr\u00e9 ou d'une bande de fr\u00e9quence diff\u00e9rente"
+  ]
+}

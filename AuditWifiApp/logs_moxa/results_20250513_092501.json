@@ -1,0 +1,60 @@
+{
+  "roaming_metrics": {
+    "total_events": 8,
+    "avg_handoff_time": 920,
+    "min_handoff_time": 195,
+    "max_handoff_time": 1390,
+    "avg_snr_before": 8.75,
+    "avg_snr_after": 31,
+    "snr_improvement": 22.25
+  },
+  "score": 60,
+  "recommendations": [
+    "Augmenter la valeur 'roaming_threshold_value' \u00e0 -65 dBm pour \u00e9viter les changements fr\u00e9quents d'AP.",
+    "Activer 'remote_connection_check' pour v\u00e9rifier la connectivit\u00e9 \u00e0 distance et \u00e9viter les d\u00e9connexions inutiles.",
+    "Repositionner les AP pour une couverture optimale et \u00e9viter les d\u00e9connexions dues \u00e0 un faible SNR."
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_threshold_value",
+      "current": "-60",
+      "recommended": "-65",
+      "reason": "Pour \u00e9viter les changements fr\u00e9quents d'AP."
+    },
+    {
+      "param": "remote_connection_check",
+      "current": "false",
+      "recommended": "true",
+      "reason": "Pour v\u00e9rifier la connectivit\u00e9 \u00e0 distance et \u00e9viter les d\u00e9connexions inutiles."
+    }
+  ],
+  "problematic_aps": [
+    {
+      "ap_mac": "A2:05:D6:D7:21:99",
+      "occurrences": 5,
+      "avg_snr": 6.2
+    }
+  ],
+  "last_roaming_status": {
+    "handoff_time": 195,
+    "target_range": "50-80",
+    "improvement_steps": "R\u00e9duire le temps de handoff en ajustant les param\u00e8tres de roaming et en optimisant la couverture des AP."
+  },
+  "instability_score": {
+    "frequent_changes": 8,
+    "time_window": "2 min",
+    "impact": "Impact possible sur la connectivit\u00e9 temps r\u00e9el",
+    "mitigation": "Augmenter 'roaming_difference' \u00e0 15 pour \u00e9viter les effets de ping-pong."
+  },
+  "behavioral_patterns": {
+    "loops_detected": 0,
+    "unnecessary_scans": 0,
+    "impact": "Aucun impact identifi\u00e9 sur les performances r\u00e9seau.",
+    "mitigation": "Aucune action n\u00e9cessaire."
+  },
+  "analysis": "Le r\u00e9seau pr\u00e9sente une instabilit\u00e9 due \u00e0 des changements fr\u00e9quents d'AP. Cela peut \u00eatre d\u00fb \u00e0 un faible SNR et \u00e0 une valeur de seuil de roaming trop \u00e9lev\u00e9e. L'activation de la v\u00e9rification de la connectivit\u00e9 \u00e0 distance et l'augmentation de la valeur de seuil de roaming peuvent aider \u00e0 r\u00e9soudre ces probl\u00e8mes.",
+  "score_adjustment": {
+    "reason": "Le score a \u00e9t\u00e9 ajust\u00e9 en raison de l'instabilit\u00e9 du r\u00e9seau et des d\u00e9connexions fr\u00e9quentes. Cependant, certains param\u00e8tres sont d\u00e9j\u00e0 correctement configur\u00e9s, comme 'wmm_enabled' et 'turbo_roaming'.",
+    "adjusted_score": 60
+  }
+}

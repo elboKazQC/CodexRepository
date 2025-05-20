@@ -1,0 +1,58 @@
+{
+  "roaming_metrics": {
+    "total_events": 24,
+    "avg_handoff_time": 1019,
+    "min_handoff_time": 82,
+    "max_handoff_time": 36902,
+    "avg_snr_before": 10.5,
+    "avg_snr_after": 22.5,
+    "snr_improvement": 12
+  },
+  "score": 6,
+  "recommendations": [
+    "Il semble y avoir un probl\u00e8me de ping-pong de roaming entre les deux points d'acc\u00e8s. Cela peut \u00eatre d\u00fb \u00e0 une mauvaise couverture ou \u00e0 des param\u00e8tres de roaming mal configur\u00e9s. Essayez de repositionner les points d'acc\u00e8s pour une meilleure couverture.",
+    "Augmenter la valeur de 'roaming_difference' \u00e0 12 pour \u00e9viter les effets de ping-pong. Cela permettra d'\u00e9viter les changements fr\u00e9quents entre les points d'acc\u00e8s, ce qui peut entra\u00eener une d\u00e9gradation des performances."
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_difference",
+      "current": 9,
+      "recommended": 12,
+      "reason": "Pour \u00e9viter les effets de ping-pong entre les points d'acc\u00e8s."
+    }
+  ],
+  "problematic_aps": [
+    {
+      "ap_mac": "A2:05:D6:D7:21:99",
+      "occurrences": 12,
+      "avg_snr": 10.5
+    },
+    {
+      "ap_mac": "A2:05:D6:D7:3E:C1",
+      "occurrences": 12,
+      "avg_snr": 22.5
+    }
+  ],
+  "last_roaming_status": {
+    "handoff_time": 4910,
+    "target_range": "50-80",
+    "improvement_steps": "R\u00e9duire le temps de handoff en ajustant les param\u00e8tres de roaming et en optimisant la couverture des AP."
+  },
+  "instability_score": {
+    "frequent_changes": 24,
+    "time_window": "2 min",
+    "impact": "Impact possible sur la connectivit\u00e9 temps r\u00e9el",
+    "mitigation": "Augmenter 'roaming_difference' \u00e0 12 pour \u00e9viter les effets de ping-pong."
+  },
+  "behavioral_patterns": {
+    "loops_detected": 12,
+    "unnecessary_scans": 0,
+    "impact": "Les boucles de roaming peuvent entra\u00eener une d\u00e9gradation des performances r\u00e9seau et une mauvaise exp\u00e9rience utilisateur.",
+    "mitigation": "Augmenter 'roaming_difference' \u00e0 12 pour \u00e9viter les effets de ping-pong et r\u00e9duire les boucles de roaming."
+  },
+  "analysis": "L'analyse des logs montre un nombre \u00e9lev\u00e9 d'\u00e9v\u00e9nements de roaming en peu de temps, indiquant un probl\u00e8me de ping-pong de roaming. Cela peut \u00eatre d\u00fb \u00e0 une mauvaise couverture ou \u00e0 des param\u00e8tres de roaming mal configur\u00e9s. Les temps de handoff sont \u00e9galement plus \u00e9lev\u00e9s que la plage cible, ce qui peut affecter les performances r\u00e9seau.",
+  "score_adjustment": {
+    "reason": "Le score a \u00e9t\u00e9 ajust\u00e9 en raison du nombre \u00e9lev\u00e9 d'\u00e9v\u00e9nements de roaming et des temps de handoff plus \u00e9lev\u00e9s que la plage cible. Bien que certains param\u00e8tres soient correctement configur\u00e9s, les probl\u00e8mes identifi\u00e9s n\u00e9cessitent des ajustements pour am\u00e9liorer les performances r\u00e9seau.",
+    "adjusted_score": 4
+  }
+}

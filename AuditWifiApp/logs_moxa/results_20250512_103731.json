@@ -1,0 +1,60 @@
+{
+  "roaming_metrics": {
+    "total_events": 5,
+    "avg_handoff_time": 127,
+    "min_handoff_time": 75,
+    "max_handoff_time": 200,
+    "avg_snr_before": 16.6,
+    "avg_snr_after": 23.8,
+    "snr_improvement": 7.2
+  },
+  "score": 7,
+  "recommendations": [
+    "Augmenter la valeur de 'roaming_threshold_value' \u00e0 -65 dBm pour \u00e9viter les changements fr\u00e9quents d'AP.",
+    "Repositionner les AP pour une couverture optimale et \u00e9viter les zones de faible signal.",
+    "Augmenter 'roaming_difference' \u00e0 12 pour \u00e9viter les effets de ping-pong."
+  ],
+  "config_changes": [
+    {
+      "param": "roaming_threshold_value",
+      "current": "-70",
+      "recommended": "-65",
+      "reason": "Pour \u00e9viter les changements fr\u00e9quents d'AP."
+    },
+    {
+      "param": "roaming_difference",
+      "current": "9",
+      "recommended": "12",
+      "reason": "Pour \u00e9viter les effets de ping-pong."
+    }
+  ],
+  "problematic_aps": [
+    {
+      "ap_mac": "A1:B2:C3:D4:E5:F8",
+      "occurrences": 1,
+      "avg_snr": 0
+    }
+  ],
+  "last_roaming_status": {
+    "handoff_time": 75,
+    "target_range": "50-80",
+    "improvement_steps": "R\u00e9duire le temps de handoff en ajustant les param\u00e8tres de roaming et en optimisant la couverture des AP."
+  },
+  "instability_score": {
+    "frequent_changes": 5,
+    "time_window": "3 min 30 sec",
+    "impact": "Impact possible sur la connectivit\u00e9 temps r\u00e9el.",
+    "mitigation": "Augmenter 'roaming_difference' \u00e0 12 pour \u00e9viter les effets de ping-pong."
+  },
+  "behavioral_patterns": {
+    "loops_detected": 0,
+    "unnecessary_scans": 0,
+    "impact": "Aucun impact identifi\u00e9 sur les performances r\u00e9seau.",
+    "mitigation": "Aucune action requise."
+  },
+  "analysis": "Les performances de roaming sont g\u00e9n\u00e9ralement bonnes, avec un temps de handoff moyen de 127 ms et une am\u00e9lioration moyenne du SNR de 7.2. Cependant, il y a eu 5 \u00e9v\u00e9nements de roaming en 3 min 30 sec, ce qui peut indiquer une instabilit\u00e9. De plus, l'AP A1:B2:C3:D4:E5:F8 a un SNR moyen de 0, ce qui peut indiquer un probl\u00e8me avec cet AP.",
+  "score_adjustment": {
+    "reason": "Le score a \u00e9t\u00e9 ajust\u00e9 \u00e0 7 en raison de l'instabilit\u00e9 identifi\u00e9e et du probl\u00e8me potentiel avec l'AP A1:B2:C3:D4:E5:F8. Cependant, aucun comportement probl\u00e9matique n'a \u00e9t\u00e9 identifi\u00e9 et les temps de handoff sont g\u00e9n\u00e9ralement bons.",
+    "adjusted_score": 7
+  }
+}

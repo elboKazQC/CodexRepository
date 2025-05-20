@@ -1,0 +1,12 @@
+{
+  "min_transmission_rate": 6,
+  "max_transmission_power": 20,
+  "rts_threshold": 512,
+  "fragmentation_threshold": 2346,
+  "roaming_mechanism": "signal_strength",
+  "roaming_difference": 9,
+  "remote_connection_check": true,
+  "wmm_enabled": true,
+  "turbo_roaming": true,
+  "ap_alive_check": true
+}
