@@ -109,6 +109,10 @@ class NetworkAnalyzerUI:
     def update_status(self, message: str) -> None:
         self.wifi_view.update_status(message)
 
+    def update_data(self) -> None:
+        """Delegate to WifiView to refresh displayed data."""
+        self.wifi_view.update_data()
+
     def show_error(self, message: str) -> None:
         self.wifi_view.show_error(message)
 

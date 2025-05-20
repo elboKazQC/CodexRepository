@@ -59,14 +59,13 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Set up bootstrap related attributes
         self._use_bootstrap = BOOTSTRAP_AVAILABLE
         self._theme = theme
-
-
+        self.style: Optional[Style] = None
+        self.theme_var: Optional[tk.StringVar] = None
 
         # Call parent class constructor first to ensure a Tk root exists
         super().__init__(cast(tk.Tk, master))
 
         # Initialize theme variable and style after parent initialization
-
         self.theme_var = tk.StringVar(master=self.master, value=theme)
         if BOOTSTRAP_AVAILABLE:
             self.style = Style(theme=theme)
@@ -90,7 +89,6 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         if not self._use_bootstrap:
             return
 
-
         try:
             # Validate theme
             all_themes = [t for themes in self.available_themes.values() for t in themes]
@@ -104,8 +102,10 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             self._register_noovelia_theme()
 
             # Apply styles to widgets
-
             self.apply_bootstrap_styles()
+
+        except Exception as exc:  # pragma: no cover - defensive
+            print(f"Error creating interface: {exc}")
 
     def apply_bootstrap_styles(self) -> None:
         """Apply bootstrap styles to widgets."""
