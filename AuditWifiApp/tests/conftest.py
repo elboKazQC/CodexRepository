@@ -141,11 +141,23 @@ def patch_ttk_style():
         patch('tkinter.ttk.Style'),
         patch('tkinter.messagebox'),
         patch('log_manager.messagebox'),
+
+        patch('tkinter.Text'),
+        patch('tkinter.ttk.OptionMenu'),
+        patch('tkinter.Menu'),
         patch('matplotlib.backends.backend_tkagg.FigureCanvasTkAgg'),
-        patch('runner.FigureCanvasTkAgg'),
-        patch('tkinter.ttk.Treeview', DummyTreeview),
-        patch('tkinter.ttk.Button', DummyButton),
+        patch('runner.NetworkAnalyzerUI.setup_graphs', lambda self: None),
     ]
+    try:
+        __import__('ttkbootstrap')
+        patches.append(patch('ttkbootstrap.style.Style'))
+        patches.append(patch('ttkbootstrap.Window'))
+        patches.append(patch('ttkbootstrap.OptionMenu'))
+        patches.append(patch('ttkbootstrap.style.Bootstyle.update_ttk_widget_style'))
+        patches.append(patch('ttkbootstrap.style.Bootstyle.update_tk_widget_style'))
+    except Exception:
+        pass
+
     with ExitStack() as stack:
         for p in patches:
             stack.enter_context(p)
