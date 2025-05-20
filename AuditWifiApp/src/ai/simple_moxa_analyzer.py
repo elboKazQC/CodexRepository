@@ -58,13 +58,15 @@ def get_api_key():
         )
     return api_key
 
-def analyze_moxa_logs(logs, current_config):
+def analyze_moxa_logs(logs, current_config, additional_params: str | None = None):
     """
     Envoie les logs Moxa et la configuration à OpenAI pour analyse.
     
     Args:
         logs (str): Les logs Moxa à analyser
         current_config (dict): La configuration actuelle du Moxa
+        additional_params (str | None): Informations facultatives fournies par
+            l'utilisateur pour préciser la configuration ou le contexte.
         
     Returns:
         str: La réponse brute d'OpenAI
@@ -77,11 +79,13 @@ def analyze_moxa_logs(logs, current_config):
     # Tronquer les logs si nécessaire
     truncated_logs = truncate_logs(logs)
 
-    prompt = f"""Analysez ces logs Moxa et la configuration actuelle. 
+    extra = f"\nParamètres supplémentaires:\n{additional_params}" if additional_params else ""
+
+    prompt = f"""Analysez ces logs Moxa et la configuration actuelle.
 Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.
 
 Configuration actuelle:
-{json.dumps(current_config, indent=2)}
+{json.dumps(current_config, indent=2)}{extra}
 
 Logs à analyser:
 {truncated_logs}
