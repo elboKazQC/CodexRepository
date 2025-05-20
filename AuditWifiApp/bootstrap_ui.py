@@ -71,9 +71,10 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         else:
             self._use_bootstrap = BOOTSTRAP_AVAILABLE
         self._theme = theme
-        self.master = master
+
 
         # Initialize theme variable and style before parent initialization
+
         # Tk variable used to track the currently selected theme. Associate it
         # with the window to avoid missing default root during tests.
         self.theme_var = tk.StringVar(master=master, value=theme)
@@ -85,8 +86,16 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         else:
             self.style = None
 
-        # Call parent class constructor
+
+
+        # Call parent class constructor first to ensure a Tk root exists
         super().__init__(cast(tk.Tk, master))
+
+        # Initialize theme variable and style after parent initialization
+
+        self.theme_var = tk.StringVar(master=self.master, value=theme)
+        if BOOTSTRAP_AVAILABLE:
+            self.style = Style(theme=theme)
 
         # Setup theme handling after parent initialization
         if BOOTSTRAP_AVAILABLE:

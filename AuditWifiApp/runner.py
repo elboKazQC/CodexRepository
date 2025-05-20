@@ -13,10 +13,12 @@ from tkinter import ttk
 import os
 from dotenv import load_dotenv
 
+
 from network_analyzer import NetworkAnalyzer
 from ui.wifi_view import WifiView
 from ui.moxa_view import MoxaView
 from network_scanner import scan_wifi  # re-exported for tests
+
 
 load_dotenv()
 
@@ -57,8 +59,10 @@ class NetworkAnalyzerUI:
         self.notebook = ttk.Notebook(self.master)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
+
         self.wifi_view = WifiView(self.notebook, self.analyzer)
         self.notebook.add(self.wifi_view.frame, text="Analyse WiFi")
+
 
         self.moxa_view = MoxaView(self.notebook, self.config_dir, self.default_config)
         self.notebook.add(self.moxa_view.frame, text="Analyse Moxa")
@@ -109,8 +113,10 @@ class NetworkAnalyzerUI:
         self.wifi_view.show_error(message)
 
 
+
 def main() -> None:
     """Application entry point."""
+
     try:
         root = tk.Tk()
         from bootstrap_ui import BootstrapNetworkAnalyzerUI
