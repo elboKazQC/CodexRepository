@@ -1,5 +1,9 @@
 import yaml
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - only for hints
+    from config_manager import ConfigurationManager
 
 # Path to the YAML configuration file
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
@@ -28,3 +32,10 @@ def save_config(config: dict, path: Path = CONFIG_PATH) -> None:
     """Save configuration dictionary back to YAML file."""
     with path.open("w", encoding="utf-8") as fh:
         yaml.safe_dump(config, fh, allow_unicode=True)
+
+
+def create_manager(path: Path = CONFIG_PATH) -> 'ConfigurationManager':
+    """Create a :class:`ConfigurationManager` using defaults from YAML."""
+    from config_manager import ConfigurationManager
+
+    return ConfigurationManager(load_config(path))

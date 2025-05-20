@@ -24,6 +24,25 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    python AuditWifiApp/runner.py
    ```
 
+## Configuration
+
+`AuditWifiApp/config.yaml` controls UI options and Wi-Fi thresholds. The new
+`wifi_thresholds` section defines when the connection is considered weak or
+critical.
+
+```yaml
+wifi_thresholds:
+  signal:
+    weak: -70      # dBm
+    critical: -80
+  packet_loss:
+    warning: 10    # percent
+    critical: 20
+  latency:
+    warning: 100   # ms
+    critical: 200
+```
+
 ## Usage
 
 When analyzing Moxa logs, paste them in the dedicated tab. Optionally fill in
@@ -35,6 +54,7 @@ roaming logic.
 
 ```bash
 pytest -v
+npm test # run TypeScript unit tests
 ```
 
 ## Repository layout
@@ -43,7 +63,7 @@ pytest -v
 - `AuditWifiApp/tests/` – unit tests
 - `requirements.txt` – Python dependencies
 - `setup.ps1` / `setup.sh` – install scripts
-- `AuditWifiApp/config.yaml` – edit thresholds and UI settings
+- `AuditWifiApp/config.yaml` – UI settings and `wifi_thresholds` values
 - Backup files from previous versions live in `AuditWifiApp/archive/`
 
 ## HistoryManager API
