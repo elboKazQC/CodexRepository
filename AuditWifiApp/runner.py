@@ -2,6 +2,7 @@
 import sys
 import json
 import logging
+from dataclasses import asdict
 from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -20,6 +21,7 @@ from network_analyzer import NetworkAnalyzer
 from wifi.wifi_collector import WifiSample
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
 from config_manager import ConfigurationManager
+from models import MoxaConfig
 
 class NetworkAnalyzerUI:
     def __init__(self, master: tk.Tk):
@@ -32,18 +34,18 @@ class NetworkAnalyzerUI:
         self.samples: List[WifiSample] = []
 
         # Configuration par défaut pour l'analyse des logs Moxa
-        self.default_config = {
-            "min_transmission_rate": 12,
-            "max_transmission_power": 20,
-            "rts_threshold": 512,
-            "fragmentation_threshold": 2346,
-            "roaming_mechanism": "snr",
-            "roaming_difference": 8,
-            "remote_connection_check": True,
-            "wmm_enabled": True,
-            "turbo_roaming": True,
-            "ap_alive_check": True,
-        }
+        self.default_config = MoxaConfig(
+            min_transmission_rate=12,
+            max_transmission_power=20,
+            rts_threshold=512,
+            fragmentation_threshold=2346,
+            roaming_mechanism="snr",
+            roaming_difference=8,
+            remote_connection_check=True,
+            wmm_enabled=True,
+            turbo_roaming=True,
+            ap_alive_check=True,
+        )
 
         # Gestionnaire de configuration
         self.config_manager = ConfigurationManager(self.default_config)
@@ -53,7 +55,8 @@ class NetworkAnalyzerUI:
         if os.path.exists(self.last_config_file):
             try:
                 with open(self.last_config_file, "r", encoding="utf-8") as f:
-                    self.config_manager.config = json.load(f)
+                    data = json.load(f)
+                    self.config_manager.config = MoxaConfig.from_dict(data)
             except Exception:
                 pass
         self.current_config = self.config_manager.get_config()
@@ -163,7 +166,7 @@ class NetworkAnalyzerUI:
         self.moxa_config_text.configure(yscrollcommand=cfg_scroll.set)
         self.moxa_config_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+        self.moxa_config_text.insert('1.0', json.dumps(asdict(self.current_config), indent=2))
 
         # Boutons de configuration
         config_btn_frame = ttk.Frame(self.moxa_frame)
@@ -277,7 +280,8 @@ class NetworkAnalyzerUI:
             try:
                 config_text = self.moxa_config_text.get('1.0', tk.END).strip()
                 if config_text:
-                    self.current_config = json.loads(config_text)
+                    data = json.loads(config_text)
+                    self.current_config = MoxaConfig.from_dict(data)
             except json.JSONDecodeError:
                 messagebox.showerror(
                     "Configuration invalide",
@@ -286,7 +290,7 @@ class NetworkAnalyzerUI:
                 return
 
             # Appel à l'API OpenAI avec la configuration courante
-            analysis = analyze_moxa_logs(logs, self.current_config)
+            analysis = analyze_moxa_logs(logs, asdict(self.current_config))
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)
@@ -328,10 +332,11 @@ class NetworkAnalyzerUI:
         if filepath:
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
-                    self.config_manager.config = json.load(f)
+                    data = json.load(f)
+                    self.config_manager.config = MoxaConfig.from_dict(data)
                 self.current_config = self.config_manager.get_config()
                 self.moxa_config_text.delete('1.0', tk.END)
-                self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+                self.moxa_config_text.insert('1.0', json.dumps(asdict(self.current_config), indent=2))
                 messagebox.showinfo("Configuration", f"Configuration chargée depuis {filepath}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Impossible de charger la configuration:\n{e}")
@@ -342,7 +347,7 @@ class NetworkAnalyzerUI:
         dialog.title("Éditer la configuration")
         entries = {}
 
-        for row, (key, value) in enumerate(self.config_manager.get_config().items()):
+        for row, (key, value) in enumerate(asdict(self.config_manager.get_config()).items()):
             ttk.Label(dialog, text=key).grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
             var = tk.StringVar(value=str(value))
             ttk.Entry(dialog, textvariable=var, width=20).grid(row=row, column=1, padx=5, pady=2)
@@ -364,7 +369,7 @@ class NetworkAnalyzerUI:
                 self.config_manager.update_config(k, parsed)
             self.current_config = self.config_manager.get_config()
             self.moxa_config_text.delete('1.0', tk.END)
-            self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+            self.moxa_config_text.insert('1.0', json.dumps(asdict(self.current_config), indent=2))
             dialog.destroy()
 
         ttk.Button(dialog, text="OK", command=save).grid(row=len(entries), column=0, padx=5, pady=10)
@@ -375,7 +380,7 @@ class NetworkAnalyzerUI:
         try:
             os.makedirs(self.config_dir, exist_ok=True)
             with open(self.last_config_file, "w", encoding="utf-8") as f:
-                json.dump(self.config_manager.get_config(), f, indent=2)
+                json.dump(asdict(self.config_manager.get_config()), f, indent=2)
         except Exception:
             pass
 
@@ -576,6 +581,27 @@ class NetworkAnalyzerUI:
         """Affiche une erreur"""
         messagebox.showerror("Erreur", message)
         self.update_status(f"ERREUR: {message}")
+
+
+class MoxaAnalyzerUI(NetworkAnalyzerUI):
+    """Backward-compatible alias used in tests."""
+
+    def __init__(self, master: tk.Tk):
+        super().__init__(master)
+        # Provide legacy attribute names expected by older tests
+        self.logs_input_text = self.moxa_input
+        self.results_text = self.moxa_results
+
+    def analyze_logs_from_input(self, log_content=None):
+        """Compatibility wrapper calling analyze_moxa_logs."""
+        if log_content is not None:
+            self.logs_input_text.delete("1.0", tk.END)
+            self.logs_input_text.insert("1.0", log_content)
+        self.analyze_moxa_logs()
+
+    def _analyze_logs(self):
+        """Legacy private method used in tests."""
+        self.analyze_moxa_logs()
 
 def main():
     """Point d'entrée de l'application"""
