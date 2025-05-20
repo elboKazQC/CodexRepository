@@ -16,6 +16,18 @@ seuils:
     excellent: -65
     faible: -85
 
+wifi_thresholds:
+  signal:
+    weak: -70
+    critical: -80
+  packet_loss:
+    warning: 10
+    critical: 20
+  latency:
+    warning: 100
+    critical: 200
+
+
 wifi:
   collector:
     base_path: logs_moxa
@@ -24,13 +36,7 @@ wifi:
       retry_delay: 2
       scan_timeout: 10
       ping_timeout: 10
-  thresholds:
-    signal_weak: -70
-    signal_critical: -80
-    packet_loss_warning: 10
-    packet_loss_critical: 20
-    latency_warning: 100
-    latency_critical: 200
+
 
 network_analyzer:
   moxa_patterns:
@@ -51,3 +57,4 @@ network_analyzer:
 
 moxa_analyzer:
   max_tokens: 2000
+
