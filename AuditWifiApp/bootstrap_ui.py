@@ -59,21 +59,19 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Set up bootstrap related attributes
         self._use_bootstrap = BOOTSTRAP_AVAILABLE
         self._theme = theme
-
-
+        self.style: Optional[Style] = None
+        self.theme_var: Optional[tk.StringVar] = None
 
         # Call parent class constructor first to ensure a Tk root exists
         super().__init__(cast(tk.Tk, master))
 
         # Initialize theme variable and style after parent initialization
-
         self.theme_var = tk.StringVar(master=self.master, value=theme)
         if BOOTSTRAP_AVAILABLE:
             self.style = Style(theme=theme)
             self._register_noovelia_theme()
-
-        # Setup theme handling after parent initialization
-        if BOOTSTRAP_AVAILABLE:
+            self.apply_bootstrap_styles()
+            self.create_theme_selector()
             self.theme_var.trace_add("write", self._on_theme_change)
 
 
@@ -90,22 +88,21 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         if not self._use_bootstrap:
             return
 
-
         try:
-            # Validate theme
+            # Validate current theme
             all_themes = [t for themes in self.available_themes.values() for t in themes]
-            if theme not in all_themes:
+            if self._theme not in all_themes:
                 return
 
-            self._theme = theme
-
             # Create new style with the selected theme
-            self.style = Style(theme=theme)
+            self.style = Style(theme=self._theme)
             self._register_noovelia_theme()
 
             # Apply styles to widgets
-
             self.apply_bootstrap_styles()
+
+        except Exception as exc:  # pragma: no cover - defensive
+            print(f"Error creating interface: {exc}")
 
     def apply_bootstrap_styles(self) -> None:
         """Apply bootstrap styles to widgets."""
@@ -154,7 +151,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
         try:
             # Create theme selector frame
-            theme_frame = ttk.Frame(self.control_frame)
+            theme_frame = ttk.Frame(self.wifi_view.control_frame)
             theme_frame.pack(side=tk.RIGHT, padx=10, pady=5)
 
             # Configure theme selector styles
