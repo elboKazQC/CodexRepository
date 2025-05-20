@@ -13,20 +13,21 @@ class MoxaLogAnalyzer:
 
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
+        self.results = {'recommendations': []}
 
         # Configuration par défaut
         self.current_config = {
-            'min_transmission_rate': None,
-            'max_transmission_power': None,
-            'rts_threshold': None,
-            'fragmentation_threshold': None,
-            'roaming_mechanism': None,
-            'roaming_difference': None,
-            'remote_connection_check': None,
-            'wmm_enabled': None,
-            'turbo_roaming': None,
-            'ap_alive_check': None,
-            'auth_timeout': None
+            'min_transmission_rate': 1,  # Mbps
+            'max_transmission_power': 20,  # dBm
+            'rts_threshold': 2347,  # bytes
+            'fragmentation_threshold': 2346,  # bytes
+            'roaming_mechanism': 'default',
+            'roaming_difference': 7,  # dB
+            'remote_connection_check': True,
+            'wmm_enabled': True,
+            'turbo_roaming': True,
+            'ap_alive_check': True,
+            'auth_timeout': 5  # seconds
         }
 
         # Métriques par défaut
