@@ -54,6 +54,7 @@ roaming logic.
 
 ```bash
 pytest -v
+npm test # run TypeScript unit tests
 ```
 
 ## Repository layout
