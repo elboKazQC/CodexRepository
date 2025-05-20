@@ -15,3 +15,13 @@ seuils:
     bon: -75
     excellent: -65
     faible: -85
+wifi_thresholds:
+  signal:
+    weak: -70
+    critical: -80
+  packet_loss:
+    warning: 10
+    critical: 20
+  latency:
+    warning: 100
+    critical: 200

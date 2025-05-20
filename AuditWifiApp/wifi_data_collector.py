@@ -15,6 +15,8 @@ from typing import List, Optional, Dict
 from models.measurement_record import WifiMeasurement, PingMeasurement, NetworkStatus
 from models.wifi_record import WifiRecord
 from wifi.powershell_collector import PowerShellWiFiCollector
+from app_config import load_config
+from config_manager import ConfigurationManager
 
 # Constantes de configuration
 RETRY_CONFIG = {
@@ -24,14 +26,11 @@ RETRY_CONFIG = {
     'PING_TIMEOUT': 10,  # secondes
 }
 
-# Seuils de qualité WiFi
-WIFI_THRESHOLDS = {
-    'SIGNAL_WEAK': -70,    # dBm, seuil pour signal faible
-    'SIGNAL_CRITICAL': -80,  # dBm, seuil critique
-    'PACKET_LOSS_WARNING': 10,  # %, seuil d'avertissement pour perte de paquets
-    'PACKET_LOSS_CRITICAL': 20,  # %, seuil critique pour perte de paquets
-    'LATENCY_WARNING': 100,  # ms, seuil d'avertissement pour la latence
-    'LATENCY_CRITICAL': 200,  # ms, seuil critique pour la latence
+# Seuils par défaut pour la qualité WiFi
+DEFAULT_WIFI_THRESHOLDS = {
+    "signal": {"weak": -70, "critical": -80},
+    "packet_loss": {"warning": 10, "critical": 20},
+    "latency": {"warning": 100, "critical": 200},
 }
 
 def _percent_to_dbm(percent: int) -> int:
@@ -53,14 +52,19 @@ def _channel_to_frequency_mhz(channel: int) -> int:
 class WifiDataCollector:
     """Collecte des données WiFi et les stocke dans des enregistrements."""
 
-    def __init__(self, base_path: str = "logs_moxa"):
-        """Initialise le collecteur avec le chemin de base pour les logs"""
+    def __init__(self, base_path: str = "logs_moxa", config_manager: Optional[ConfigurationManager] = None):
+        """Initialise le collecteur avec le chemin de base et la configuration."""
         self.base_path = base_path
         self.current_cycle: int = 0
         self.current_zone: str = "Non spécifiée"
         self.current_location_tag: str = ""
         self.is_collecting = False
         self.measurement_lock = threading.Lock()
+        if config_manager is None:
+            cfg = load_config()
+            config_manager = ConfigurationManager(cfg)
+        self.config_manager = config_manager
+        self.wifi_thresholds = self.config_manager.get_config().get("wifi_thresholds", DEFAULT_WIFI_THRESHOLDS)
         self._setup_logging()
         self.ps_collector = PowerShellWiFiCollector()
         self.records: List[WifiRecord] = []
@@ -224,18 +228,24 @@ class WifiDataCollector:
         ping_meas = last_record.ping_measurement
 
         # Vérifier les critères dans l'ordre du plus critique au moins critique
-        if not wifi_meas or wifi_meas.signal_dbm <= WIFI_THRESHOLDS['SIGNAL_CRITICAL']:
+        signal_crit = self.wifi_thresholds['signal']['critical']
+        loss_warn = self.wifi_thresholds['packet_loss']['warning']
+        loss_crit = self.wifi_thresholds['packet_loss']['critical']
+        latency_warn = self.wifi_thresholds['latency']['warning']
+        latency_crit = self.wifi_thresholds['latency']['critical']
+
+        if not wifi_meas or wifi_meas.signal_dbm <= signal_crit:
             return NetworkStatus.CRITICAL
 
         if not ping_meas:
             return NetworkStatus.WARNING
 
-        if (ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_CRITICAL'] or
-            ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_CRITICAL']):
+        if (ping_meas.lost_percent >= loss_crit or
+            ping_meas.latency >= latency_crit):
             return NetworkStatus.CRITICAL
 
-        if (ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_WARNING'] or
-            ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_WARNING']):
+        if (ping_meas.lost_percent >= loss_warn or
+            ping_meas.latency >= latency_warn):
             return NetworkStatus.WARNING
 
         return NetworkStatus.GOOD
