@@ -12,27 +12,13 @@ import subprocess
 from datetime import datetime
 from typing import List, Optional, Dict
 
+from config_manager import ConfigurationManager
+from app_config import CONFIG_PATH
+
 from models.measurement_record import WifiMeasurement, PingMeasurement, NetworkStatus
 from models.wifi_record import WifiRecord
 from wifi.powershell_collector import PowerShellWiFiCollector
 
-# Constantes de configuration
-RETRY_CONFIG = {
-    'MAX_RETRIES': 3,
-    'RETRY_DELAY': 2,  # secondes
-    'SCAN_TIMEOUT': 10,  # secondes
-    'PING_TIMEOUT': 10,  # secondes
-}
-
-# Seuils de qualité WiFi
-WIFI_THRESHOLDS = {
-    'SIGNAL_WEAK': -70,    # dBm, seuil pour signal faible
-    'SIGNAL_CRITICAL': -80,  # dBm, seuil critique
-    'PACKET_LOSS_WARNING': 10,  # %, seuil d'avertissement pour perte de paquets
-    'PACKET_LOSS_CRITICAL': 20,  # %, seuil critique pour perte de paquets
-    'LATENCY_WARNING': 100,  # ms, seuil d'avertissement pour la latence
-    'LATENCY_CRITICAL': 200,  # ms, seuil critique pour la latence
-}
 
 def _percent_to_dbm(percent: int) -> int:
     """Convertit un pourcentage de signal en dBm (approximation)"""
@@ -53,9 +39,15 @@ def _channel_to_frequency_mhz(channel: int) -> int:
 class WifiDataCollector:
     """Collecte des données WiFi et les stocke dans des enregistrements."""
 
-    def __init__(self, base_path: str = "logs_moxa"):
-        """Initialise le collecteur avec le chemin de base pour les logs"""
-        self.base_path = base_path
+    def __init__(self, base_path: str | None = None, config_manager: ConfigurationManager | None = None):
+        """Initialise le collecteur avec les paramètres issus de la configuration."""
+        self.config_manager = config_manager or ConfigurationManager(path=CONFIG_PATH)
+        cfg = self.config_manager.get_config().get("wifi", {})
+        collector_cfg = cfg.get("collector", {})
+        self.retry_config = collector_cfg.get("retry", {})
+        self.thresholds = cfg.get("thresholds", {})
+
+        self.base_path = base_path or collector_cfg.get("base_path", "logs_moxa")
         self.current_cycle: int = 0
         self.current_zone: str = "Non spécifiée"
         self.current_location_tag: str = ""
@@ -224,18 +216,22 @@ class WifiDataCollector:
         ping_meas = last_record.ping_measurement
 
         # Vérifier les critères dans l'ordre du plus critique au moins critique
-        if not wifi_meas or wifi_meas.signal_dbm <= WIFI_THRESHOLDS['SIGNAL_CRITICAL']:
+        if not wifi_meas or wifi_meas.signal_dbm <= self.thresholds.get('signal_critical', -80):
             return NetworkStatus.CRITICAL
 
         if not ping_meas:
             return NetworkStatus.WARNING
 
-        if (ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_CRITICAL'] or
-            ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_CRITICAL']):
+        if (
+            ping_meas.lost_percent >= self.thresholds.get('packet_loss_critical', 20)
+            or ping_meas.latency >= self.thresholds.get('latency_critical', 200)
+        ):
             return NetworkStatus.CRITICAL
 
-        if (ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_WARNING'] or
-            ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_WARNING']):
+        if (
+            ping_meas.lost_percent >= self.thresholds.get('packet_loss_warning', 10)
+            or ping_meas.latency >= self.thresholds.get('latency_warning', 100)
+        ):
             return NetworkStatus.WARNING
 
         return NetworkStatus.GOOD
