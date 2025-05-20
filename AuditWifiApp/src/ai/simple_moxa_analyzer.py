@@ -10,6 +10,17 @@ from datetime import datetime
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from pathlib import Path
+from typing import Optional
+
+
+def _sanitize_additional_params(params: str, max_length: int = 500) -> str:
+    """Return params stripped of non-printable chars and validated by length."""
+    cleaned = "".join(ch for ch in params if ch.isprintable())
+    if len(cleaned) > max_length:
+        raise ValueError(
+            f"Paramètres supplémentaires trop longs (max {max_length} caractères)"
+        )
+    return cleaned
 
 def create_retry_session(
     retries=3,
@@ -79,7 +90,11 @@ def analyze_moxa_logs(logs, current_config, additional_params: str | None = None
     # Tronquer les logs si nécessaire
     truncated_logs = truncate_logs(logs)
 
-    extra = f"\nParamètres supplémentaires:\n{additional_params}" if additional_params else ""
+    sanitized_params: Optional[str] = None
+    if additional_params:
+        sanitized_params = _sanitize_additional_params(additional_params)
+
+    extra = f"\nParamètres supplémentaires:\n{sanitized_params}" if sanitized_params else ""
 
     prompt = f"""Analysez ces logs Moxa et la configuration actuelle.
 Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.
