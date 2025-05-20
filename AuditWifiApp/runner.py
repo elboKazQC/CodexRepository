@@ -146,6 +146,21 @@ class NetworkAnalyzerUI:
         self.moxa_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         input_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Zone d'édition de la configuration courante du Moxa
+        config_frame = ttk.LabelFrame(
+            self.moxa_frame,
+            text="Configuration Moxa actuelle (JSON) :",
+            padding=10,
+        )
+        config_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        self.moxa_config_text = tk.Text(config_frame, height=8, wrap=tk.WORD)
+        cfg_scroll = ttk.Scrollbar(config_frame, command=self.moxa_config_text.yview)
+        self.moxa_config_text.configure(yscrollcommand=cfg_scroll.set)
+        self.moxa_config_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+
         # Boutons de configuration
         config_btn_frame = ttk.Frame(self.moxa_frame)
         config_btn_frame.pack(pady=5)
@@ -254,6 +269,18 @@ class NetworkAnalyzerUI:
             self.analyze_button.config(state=tk.DISABLED)
             self.moxa_results.update()
 
+            # Récupérer la configuration depuis la zone de texte
+            try:
+                config_text = self.moxa_config_text.get('1.0', tk.END).strip()
+                if config_text:
+                    self.current_config = json.loads(config_text)
+            except json.JSONDecodeError:
+                messagebox.showerror(
+                    "Configuration invalide",
+                    "La configuration Moxa n'est pas un JSON valide."
+                )
+                return
+
             # Appel à l'API OpenAI avec la configuration courante
             analysis = analyze_moxa_logs(logs, self.current_config)
 
@@ -299,6 +326,8 @@ class NetworkAnalyzerUI:
                 with open(filepath, "r", encoding="utf-8") as f:
                     self.config_manager.config = json.load(f)
                 self.current_config = self.config_manager.get_config()
+                self.moxa_config_text.delete('1.0', tk.END)
+                self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
                 messagebox.showinfo("Configuration", f"Configuration chargée depuis {filepath}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Impossible de charger la configuration:\n{e}")
@@ -330,6 +359,8 @@ class NetworkAnalyzerUI:
                             parsed = val
                 self.config_manager.update_config(k, parsed)
             self.current_config = self.config_manager.get_config()
+            self.moxa_config_text.delete('1.0', tk.END)
+            self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
             dialog.destroy()
 
         ttk.Button(dialog, text="OK", command=save).grid(row=len(entries), column=0, padx=5, pady=10)
