@@ -40,31 +40,13 @@ def truncate_logs(logs, max_length=8000):
     return f"{logs[:half_length]}\n...[LOGS TRONQUÉS]...\n{logs[-half_length:]}"
 
 def get_api_key():
-    """
-    Récupère la clé API OpenAI depuis les différentes sources possibles.
-    Ordre de priorité:
-    1. Variable d'environnement OPENAI_API_KEY
-    2. Fichier de configuration config/api_config.json
-    """
-    # Vérifier la variable d'environnement
+    """Retourne la clé API OpenAI depuis la variable d'environnement."""
     api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        return api_key
-    
-    # Chercher dans le fichier de configuration
-    try:
-        config_path = Path(__file__).parents[3] / "config" / "api_config.json"
-        if config_path.exists():
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-                if "api_key" in config:
-                    # Définir la variable d'environnement pour les futurs appels
-                    os.environ["OPENAI_API_KEY"] = config["api_key"]
-                    return config["api_key"]
-    except Exception as e:
-        print(f"Warning: Could not read API key from config file: {e}")
-    
-    return None
+    if not api_key:
+        raise Exception(
+            "Clé API OpenAI non trouvée. Définissez la variable d'environnement OPENAI_API_KEY."
+        )
+    return api_key
 
 def analyze_moxa_logs(logs, current_config):
     """
@@ -81,8 +63,6 @@ def analyze_moxa_logs(logs, current_config):
         raise ValueError("Les logs sont vides")
         
     api_key = get_api_key()
-    if not api_key:
-        raise Exception("Clé API OpenAI non trouvée. Veuillez configurer la variable d'environnement OPENAI_API_KEY ou le fichier config/api_config.json")
 
     # Tronquer les logs si nécessaire
     truncated_logs = truncate_logs(logs)
