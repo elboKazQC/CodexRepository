@@ -24,7 +24,8 @@ class MoxaLogAnalyzer:
             'remote_connection_check': None,
             'wmm_enabled': None,
             'turbo_roaming': None,
-            'ap_alive_check': None
+            'ap_alive_check': None,
+            'auth_timeout': None
         }
 
         # Métriques par défaut
