@@ -70,3 +70,16 @@ def test_moxa_ui_integration():
     with patch('src.ai.simple_moxa_analyzer.create_retry_session', return_value=session):
         result = analyze_moxa_logs("log", {"roaming_mechanism": "signal"})
         assert "Analyse" in result
+
+
+
+def test_deauth_metrics(moxa_logs_with_deauth):
+    """Verify that deauthentication events are counted"""
+    from moxa_log_analyzer import MoxaLogAnalyzer
+
+    analyzer = MoxaLogAnalyzer()
+    result = analyzer.analyze_logs(moxa_logs_with_deauth, {})
+
+    assert result["analyse_detaillee"]["deauth_requests"]["total"] == 1
+    assert result["analyse_detaillee"]["deauth_requests"]["par_ap"]["aa:bb:cc:dd:ee:ff"] == 1
+
