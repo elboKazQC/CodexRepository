@@ -13,8 +13,8 @@ from moxa_log_analyzer import MoxaLogAnalyzer
 from history_manager import HistoryManager
 from config_manager import ConfigurationManager
 
-# Configuration du chemin par défaut
-CONFIG_PATH = Path(__file__).parent / "config.yaml"
+from app_config import CONFIG_PATH
+
 
 
 class NetworkAnalyzer:
