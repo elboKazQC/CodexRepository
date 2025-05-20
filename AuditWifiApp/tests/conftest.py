@@ -134,6 +134,8 @@ def patch_ttk_style():
         def config(self, **kwargs):
             self.options.update(kwargs)
 
+        configure = config
+
         def __getitem__(self, key):
             return self.options.get(key)
 
@@ -143,6 +145,8 @@ def patch_ttk_style():
         patch('log_manager.messagebox'),
 
         patch('tkinter.Text'),
+        patch('tkinter.ttk.Treeview', DummyTreeview),
+        patch('tkinter.ttk.Button', DummyButton),
         patch('tkinter.ttk.OptionMenu'),
         patch('tkinter.Menu'),
         patch('matplotlib.backends.backend_tkagg.FigureCanvasTkAgg'),
