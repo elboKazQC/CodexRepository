@@ -87,3 +87,14 @@ def test_moxa_ui_integration(mock_tk_root):
         
         # Call analyze_logs method
         ui._analyze_logs()
+
+
+def test_deauth_metrics(moxa_logs_with_deauth):
+    """Verify that deauthentication events are counted"""
+    from moxa_log_analyzer import MoxaLogAnalyzer
+
+    analyzer = MoxaLogAnalyzer()
+    result = analyzer.analyze_logs(moxa_logs_with_deauth, {})
+
+    assert result["analyse_detaillee"]["deauth_requests"]["total"] == 1
+    assert result["analyse_detaillee"]["deauth_requests"]["par_ap"]["aa:bb:cc:dd:ee:ff"] == 1

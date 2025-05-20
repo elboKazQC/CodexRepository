@@ -577,6 +577,10 @@ class NetworkAnalyzerUI:
         messagebox.showerror("Erreur", message)
         self.update_status(f"ERREUR: {message}")
 
+# Alias for backward compatibility with older tests
+class MoxaAnalyzerUI(NetworkAnalyzerUI):
+    pass
+
 def main():
     """Point d'entrée de l'application"""
     try:

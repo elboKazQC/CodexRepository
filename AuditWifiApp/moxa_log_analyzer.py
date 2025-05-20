@@ -3,6 +3,7 @@
 import json
 import requests
 import os
+import re
 
 class MoxaLogAnalyzer:
     """
@@ -36,7 +37,8 @@ class MoxaLogAnalyzer:
             "ping_pong_events": 0,
             "authentication_failures": 0,
             "snr_drops": [],
-            "ap_changes": []
+            "ap_changes": [],
+            "deauth_requests": {"total": 0, "per_ap": {}}
         }
 
         # Initialize weights for scoring
@@ -117,8 +119,8 @@ class MoxaLogAnalyzer:
                         }
                     },
                     "deauth_requests": {
-                        "total": 0,  # À implémenter comptage des deauth
-                        "par_ap": {},  # À remplir avec les stats par AP
+                        "total": self.metrics["deauth_requests"]["total"],
+                        "par_ap": self.metrics["deauth_requests"]["per_ap"],
                         "details": {
                             "raisons": ["inactivite", "surcharge"] if self.metrics["failed_roaming"] > 0 else [],
                             "impact": "À évaluer selon le nombre d'événements"
@@ -152,7 +154,8 @@ class MoxaLogAnalyzer:
             "authentication_failures": 0,
             "roaming_success_rate": 0,
             "snr_drops": [],
-            "ap_changes": []
+            "ap_changes": [],
+            "deauth_requests": {"total": 0, "per_ap": {}}
         }
 
     def _process_log_line(self, line):
@@ -248,9 +251,21 @@ class MoxaLogAnalyzer:
         if "authentication timeout" in context.lower():
             self.metrics["authentication_failures"] += 1
 
-        if "deauthentication" in context.lower():
-            # TODO: Implémenter l'analyse des deauth requests
-            pass
+        if "deauthentication" in context.lower() or "deauth request" in context.lower():
+            for line in context.split("\n"):
+                lowered = line.lower()
+                if "deauthentication" in lowered or "deauth request" in lowered:
+                    self.metrics["deauth_requests"]["total"] += 1
+                    mac = None
+                    if "[mac:" in lowered:
+                        mac = lowered.split("[mac:")[1].split("]")[0].strip()
+                    else:
+                        mac_match = re.search(r"([0-9a-f]{2}:){5}[0-9a-f]{2}", lowered)
+                        if mac_match:
+                            mac = mac_match.group(0)
+                    if mac:
+                        self.metrics["deauth_requests"]["per_ap"].setdefault(mac, 0)
+                        self.metrics["deauth_requests"]["per_ap"][mac] += 1
 
     def _calculate_score(self):
         """Calcule un score global basé sur les métriques avec un système pondéré."""
@@ -413,6 +428,14 @@ class MoxaLogAnalyzer:
                 "parametres": {
                     "max_transmission_power": "Augmenter si < 20 dBm"
                 }
+            })
+
+        if self.metrics["deauth_requests"]["total"] > 3:
+            recommendations.append({
+                "probleme": f"Nombre élevé de deauthentications ({self.metrics['deauth_requests']['total']})",
+                "solution": "Analyser les causes possibles (interférences, configuration de sécurité) et vérifier les AP concernés",
+                "priorite": 2,
+                "parametres": {}
             })
 
         return recommendations
