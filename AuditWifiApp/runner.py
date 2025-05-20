@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -230,7 +230,14 @@ class NetworkAnalyzerUI:
     def start_collection(self):
         """Démarre la collecte WiFi"""
         try:
-            if self.analyzer.start_analysis():
+            tag = simpledialog.askstring(
+                "Tag de localisation",
+                "Indiquez l'emplacement actuel (ex: usine 1, sous-sol)",
+                parent=self.master
+            )
+            if tag is None:
+                return
+            if self.analyzer.start_analysis(location_tag=tag.strip()):
                 self.samples = []
                 self.start_button.config(state=tk.DISABLED)
                 self.stop_button.config(state=tk.NORMAL)
