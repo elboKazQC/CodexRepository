@@ -1,8 +1,25 @@
 import csv
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import tkinter as tk
 
-from runner import NetworkAnalyzerUI
+from ui.wifi_view import WifiView
+
+
+class DummyAnalyzer:
+    """Analyzer stub for WifiView tests."""
+
+    def __init__(self) -> None:
+        self.is_collecting = False
+        self.wifi_collector = MagicMock()
+
+    def start_analysis(self) -> bool:
+        return True
+
+    def stop_analysis(self) -> None:
+        self.is_collecting = False
+
+    def export_data(self, filepath: str) -> None:
+        pass
 
 
 def test_scan_wifi_populates_tree(mock_tk_root):
@@ -11,14 +28,13 @@ def test_scan_wifi_populates_tree(mock_tk_root):
         {"ssid": "AP2", "signal": -50, "channel": 36, "frequency": "5 GHz"},
     ]
     with patch("runner.scan_wifi", return_value=mock_results) as mock_scan:
-        ui = NetworkAnalyzerUI(mock_tk_root)
+        ui = WifiView(mock_tk_root, DummyAnalyzer())
         ui.scan_nearby_aps()
         mock_scan.assert_called_once()
         items = ui.scan_tree.get_children()
         assert len(items) == 2
         first = ui.scan_tree.item(items[0])["values"]
         assert first[0] == "AP1"
-        # export button should be enabled
         assert ui.export_scan_button["state"] == tk.NORMAL
 
 
@@ -27,7 +43,7 @@ def test_export_scan_results(tmp_path, mock_tk_root):
         {"ssid": "AP1", "signal": -40, "channel": 1, "frequency": "2.4 GHz"}
     ]
     with patch("runner.scan_wifi", return_value=mock_results):
-        ui = NetworkAnalyzerUI(mock_tk_root)
+        ui = WifiView(mock_tk_root, DummyAnalyzer())
         ui.scan_nearby_aps()
     export_file = tmp_path / "scan.csv"
     with patch("tkinter.filedialog.asksaveasfilename", return_value=str(export_file)):
@@ -40,11 +56,35 @@ def test_export_scan_results(tmp_path, mock_tk_root):
 
 
 def test_start_collection_triggers_scan(mock_tk_root):
-    """start_collection should scan WiFi networks after starting."""
     with patch("runner.scan_wifi") as mock_scan, \
-         patch.object(NetworkAnalyzerUI, "update_data"), \
-         patch.object(NetworkAnalyzerUI, "update_status"):
-        ui = NetworkAnalyzerUI(mock_tk_root)
+         patch.object(WifiView, "update_data"), \
+         patch.object(WifiView, "update_status"):
+        ui = WifiView(mock_tk_root, DummyAnalyzer())
         with patch.object(ui.analyzer, "start_analysis", return_value=True):
             ui.start_collection()
         mock_scan.assert_called_once()
+
+
+def test_filter_and_sorting(mock_tk_root):
+    """Filtering by SSID and sorting by column should refresh the tree."""
+    mock_results = [
+        {"ssid": "AP1", "signal": -50, "channel": 1, "frequency": "2.4 GHz"},
+        {"ssid": "AP2", "signal": -40, "channel": 6, "frequency": "2.4 GHz"},
+        {"ssid": "Guest", "signal": -60, "channel": 11, "frequency": "2.4 GHz"},
+    ]
+    with patch("runner.scan_wifi", return_value=mock_results):
+        ui = WifiView(mock_tk_root, DummyAnalyzer())
+        ui.scan_nearby_aps()
+
+    ui._on_heading_click("signal")
+    items = ui.scan_tree.get_children()
+    assert ui.scan_tree.item(items[0])["values"][0] == "Guest"
+
+    ui._on_heading_click("signal")
+    items = ui.scan_tree.get_children()
+    assert ui.scan_tree.item(items[0])["values"][0] == "AP2"
+
+    ui.scan_filter_var.set("AP")
+    items = ui.scan_tree.get_children()
+    assert len(items) == 2
+    assert ui.scan_tree.item(items[0])["values"][0] == "AP2"

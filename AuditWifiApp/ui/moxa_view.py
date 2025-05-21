@@ -114,6 +114,27 @@ class MoxaView:
         self.export_button.pack(pady=5)
 
     # ------------------------------------------------------------------
+    # Helper actions
+    # ------------------------------------------------------------------
+    def load_example_log(self) -> None:
+        """Load example log file into the input text widget."""
+        try:
+            with open(self.example_log_path, "r", encoding="utf-8") as fh:
+                content = fh.read()
+        except Exception:
+            messagebox.showerror("Erreur", "Impossible de charger l'exemple de log")
+            return
+        self.moxa_input.delete('1.0', tk.END)
+        self.moxa_input.insert('1.0', content)
+
+    def show_metrics_help(self) -> None:
+        """Display a short help message about available metrics."""
+        message = (
+            "Collez vos journaux Moxa ici pour obtenir une analyse et des recommandations."
+        )
+        messagebox.showinfo("Aide", message)
+
+    # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
     def analyze_moxa_logs(self) -> None:

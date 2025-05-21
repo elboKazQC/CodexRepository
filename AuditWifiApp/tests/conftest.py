@@ -105,7 +105,7 @@ def patch_ttk_style():
             self._items = []
             self.headings = {}
 
-        def heading(self, col, text=None):
+        def heading(self, col, text=None, command=None):
             self.headings[col] = text
 
         def column(self, col, width=None):
@@ -117,6 +117,9 @@ def patch_ttk_style():
         def insert(self, parent, index, values=()):
             self._items.append(values)
             return str(len(self._items))
+
+        def delete(self, item):
+            self._items = []
 
         def get_children(self):
             return [str(i + 1) for i in range(len(self._items))]
@@ -139,45 +142,23 @@ def patch_ttk_style():
         def __getitem__(self, key):
             return self.options.get(key)
 
-    class DummyText:
+
+    class DummyStringVar:
         def __init__(self, *args, **kwargs):
-            self.content = ""
-            self.options = {}
+            self._value = ""
+            self._callbacks = []
 
-        def pack(self, *args, **kwargs):
-            pass
+        def get(self) -> str:
+            return self._value
 
-        def get(self, *args, **kwargs):
-            return self.content
+        def set(self, value: str) -> None:
+            self._value = value
+            for cb in self._callbacks:
+                cb()
 
-        def insert(self, index, text):
-            self.content += text
+        def trace_add(self, mode: str, callback):
+            self._callbacks.append(callback)
 
-        def delete(self, *args, **kwargs):
-            self.content = ""
-
-        def configure(self, **kwargs):
-            self.options.update(kwargs)
-
-        def yview(self, *args, **kwargs):
-            pass
-
-        config = configure
-
-        def tag_config(self, *args, **kwargs):
-            pass
-
-        def tag_add(self, *args, **kwargs):
-            pass
-
-        def tag_remove(self, *args, **kwargs):
-            pass
-
-        def bind(self, *args, **kwargs):
-            pass
-
-        def __getitem__(self, key):
-            return self.options.get(key)
 
     patches = [
         patch('tkinter.ttk.Style'),
@@ -185,7 +166,9 @@ def patch_ttk_style():
         patch('log_manager.messagebox'),
 
         patch('tkinter.Text'),
-        patch('tkinter.scrolledtext.ScrolledText', DummyText),
+
+        patch('tkinter.StringVar', DummyStringVar),
+
         patch('tkinter.ttk.Treeview', DummyTreeview),
         patch('tkinter.ttk.Button', DummyButton),
         patch('tkinter.ttk.OptionMenu'),
