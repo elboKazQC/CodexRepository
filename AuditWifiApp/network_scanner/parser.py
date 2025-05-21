@@ -3,69 +3,11 @@ import re
 import os
 from typing import List
 
-def percentage_to_dbm(percentage):
-    """Convertit un pourcentage de signal en dBm (approximation)"""
-    # Une approximation basée sur l'échelle généralement utilisée
-    if percentage >= 100:
-        return -30
-    elif percentage >= 80:
-        return -50
-    elif percentage >= 60:
-        return -60
-    elif percentage >= 40:
-        return -67
-    elif percentage >= 20:
-        return -75
-    else:
-        return -85
-
-def calculate_channel_from_frequency(frequency):
-    """Calcule le numéro de canal Wi-Fi à partir de la fréquence en MHz"""
-    # Canaux 2.4 GHz (2412-2484 MHz)
-    if 2412 <= frequency <= 2484:
-        if frequency == 2484:  # Canal 14 spécifique (Japon uniquement)
-            return 14
-        elif frequency == 2407:  # Canal 0 (rare)
-            return 0
-        elif 2412 <= frequency <= 2472:  # Canaux 1-13
-            return (frequency - 2412) // 5 + 1
-        # Fallback pour les cas limites
-        return int((frequency - 2407) / 5)
-    
-    # Canaux 5 GHz (de nombreuses bandes)
-    elif 5170 <= frequency <= 5825:
-        # UNII-1 (36-48)
-        if 5170 <= frequency <= 5240:
-            return (frequency - 5170) // 5 + 34  # Commence au canal 36 (-2 d'offset)
-        # UNII-2 (52-64)
-        elif 5250 <= frequency <= 5330:
-            return (frequency - 5250) // 5 + 52
-        # UNII-2e (100-144)
-        elif 5490 <= frequency <= 5710:
-            return (frequency - 5490) // 5 + 100
-        # UNII-3 (149-165)
-        elif 5735 <= frequency <= 5835:
-            return (frequency - 5735) // 5 + 149
-        # Fallback pour les cas limites dans la bande 5 GHz
-        return ((frequency - 5000) // 5) // 5 * 4 + 32
-    
-    # Bande 6 GHz (nouveaux canaux Wi-Fi 6E)
-    elif 5945 <= frequency <= 7125:
-        # Simplification: canal = (freq - 5950) / 5 + 1
-        return (frequency - 5950) // 5 + 1
-    
-    # Si on ne peut pas déterminer le canal
-    return 0  # Canal inconnu
-
-def frequency_to_band(frequency):
-    """Détermine la bande de fréquence (2.4 GHz, 5 GHz ou 6 GHz) à partir de la fréquence en MHz"""
-    if 2400 <= frequency <= 2500:
-        return "2.4 GHz"
-    elif 5100 <= frequency <= 5900:
-        return "5 GHz"
-    elif 5945 <= frequency <= 7125:
-        return "6 GHz"
-    return "Inconnu"
+from .utils import (
+    percentage_to_dbm,
+    calculate_channel_from_frequency,
+    frequency_to_band,
+)
 
 def detect_wifi_driver_info():
     """Détecte les informations sur les pilotes Wi-Fi et les interfaces"""
