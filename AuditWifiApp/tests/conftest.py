@@ -139,12 +139,53 @@ def patch_ttk_style():
         def __getitem__(self, key):
             return self.options.get(key)
 
+    class DummyText:
+        def __init__(self, *args, **kwargs):
+            self.content = ""
+            self.options = {}
+
+        def pack(self, *args, **kwargs):
+            pass
+
+        def get(self, *args, **kwargs):
+            return self.content
+
+        def insert(self, index, text):
+            self.content += text
+
+        def delete(self, *args, **kwargs):
+            self.content = ""
+
+        def configure(self, **kwargs):
+            self.options.update(kwargs)
+
+        def yview(self, *args, **kwargs):
+            pass
+
+        config = configure
+
+        def tag_config(self, *args, **kwargs):
+            pass
+
+        def tag_add(self, *args, **kwargs):
+            pass
+
+        def tag_remove(self, *args, **kwargs):
+            pass
+
+        def bind(self, *args, **kwargs):
+            pass
+
+        def __getitem__(self, key):
+            return self.options.get(key)
+
     patches = [
         patch('tkinter.ttk.Style'),
         patch('tkinter.messagebox'),
         patch('log_manager.messagebox'),
 
         patch('tkinter.Text'),
+        patch('tkinter.scrolledtext.ScrolledText', DummyText),
         patch('tkinter.ttk.Treeview', DummyTreeview),
         patch('tkinter.ttk.Button', DummyButton),
         patch('tkinter.ttk.OptionMenu'),

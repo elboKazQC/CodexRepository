@@ -1,3 +1,4 @@
+
 from unittest.mock import MagicMock, patch
 
 from ui.wifi_view import WifiView
@@ -50,3 +51,4 @@ def test_update_stats_colours_labels(mock_tk_root):
         assert "54 Mbps" in view.tx_label.cget("text")
         assert view.signal_label.cget("foreground") == "green"
         assert view.quality_label.cget("foreground") == "green"
+
