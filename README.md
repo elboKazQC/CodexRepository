@@ -28,7 +28,12 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    `.env` is ignored by Git so your key stays local.
 5. Launch the user interface:
    ```bash
-   python AuditWifiApp/runner.py
+   python AuditWifiApp/main.py
+   ```
+5. If you use the bundled VS Code extension, build the TypeScript files first:
+   ```bash
+   npm install
+   npm run compile
    ```
 
 ## Configuration
@@ -51,6 +56,11 @@ wifi_thresholds:
 ```
 
 ## Usage
+
+Start the application with:
+```bash
+python AuditWifiApp/main.py
+```
 
 When analyzing Moxa logs, paste them in the dedicated tab. Optionally fill in
 the **Paramètres supplémentaires** field to give extra context to the AI. For
