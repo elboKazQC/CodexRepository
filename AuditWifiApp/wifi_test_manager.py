@@ -3,29 +3,53 @@
 
 import threading
 import time
-from typing import List, Optional, Callable
+"""Gestionnaire de tests WiFi.
+
+Ce module orchestre les sessions de tests WiFi en démarrant et arrêtant la
+collecte de données via :class:`WifiDataCollector`. Les mesures sont récupérées
+de manière asynchrone dans un thread dédié afin de ne pas bloquer l'interface
+utilisateur.
+"""
+
+from typing import Callable, List, Optional
+
 from wifi_data_collector import WifiDataCollector
-from models.measurement_record import WifiMeasurement, MeasurementRecord
+from models.wifi_record import WifiRecord
 
 class WifiTestManager:
-    """
-    Gère les tests Wi-Fi, y compris le démarrage, l'arrêt et la collecte des résultats.
+    """Orchestre l'exécution d'un test WiFi.
+
+    Le gestionnaire démarre et arrête la collecte via :class:`WifiDataCollector`
+    et conserve les enregistrements récupérés. Il peut notifier un consommateur
+    externe via un callback à chaque nouvelle mesure.
     """
 
     def __init__(self, data_collector: WifiDataCollector) -> None:
-        """Initialise le gestionnaire de test Wi-Fi"""
+        """Initialiser le gestionnaire.
+
+        Parameters
+        ----------
+        data_collector : WifiDataCollector
+            Instance responsable de la collecte des mesures WiFi.
+        """
         self.data_collector: WifiDataCollector = data_collector
         self.test_running: bool = False  # Unique flag for test state
-        self.collected_data: List[MeasurementRecord] = []
+        self.collected_data: List[WifiRecord] = []
         self.test_thread: Optional[threading.Thread] = None
         self.current_zone: str = "Non spécifiée"
-        self.callback: Optional[Callable[[MeasurementRecord], None]] = None
+        self.callback: Optional[Callable[[WifiRecord], None]] = None
         self.error_count: int = 0
         self.max_errors: int = 3
         print("WifiTestManager initialisé")  # Debug logging
 
-    def start_wifi_test(self, callback: Optional[Callable[[MeasurementRecord], None]] = None) -> None:
-        """Démarre un nouveau test WiFi avec callback optionnel pour les résultats"""
+    def start_wifi_test(self, callback: Optional[Callable[[WifiRecord], None]] = None) -> None:
+        """Démarrer la collecte dans un thread séparé.
+
+        Parameters
+        ----------
+        callback : Callable[[WifiRecord], None], optional
+            Fonction exécutée à chaque nouvelle mesure collectée.
+        """
         if self.test_running:
             print("Un test est déjà en cours")  # Debug logging
             return
@@ -48,7 +72,13 @@ class WifiTestManager:
         print("Thread de test démarré")  # Debug logging
 
     def _run_test(self) -> None:
-        """Exécute le test WiFi en collectant des données"""
+        """Boucle interne de collecte.
+
+        Cette méthode est exécutée dans un thread dédié. Elle récupère
+        périodiquement la dernière mesure depuis ``WifiDataCollector`` et la
+        stocke dans :attr:`collected_data`. En cas d'erreur répétée la collecte
+        est arrêtée automatiquement.
+        """
         print("Thread de test WiFi démarré")  # Debug logging
         while self.test_running and self.error_count < self.max_errors:
             try:
@@ -81,8 +111,14 @@ class WifiTestManager:
 
         print("Thread de test WiFi terminé")  # Debug logging
 
-    def stop_wifi_test(self) -> List[MeasurementRecord]:
-        """Arrête le test WiFi en cours"""
+    def stop_wifi_test(self) -> List[WifiRecord]:
+        """Arrêter proprement la collecte.
+
+        Returns
+        -------
+        list[WifiRecord]
+            L'ensemble des mesures accumulées pendant le test.
+        """
         print("Arrêt du test WiFi")  # Debug logging
         self.test_running = False
 
@@ -96,16 +132,16 @@ class WifiTestManager:
         return self.collected_data
 
     def set_zone(self, zone_name: str) -> None:
-        """Définit la zone actuelle pour les tests"""
+        """Définir la zone géographique associée au test."""
         self.current_zone = zone_name
         if hasattr(self.data_collector, 'current_zone'):
             self.data_collector.current_zone = zone_name
 
     def set_location_tag(self, tag: str) -> None:
-        """Définit le tag de localisation pour les mesures actuelles"""
+        """Renseigner un tag permettant d'identifier la localisation précise."""
         if hasattr(self.data_collector, 'current_location_tag'):
             self.data_collector.current_location_tag = tag
 
     def is_collecting(self) -> bool:
-        """Retourne True si la collecte de données est active"""
+        """Indiquer si un test est en cours."""
         return self.test_running
