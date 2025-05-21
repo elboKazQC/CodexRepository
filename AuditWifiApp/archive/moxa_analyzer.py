@@ -2,6 +2,8 @@
 import re
 import json
 import statistics
+import os
+import tempfile
 from datetime import datetime
 
 class MoxaLogAnalyzer:
@@ -1110,5 +1112,19 @@ class MoxaLogAnalyzer:
         
         if results_filepath:
             self.save_results(results_filepath)
-        
+
         return True
+
+    def analyze_logs(self, log_content, results_filepath=None):
+        """Analyse le contenu de logs fourni directement.
+
+        Cette méthode crée un fichier temporaire avec le contenu des logs puis
+        délègue l'analyse à :py:meth:`analyze_log`. Elle permet de conserver la
+        même interface ``analyze_logs`` que les autres analyseurs."""
+        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tmp:
+            tmp.write(log_content)
+            path = tmp.name
+        try:
+            return self.analyze_log(path, results_filepath)
+        finally:
+            os.remove(path)

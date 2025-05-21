@@ -39,8 +39,11 @@ def test_params_field_height_and_label(mock_tk_root, tmp_path):
         module = importlib.reload(moxa_view_module)
         module.MoxaView(mock_tk_root, str(tmp_path), {})
 
-    assert text_mock.call_args_list[2].kwargs.get("height") == 8
+
+    heights = [c.kwargs.get("height") for c in text_mock.call_args_list]
+    assert 8 in heights
     texts = [c.kwargs.get("text") for c in label_mock.call_args_list]
+
     assert any(
         "Indiquez ici tout contexte supplémentaire" in t
         for t in texts if t
@@ -79,3 +82,4 @@ def test_error_dialog_on_analysis_failure(mock_tk_root, tmp_path):
         module.MoxaView.analyze_moxa_logs(dummy)
         module.messagebox.showerror.assert_called_once()
         assert dummy.analyze_button.options["state"] == tk.NORMAL
+

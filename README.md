@@ -2,16 +2,18 @@
 
 AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. It collects signal information, analyses Moxa logs with AI and highlights weak Wi-Fi zones so that AMRs remain connected. The latest version also suggests concrete updates to your Moxa JSON configuration whenever issues are detected.
 
+> **Note**: Much of this codebase has been generated with AI assistance. The accompanying guidelines are meant as a starting point and can be adjusted as the project evolves.
+
 ## Setup
 
 1. Install Python 3.11 or newer.
-2. Create a virtual environment and install dependencies:
+2. Run the setup script to create the virtual environment and install
+   dependencies:
    ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ./setup.ps1
+   ./setup.ps1 [-f] [--offline]
    ```
-   On Linux/macOS you can run `bash setup.sh` instead.
+   On Linux/macOS run `bash setup.sh [-f] [--offline]` instead. The script
+   also copies `.env.example` to `AuditWifiApp/.env` if needed.
 3. Install Node.js (18+), then install the TypeScript tooling and build the extension:
    ```bash
    cd AuditWifiApp
@@ -19,12 +21,8 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    npm run build
    cd ..
    ```
-4. Copy `.env.example` to `.env` at the project root and place your API key inside:
-   ```bash
-   cp .env.example .env
-   # then edit .env and set your key
-   OPENAI_API_KEY=your-key
-   ```
+4. Edit `AuditWifiApp/.env` and set your API key. The setup script copies
+   `.env.example` there automatically if the file is missing.
    `.env` is ignored by Git so your key stays local.
 5. Launch the user interface:
    ```bash
@@ -75,7 +73,9 @@ Two buttons help manage the configuration:
 Make sure dependencies are installed with the setup script before launching tests.
 
 ```bash
+
 bash setup.sh    # on Windows use ./setup.ps1
+
 pytest -v
 npm test # run TypeScript unit tests
 ```
@@ -103,3 +103,9 @@ to manage these records:
 
 The UI exposes a new **Historique** tab that lists available reports and lets
 you open them with your default viewer.
+
+## Ideas for improvement
+
+- Add a dashboard summarizing key metrics from multiple audits
+- Generate heatmaps automatically from the collected GPS coordinates
+- Provide a headless mode to run audits without the UI

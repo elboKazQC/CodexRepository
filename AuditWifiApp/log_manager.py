@@ -48,7 +48,9 @@ class LogManager:
                 if "Roaming" in log_content or "roaming" in log_content:
                     # Utiliser l'analyseur spécialisé pour le roaming Moxa
                     try:
-                        result = self.moxa_roaming_analyzer.analyze_logs(log_content, current_config)
+                        # Utilise la méthode "analyze" de l'analyseur de roaming
+                        # depuis que "analyze_logs" a été renommée.
+                        result = self.moxa_roaming_analyzer.analyze(log_content, current_config)
                         # Vérifier que le résultat est bien un dictionnaire JSON valide
                         if not isinstance(result, dict):
                             raise ValueError("Résultat d'analyse invalide. Format JSON attendu.")
