@@ -14,6 +14,10 @@ Tu es un assistant IA spécialisé en développement Python/CODESYS pour l’aut
 
 Merci de suivre ces instructions à chaque modification du code.
 
+> **Note** : Ce projet est en grande partie généré par une IA.
+> Les règles ci-dessus servent de cadre initial mais peuvent être
+> adaptées selon vos besoins et l'évolution du projet.
+
 # AuditWifiApp
 
 ## Objectif

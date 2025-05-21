@@ -2,6 +2,8 @@
 
 AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. It collects signal information, analyses Moxa logs with AI and highlights weak Wi-Fi zones so that AMRs remain connected. The latest version also suggests concrete updates to your Moxa JSON configuration whenever issues are detected.
 
+> **Note**: Much of this codebase has been generated with AI assistance. The accompanying guidelines are meant as a starting point and can be adjusted as the project evolves.
+
 ## Setup
 
 1. Install Python 3.11 or newer.
@@ -72,7 +74,7 @@ Make sure dependencies are installed with the setup script before launching test
 
 ```bash
 
-bash setup.sh [-f] [--offline]    # on Windows use ./setup.ps1
+bash setup.sh    # on Windows use ./setup.ps1
 
 pytest -v
 npm test # run TypeScript unit tests
@@ -101,3 +103,9 @@ to manage these records:
 
 The UI exposes a new **Historique** tab that lists available reports and lets
 you open them with your default viewer.
+
+## Ideas for improvement
+
+- Add a dashboard summarizing key metrics from multiple audits
+- Generate heatmaps automatically from the collected GPS coordinates
+- Provide a headless mode to run audits without the UI
