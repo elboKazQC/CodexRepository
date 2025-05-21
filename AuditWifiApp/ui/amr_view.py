@@ -90,7 +90,10 @@ class AmrMonitorView:
         ip = self.ip_entry_var.get().strip()
         if not ip or ip in self.rows:
             return
-        row = ttk.Frame(self.list_frame, name=ip)
+        # Widget names in Tkinter cannot contain dots or start with a digit.
+        # Since IP addresses do not meet these requirements, avoid using the
+        # ``name`` parameter and rely on the ``rows`` dict to map IPs to widgets.
+        row = ttk.Frame(self.list_frame)
         canvas = tk.Canvas(row, width=16, height=16, highlightthickness=0)
         canvas.create_oval(2, 2, 14, 14, fill="gray")
         canvas.pack(side=tk.LEFT, padx=2)
