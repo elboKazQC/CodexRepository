@@ -260,3 +260,17 @@ class NetworkAnalyzer:
         log_content = "\n".join(line for line in log_content.split("\n") if line.strip())
 
         return log_content
+
+    def start_wifi_collection(self) -> None:
+        """Démarre la collecte de données WiFi."""
+        if not self.is_collecting:
+            self.wifi_collector.start_collection()
+            self.is_collecting = True
+            self.logger.info("Analyse réseau démarrée")
+
+    def stop_wifi_collection(self) -> None:
+        """Arrête la collecte de données WiFi."""
+        if self.is_collecting:
+            self.wifi_collector.stop_collection()
+            self.is_collecting = False
+            self.logger.info("Analyse réseau arrêtée")

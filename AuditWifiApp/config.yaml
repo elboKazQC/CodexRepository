@@ -1,6 +1,6 @@
 interface:
   refresh_rate: 2000
-  theme: noovelia
+  theme: darkly
   window:
     height: 650
     title: Audit Wifi App
@@ -9,52 +9,45 @@ logging:
   directory: logs
   enabled: true
   format: csv
+moxa_analyzer:
+  max_tokens: 2000
+network_analyzer:
+  default_moxa_config:
+    max_transmission_power: 20
+    min_transmission_rate: 6
+    roaming_mechanism: signal_strength
+    rts_threshold: 512
+  moxa_patterns:
+  - '[WLAN] Roaming from AP'
+  - Authentication request
+  - Deauthentication from AP
+  - 'SNR:'
+  - 'Noise floor:'
+  - TransferRingToThread
+  - AUTH-RECEIVE
+  - ASSOC-STATE
+  - WLAN-RECEIVE
 seuils:
   ping: 100
   rssi:
     bon: -75
     excellent: -65
     faible: -85
-
-wifi_thresholds:
-  signal:
-    weak: -70
-    critical: -80
-  packet_loss:
-    warning: 10
-    critical: 20
-  latency:
-    warning: 100
-    critical: 200
-
-
 wifi:
   collector:
     base_path: logs_moxa
     retry:
       max_retries: 3
+      ping_timeout: 10
       retry_delay: 2
       scan_timeout: 10
-      ping_timeout: 10
-
-
-network_analyzer:
-  moxa_patterns:
-    - "[WLAN] Roaming from AP"
-    - "Authentication request"
-    - "Deauthentication from AP"
-    - "SNR:"
-    - "Noise floor:"
-    - "TransferRingToThread"
-    - "AUTH-RECEIVE"
-    - "ASSOC-STATE"
-    - "WLAN-RECEIVE"
-  default_moxa_config:
-    min_transmission_rate: 6
-    max_transmission_power: 20
-    rts_threshold: 512
-    roaming_mechanism: signal_strength
-
-moxa_analyzer:
-  max_tokens: 2000
-
+wifi_thresholds:
+  latency:
+    critical: 200
+    warning: 100
+  packet_loss:
+    critical: 20
+    warning: 10
+  signal:
+    critical: -80
+    weak: -70

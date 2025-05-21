@@ -33,74 +33,105 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         master: Optional[Union[tk.Tk, 'ttkbootstrap.Window']] = None,
         theme: Optional[str] = None,
     ):
-        # Liste des thèmes disponibles
+        # Define available themes
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
-
-            # Ajout du thème interne "noovelia" au groupe sombre pour permettre
-            # son chargement via la configuration YAML et les tests unitaires.
-
-            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero", "noovelia"]
+            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero"]
         }
 
-        # Load theme from YAML config if not provided
+        # Create a flat list of all themes
+        all_themes = [theme for category in self.available_themes.values() for theme in category]
+
+        # Load config and validate theme
         self._config = load_config()
-        if theme is None:
-            theme = self._config.get("interface", {}).get("theme", "darkly")
+        config_theme = self._config.get("interface", {}).get("theme", "darkly")
 
+        # Validate and set theme
+        self._theme = theme or config_theme
+        if self._theme not in all_themes:
+            self._theme = "darkly"  # Default to darkly if invalid theme
+            self._config["interface"]["theme"] = self._theme
+            save_config(self._config)
 
-        # Validate theme only if ttkbootstrap provides it
-        if BOOTSTRAP_AVAILABLE:
-            try:
-                names = Style().theme_names()
-                if isinstance(names, list) and theme not in names:
-                    theme = "darkly"
-            except Exception:
-                theme = "darkly"
-
-
-        # Initialize Tkinter window with ttkbootstrap
-        if master is None:
-            if BOOTSTRAP_AVAILABLE:
-                master = ttkbootstrap.Window(themename=theme)
-            else:  # fallback to classic Tk
-                master = tk.Tk()
-
-        # Initialize attributes needed by create_interface
+        # Initialize bootstrap availability
         self._use_bootstrap = BOOTSTRAP_AVAILABLE
-        self._theme = theme
 
+        # Initialize window with validated theme
+        if master is None:
+            if self._use_bootstrap:
+                try:
+                    master = ttkbootstrap.Window(themename=self._theme)
+                    master.title("AuditWifiApp")
+                    master.geometry("1200x800")  # Set initial window size
+                except Exception as e:
+                    print(f"Error initializing theme {self._theme}: {e}")
+                    self._theme = "darkly"
+                    master = ttkbootstrap.Window(themename=self._theme)
+            else:
+                master = tk.Tk()
+                master.title("AuditWifiApp")
+                master.geometry("1200x800")
+
+        # Initialize theme-related components before parent
         if self._use_bootstrap:
-            self.style = Style(theme=theme)
+            try:
+                self.style = Style(theme=self._theme)
+            except Exception as e:
+                print(f"Error setting style with theme {self._theme}: {e}")
+                self.style = Style(theme="darkly")
         else:
-            self.style = None
+            self.style = ttk.Style()
 
-        # Now initialize parent class which will call create_interface
-        super().__init__(master)
-
-        # Initialize theme variable after parent class initialization
-        self.theme_var = tk.StringVar(master=self.master, value=theme)
-        if BOOTSTRAP_AVAILABLE:
-            self.style = Style(theme=theme)
-
-        # Setup theme handling after parent initialization
-        if BOOTSTRAP_AVAILABLE:
+        # Initialize theme variable
+        self.theme_var = tk.StringVar(master=master, value=self._theme)
+        if self._use_bootstrap:
             self.theme_var.trace_add("write", self._on_theme_change)
 
-    def create_interface(self) -> None:
-        """Override to create the interface with bootstrap styles."""
-        if not self._use_bootstrap:
-            super().create_interface()
-            return
+        # Initialize parent class last
+        super().__init__(master)
 
-        # Create theme selector first
-        self.create_theme_selector()
+    def configure_styles(self):
+        """Configure all ttk styles"""
+        if self._use_bootstrap:
+            # Bootstrap-specific styles
+            success_opts = {"padding": 5}
+            danger_opts = {"padding": 5}
+            info_opts = {"padding": 5}
 
-        # Create main interface
+            # Label styles
+            self.style.configure("TLabel", font=("Helvetica", 10))
+            self.style.configure("Title.TLabel", font=("Helvetica", 14, "bold"))
+            self.style.configure("Subtitle.TLabel", font=("Helvetica", 12, "bold"))
+            self.style.configure("Stats.TLabel", font=("Helvetica", 10))
+
+            # Button styles
+            self.style.configure('success.TButton', **success_opts)
+            self.style.configure('danger.TButton', **danger_opts)
+            self.style.configure('info.TButton', **info_opts)
+
+            # Theme selector styles
+            self.style.configure("ThemeSelector.TLabel",
+                               font=("Helvetica", 10),
+                               padding=5)
+            self.style.configure("ThemeSelector.TCombobox",
+                               padding=5)
+
+            # Notebook styles
+            self.style.configure("TNotebook", padding=2)
+            self.style.configure("TNotebook.Tab", padding=(10, 4))
+
+            # Fix combobox width
+            self.style.configure('TCombobox', postoffset=(0, 0, 150, 0))  # Limit dropdown width    def create_interface(self) -> None:
+        """Create the interface with bootstrap styles."""
+        # Create the base interface first (including notebook and tabs)
         super().create_interface()
 
-        # Apply bootstrap styles
-        self.apply_bootstrap_styles()
+        if self._use_bootstrap:
+            # Configure styles
+            self.configure_styles()
+
+            # Create theme selector at the top
+            self.create_theme_selector()
 
     def change_theme(self, theme: str) -> None:
         """Change the current theme"""
@@ -173,74 +204,82 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         except Exception as e:
             print(f"Error applying bootstrap styles: {e}")
 
-    def create_theme_selector(self) -> None:
-        """Create dropdown for theme selection"""
-        try:
-            theme_frame = ttk.Frame(self.master)
-            theme_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=2)
-
-            # Style for theme selector
-            self.style.configure("ThemeSelector.TLabel",
-                               font=("Helvetica", 10),
-                               padding=(5, 2))
-
-            ttk.Label(theme_frame,
-                     text="Thème :",
-                     style="ThemeSelector.TLabel").pack(side=tk.LEFT, padx=5)
-
-            # Get all themes as a flat list
-            all_themes = [t for themes in self.available_themes.values() for t in themes]
-
-            # Style for combobox
-            self.style.configure("ThemeSelector.TCombobox",
-                               padding=(5, 2),
-                               arrowsize=12)
-
-            self.theme_combobox = ttk.Combobox(
-                theme_frame,
-                textvariable=self.theme_var,
-                values=all_themes,
-                state="readonly",
-                width=15,
-                style="ThemeSelector.TCombobox"
-            )
-            self.theme_combobox.pack(side=tk.LEFT, padx=5)
-
-            # Label to show theme category (Light/Dark)
-            self.theme_category_label = ttk.Label(
-                theme_frame,
-                text="",
-                style="ThemeSelector.TLabel"
-            )
-            self.theme_category_label.pack(side=tk.LEFT, padx=5)
-
-            # Update category label for initial theme
-            self._update_theme_category()
-
-        except Exception as e:
-            print(f"Error creating theme selector: {e}")
-
     def _on_theme_change(self, *args) -> None:
-        """Callback when theme is changed"""
-        if self._use_bootstrap:
-            try:
-                new_theme = self.theme_var.get()
-                self.change_theme(new_theme)
-            except Exception as e:
-                print(f"Error in theme change callback: {e}")
-
-    def _update_theme_category(self, *args) -> None:
-        """Update the theme category label based on current theme"""
-        if not hasattr(self, 'theme_category_label'):
+        """Handle theme changes."""
+        if not self._use_bootstrap:
             return
 
         try:
-            current_theme = self.theme_var.get()
-            category = next((cat for cat, themes in self.available_themes.items()
-                         if current_theme in themes), "Unknown")
-            self.theme_category_label.config(text=f"({category})")
+            new_theme = self.theme_var.get()
+            self.style.theme_use(new_theme)
+            self._theme = new_theme
+
+            # Update config
+            if "interface" not in self._config:
+                self._config["interface"] = {}
+            self._config["interface"]["theme"] = new_theme
+            save_config(self._config)
+
+            # Update the theme category display
+            self._update_theme_category()
         except Exception as e:
-            print(f"Error updating theme category: {e}")
+            print(f"Error in theme change callback: {e}")
+
+    def _update_theme_category(self, *args) -> None:
+        """Update the theme category label based on current theme"""
+        if not hasattr(self, "theme_category_label"):
+            return
+
+        current_theme = self.theme_var.get()
+        category = next(
+            (cat for cat, themes in self.available_themes.items()
+             if current_theme in themes),
+            "Unknown"
+        )
+        self.theme_category_label.configure(text=f"Category: {category}")
+
+    def create_theme_selector(self) -> None:
+        """Create the theme selector widgets"""
+        if not self._use_bootstrap:
+            return
+
+        # Create frame for theme selection with fixed width
+        theme_frame = ttk.Frame(self.master)
+        theme_frame.pack(fill=tk.X, padx=5, pady=2)
+
+        # Theme selector label
+        ttk.Label(
+            theme_frame,
+            text="Theme:",
+            style="ThemeSelector.TLabel"
+        ).pack(side=tk.LEFT, padx=(5,2))
+
+        # All available themes
+        all_themes = [theme for themes in self.available_themes.values()
+                     for theme in themes]
+
+        # Theme selector combobox with fixed width
+        theme_select = ttk.Combobox(
+            theme_frame,
+            textvariable=self.theme_var,
+            values=all_themes,
+            state="readonly",
+            style="ThemeSelector.TCombobox",
+            width=15  # Fixed width
+        )
+        theme_select.pack(side=tk.LEFT, padx=2)
+
+        # Theme category label with fixed width
+        self.theme_category_label = ttk.Label(
+            theme_frame,
+            text="",
+            style="ThemeSelector.TLabel",
+            width=15  # Fixed width
+        )
+        self.theme_category_label.pack(side=tk.LEFT, padx=2)
+
+        # Update category display
+        self._update_theme_category()
 
 def main() -> None:
     """Point d'entrée autonome pour le test de l'interface bootstrap."""
