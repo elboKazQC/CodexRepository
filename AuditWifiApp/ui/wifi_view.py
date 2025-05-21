@@ -80,6 +80,7 @@ class WifiView:
         self.ax2: Any = None
         self.signal_line: Any = None
         self.quality_line: Any = None
+        self.fallback_canvas: Any = None
 
         # Configuration settings
         self.update_interval = 1000  # ms
@@ -93,6 +94,8 @@ class WifiView:
         self.create_interface()
         if MATPLOTLIB_AVAILABLE:
             self._setup_graphs()
+        else:
+            self._setup_canvas_fallback()
 
 
     def _place(self, widget: Any, **grid_kwargs) -> None:
@@ -308,18 +311,18 @@ class WifiView:
         self._place(self.scan_tree, row=0, column=0, sticky="nsew")
         self._place(scan_scroll, row=0, column=1, sticky="ns")
 
-        if MATPLOTLIB_AVAILABLE:
-            # Plot frame
-            self.plot_frame = ttk.LabelFrame(
-                self.viz_frame,
-                text="Visualisation du signal",
-                padding=5
-            )
-            self._place(self.plot_frame, row=1, column=0, sticky="nsew", padx=5, pady=5)
+        # Plot frame used for graphs or fallback canvas
+        self.plot_frame = ttk.LabelFrame(
+            self.viz_frame,
+            text="Visualisation du signal",
+            padding=5
+        )
+        self._place(self.plot_frame, row=1, column=0, sticky="nsew", padx=5, pady=5)
 
-            # Configure plot frame grid to expand properly
-            self.plot_frame.columnconfigure(0, weight=1)
-            self.plot_frame.rowconfigure(0, weight=1)  # Graph area
+        # Configure plot frame grid to expand properly
+        self.plot_frame.columnconfigure(0, weight=1)
+        self.plot_frame.rowconfigure(0, weight=1)  # Graph area
+        if MATPLOTLIB_AVAILABLE:
             self.plot_frame.rowconfigure(1, weight=0)  # Toolbar
 
     def _create_alerts_panel(self) -> None:
@@ -406,6 +409,17 @@ class WifiView:
         except Exception as e:
             logging.error(f"Error setting up graphs: {e}")
             self.canvas = None  # Disable graphing on error
+            self._setup_canvas_fallback()
+
+    def _setup_canvas_fallback(self) -> None:
+        """Create a minimal Tkinter canvas when matplotlib is unavailable."""
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            return
+        self.fallback_canvas = tk.Canvas(self.plot_frame, bg="white")
+        self._place(self.fallback_canvas, row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.plot_frame.columnconfigure(0, weight=1)
+        self.plot_frame.rowconfigure(0, weight=1)
+
 
     def _update_plots(self) -> None:
         """Update plot data and redraw."""
@@ -449,6 +463,32 @@ class WifiView:
             if hasattr(self.canvas, '_tkcanvas'):
                 self.canvas._tkcanvas.config(cursor="")
 
+    def _update_canvas_fallback(self) -> None:
+        """Draw a simple line chart on the fallback canvas."""
+        if not self.fallback_canvas or not self.samples:
+            return
+
+        try:
+            width = self.fallback_canvas.winfo_width() or 1
+            height = self.fallback_canvas.winfo_height() or 1
+            signals = [s.signal_strength for s in self.samples][-width:]
+            qualities = [s.quality for s in self.samples][-width:]
+
+            def sig_to_y(val: int) -> float:
+                return height - ((val + 90) / 60) * height
+
+            def qual_to_y(val: int) -> float:
+                return height - (val / 100) * height
+
+            self.fallback_canvas.delete("all")
+            for i in range(1, len(signals)):
+                x0 = (i - 1) * (width / len(signals))
+                x1 = i * (width / len(signals))
+                self.fallback_canvas.create_line(x0, sig_to_y(signals[i - 1]), x1, sig_to_y(signals[i]), fill="blue")
+                self.fallback_canvas.create_line(x0, qual_to_y(qualities[i - 1]), x1, qual_to_y(qualities[i]), fill="green")
+        except Exception as e:
+            logging.error(f"Error updating fallback canvas: {e}")
+
     def _update_data(self) -> None:
         """Update displayed data."""
         try:
@@ -472,6 +512,8 @@ class WifiView:
             # Update plots if available
             if MATPLOTLIB_AVAILABLE and self.canvas:
                 self._update_plots()
+            elif self.fallback_canvas:
+                self._update_canvas_fallback()
 
             # Schedule next update if collection is active and window exists
             if (hasattr(self, 'stop_button') and
