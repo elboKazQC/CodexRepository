@@ -56,6 +56,15 @@ class WifiView:
     }
 
     def __init__(self, master: tk.Misc, analyzer: NetworkAnalyzer) -> None:
+        """Instantiate the view and create the underlying frame.
+
+        Args:
+            master: Widget parent that will host the view's frame.
+            analyzer: Network analyzer used to compute WiFi statistics.
+
+        The constructor sets up Tk variables, initializes plotting
+        components and builds the user interface.
+        """
         # Initialize instance variables
         self.master = master
         self.analyzer = analyzer

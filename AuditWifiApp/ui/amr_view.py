@@ -21,6 +21,14 @@ class AmrMonitorView:
     """Tkinter view dedicated to AMR connectivity monitoring."""
 
     def __init__(self, master: tk.Misc) -> None:
+        """Initialize the AMR monitoring view.
+
+        Args:
+            master: Parent widget used to create the internal frame.
+
+        All widgets and variables required for monitoring are prepared
+        during initialization.
+        """
         self.master = master
         self.frame = ttk.Frame(master)
         self.monitor: AmrPingMonitor | None = None

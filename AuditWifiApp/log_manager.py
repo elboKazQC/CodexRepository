@@ -12,6 +12,7 @@ class LogManager:
     """
 
     def __init__(self):
+        """Instantiate analyzers used for the different log types."""
         self.wifi_analyzer = WifiAnalyzer()
         self.moxa_log_analyzer = MoxaLogAnalyzer()
         self.moxa_roaming_analyzer = MoxaRoamingAnalyzer()
