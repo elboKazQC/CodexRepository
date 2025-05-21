@@ -36,7 +36,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Define available themes
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
-            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero"]
+            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero", "noovelia"]
         }
 
         # Create a flat list of all themes
