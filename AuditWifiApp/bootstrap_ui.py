@@ -36,6 +36,10 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Liste des thèmes disponibles
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
+
+            # Ajout du thème interne "noovelia" au groupe sombre pour permettre
+            # son chargement via la configuration YAML et les tests unitaires.
+
             "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero", "noovelia"]
         }
 
@@ -45,11 +49,13 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             theme = self._config.get("interface", {}).get("theme", "darkly")
 
 
-        # Validate theme against known options but allow custom entries
-        all_themes = [t for themes in self.available_themes.values() for t in themes]
-        if theme not in all_themes:
-            # Keep custom theme when ttkbootstrap is available; otherwise fall back
-            if not BOOTSTRAP_AVAILABLE:
+        # Validate theme only if ttkbootstrap provides it
+        if BOOTSTRAP_AVAILABLE:
+            try:
+                names = Style().theme_names()
+                if isinstance(names, list) and theme not in names:
+                    theme = "darkly"
+            except Exception:
                 theme = "darkly"
 
 

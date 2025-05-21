@@ -142,6 +142,7 @@ def patch_ttk_style():
         def __getitem__(self, key):
             return self.options.get(key)
 
+
     class DummyStringVar:
         def __init__(self, *args, **kwargs):
             self._value = ""
@@ -158,13 +159,16 @@ def patch_ttk_style():
         def trace_add(self, mode: str, callback):
             self._callbacks.append(callback)
 
+
     patches = [
         patch('tkinter.ttk.Style'),
         patch('tkinter.messagebox'),
         patch('log_manager.messagebox'),
 
         patch('tkinter.Text'),
+
         patch('tkinter.StringVar', DummyStringVar),
+
         patch('tkinter.ttk.Treeview', DummyTreeview),
         patch('tkinter.ttk.Button', DummyButton),
         patch('tkinter.ttk.OptionMenu'),
