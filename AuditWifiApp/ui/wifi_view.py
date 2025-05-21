@@ -29,10 +29,8 @@ try:
         CURSORS_AVAILABLE = False
 except ImportError:  # pragma: no cover - optional dependency
     MATPLOTLIB_AVAILABLE = False
-    CURSORS_AVAILABLE = False
 
 import yaml
-from heatmap_generator import generate_heatmap
 from network_analyzer import NetworkAnalyzer
 from network_scanner import scan_wifi
 from wifi.wifi_collector import WifiSample
@@ -375,8 +373,9 @@ class WifiView:
             return
 
         try:
-            # Configure figure layout
-            self.fig.subplots_adjust(left=0.1, right=0.95, bottom=0.1, top=0.95, hspace=0.3)
+            # Configure figure layout with better spacing
+            logging.info("Initializing matplotlib graphs...")
+            self.fig.subplots_adjust(left=0.12, right=0.95, bottom=0.1, top=0.95, hspace=0.3)
 
             # Signal strength subplot
             self.ax1 = self.fig.add_subplot(211)
@@ -385,8 +384,9 @@ class WifiView:
             self.ax1.set_xlabel("Échantillons")
             self.ax1.grid(True, linestyle='--', alpha=0.7)
             self.signal_line, = self.ax1.plot([], [], 'b-', label="Signal", linewidth=2)
-            self.ax1.set_ylim(-90, -30)
+            self.ax1.set_ylim(-90, -30)  # Fixed Y scale for signal strength
             self.ax1.legend(loc='upper right')
+            logging.debug("Signal strength subplot configured")
 
             # Quality subplot
             self.ax2 = self.fig.add_subplot(212)
@@ -395,28 +395,34 @@ class WifiView:
             self.ax2.set_xlabel("Échantillons")
             self.ax2.grid(True, linestyle='--', alpha=0.7)
             self.quality_line, = self.ax2.plot([], [], 'g-', label="Qualité", linewidth=2)
-            self.ax2.set_ylim(0, 100)
+            self.ax2.set_ylim(0, 100)  # Fixed Y scale for quality
             self.ax2.legend(loc='upper right')
+            logging.debug("Quality subplot configured")
 
             if "PYTEST_CURRENT_TEST" in os.environ:
                 return
 
             # Create and configure canvas in plot frame with proper expansion
+            logging.debug("Creating Tkinter canvas...")
             self.canvas = FigureCanvasTkAgg(self.fig, master=self.plot_frame)
             canvas_widget = self.canvas.get_tk_widget()
-            self._place(canvas_widget, row=0, column=0, sticky="nsew", padx=5, pady=5)            # Add toolbar below the plot
+            self._place(canvas_widget, row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+            # Add toolbar below the plot
             self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_frame, pack_toolbar=False)
             self._place(self.toolbar, row=1, column=0, sticky="ew")
 
             # Enable interactive cursors if available
             if CURSORS_AVAILABLE and self.signal_line and self.quality_line:
+                logging.debug("Enabling interactive cursors...")
                 mplcursors.cursor([self.signal_line, self.quality_line], hover=True)
 
             # Initial draw
             self.canvas.draw()
+            logging.info("Matplotlib graphs initialized successfully")
 
         except Exception as e:
-            logging.error(f"Error setting up graphs: {e}")
+            logging.error(f"Error setting up graphs: {e}", exc_info=True)
             self.canvas = None  # Disable graphing on error
             self._setup_canvas_fallback()
 
@@ -432,43 +438,54 @@ class WifiView:
 
     def _update_plots(self) -> None:
         """Update plot data and redraw."""
-        if not MATPLOTLIB_AVAILABLE or not self.samples or not self.canvas:
+        if not MATPLOTLIB_AVAILABLE:
+            logging.debug("Matplotlib not available, skipping plot update")
+            return
+
+        if not self.samples:
+            logging.debug("No samples available to plot")
+            return
+
+        if not self.canvas:
+            logging.debug("No canvas available, skipping plot update")
             return
 
         if not hasattr(self, 'signal_line') or not hasattr(self, 'quality_line'):
+            logging.warning("Plot lines not initialized")
             return
 
         try:
-            # Lock to prevent concurrent updates
-            if hasattr(self.canvas, '_tkcanvas'):
-                self.canvas._tkcanvas.config(cursor="watch")
+            # Pre-update validation
+            logging.info(f"Starting plot update with {len(self.samples)} samples")
 
-            # Extract data points directly from samples
+            # Extract and validate data points
             signals = [s.signal_strength for s in self.samples]
             qualities = [s.quality for s in self.samples]
             x_data = list(range(len(signals)))
 
-            # Update signal plot
+            # Log data validation
+            logging.debug(f"Number of data points: {len(signals)}")
+            if signals:
+                logging.debug(f"Signal range: {min(signals)} to {max(signals)} dBm")
+            if qualities:
+                logging.debug(f"Quality range: {min(qualities)} to {max(qualities)}%")
+
+            # Verify line objects
+            logging.debug("Updating signal plot data...")
             self.signal_line.set_data(x_data, signals)
-            self.ax1.set_xlim(0, max(len(signals), 10))  # Minimum width
-            self.ax1.relim()
-            self.ax1.autoscale_view(scalex=False)  # Only autoscale y-axis
+            self.ax1.set_xlim(0, max(len(signals), 10))
 
-            # Update quality plot
+            logging.debug("Updating quality plot data...")
             self.quality_line.set_data(x_data, qualities)
-            self.ax2.set_xlim(0, max(len(qualities), 10))  # Minimum width
-            self.ax2.relim()
-            self.ax2.autoscale_view(scalex=False)  # Only autoscale y-axis
+            self.ax2.set_xlim(0, max(len(qualities), 10))
 
-            # Redraw the plots
-            self.canvas.draw_idle()  # Use draw_idle instead of draw for better performance
-
-            # Restore cursor
-            if hasattr(self.canvas, '_tkcanvas'):
-                self.canvas._tkcanvas.config(cursor="")
+            # Plot update confirmation
+            logging.debug("Redrawing canvas...")
+            self.canvas.draw_idle()
+            logging.info("Plot update complete")
 
         except Exception as e:
-            logging.error(f"Error updating plots: {e}")
+            logging.error(f"Error updating plots: {e}", exc_info=True)
             if hasattr(self.canvas, '_tkcanvas'):
                 self.canvas._tkcanvas.config(cursor="")
 
@@ -503,35 +520,44 @@ class WifiView:
         try:
             # Get latest sample via collector helper
             collector = getattr(self.analyzer, 'wifi_collector', None)
-            if collector:
-                # Actively request a new sample from the collector
-                if getattr(collector, 'is_collecting', False):
-                    sample = collector.collect_sample()
+            if not collector:
+                logging.warning("No WiFi collector available")
+                return
+
+            # Log collector state
+            is_collecting = getattr(collector, 'is_collecting', False)
+            logging.info(f"Collector state - is_collecting: {is_collecting}")
+
+            sample = None
+            if is_collecting:
+                logging.debug("Collecting new sample...")
+                sample = collector.collect_sample()
+                if sample:
+                    logging.info(f"New sample collected: Signal={sample.signal_strength}dBm, Quality={sample.quality}%")
                 else:
-                    sample = collector.get_latest_sample()
+                    logging.warning("Failed to collect new sample")
 
-                if sample is not None:
-                    self.samples.append(sample)
-                    if len(self.samples) > self.max_samples:
-                        self.samples.pop(0)
+            if sample is not None:
+                self.samples.append(sample)
+                if len(self.samples) > self.max_samples:
+                    self.samples.pop(0)
+                logging.info(f"Total samples in buffer: {len(self.samples)}")
 
-            # Update stats first as they're simpler
+            # Update display
             self._update_stats()
-
-            # Update plots if available
             if MATPLOTLIB_AVAILABLE and self.canvas:
                 self._update_plots()
             elif self.fallback_canvas:
                 self._update_canvas_fallback()
 
-            # Schedule next update if collection is active and window exists
+            # Schedule next update if collection is active
             if (hasattr(self, 'stop_button') and
                 self.stop_button.winfo_exists() and
                 self.stop_button.cget('state') == tk.NORMAL):
                 self.frame.after(self.update_interval, self._update_data)
 
         except Exception as e:
-            logging.error(f"Error updating data: {e}")
+            logging.error(f"Error in _update_data: {e}", exc_info=True)
             # Try to schedule next update even if this one failed
             if (hasattr(self, 'stop_button') and
                 self.stop_button.winfo_exists() and

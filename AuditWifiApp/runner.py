@@ -16,7 +16,6 @@ from dotenv import load_dotenv
 from unittest.mock import MagicMock
 import yaml
 
-from heatmap_generator import generate_heatmap
 from network_analyzer import NetworkAnalyzer
 from network_scanner import scan_wifi
 from wifi.wifi_collector import WifiSample

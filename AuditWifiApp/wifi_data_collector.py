@@ -116,49 +116,63 @@ class WifiDataCollector:
                 return None
 
             # Get required fields with default values
-            ssid = wifi_data.get('SSID', 'N/A')
-            signal_percent = int(wifi_data.get('SignalStrength', '0').strip('%'))
+            ssid = str(wifi_data.get('SSID', 'N/A'))
+            signal_str = str(wifi_data.get('SignalStrength', '0%'))
+            signal_percent = int(signal_str.strip('%') if '%' in signal_str else signal_str)
+
+            # Get signal strength in dBm
             signal_dbm = wifi_data.get('SignalStrengthDBM')
-            if signal_dbm is None and signal_percent > 0:
-                # Convert percentage to dBm if not provided
-                signal_dbm = -100 + (signal_percent * 0.5)
+            if signal_dbm is None:
+                signal_dbm = int(-100 + (signal_percent * 0.5))
             else:
-                signal_dbm = int(signal_dbm or -100)
+                signal_dbm = int(float(signal_dbm))
 
-            channel_val = int(wifi_data.get('Channel', '0'))
-            band = wifi_data.get('Band', '2.4 GHz')  # Default to 2.4 GHz if not specified
+            # Get channel info
+            channel_str = str(wifi_data.get('Channel', '0'))
+            channel_val = int(channel_str) if channel_str.isdigit() else 0
 
+            # Get band info
+            band = str(wifi_data.get('Band', '2.4 GHz'))
+
+            # Get noise floor and SNR
             noise_floor = wifi_data.get('NoiseFloor')
-            noise_floor = int(noise_floor) if noise_floor not in [None, ""] else None
+            noise_floor = int(float(noise_floor)) if isinstance(noise_floor, (int, str)) and str(noise_floor).strip('-').replace('.','').isdigit() else None
+
             snr_value = wifi_data.get('SNR')
-            snr_value = int(snr_value) if snr_value not in [None, ""] else None
+            snr_value = int(float(snr_value)) if isinstance(snr_value, (int, str)) and str(snr_value).replace('.','').isdigit() else None
+
+            # Calculate SNR if not provided but we have noise floor
             if snr_value is None and noise_floor is not None:
-                snr_value = int(signal_dbm) - int(noise_floor)
+                snr_value = int(signal_dbm - noise_floor)
+
+            # Calculate frequency from channel
+            frequency_mhz = 0
+            if channel_val > 0:
+                if channel_val <= 13:  # 2.4 GHz band
+                    frequency_mhz = 2412 + ((channel_val - 1) * 5)
+                else:  # 5 GHz band
+                    frequency_mhz = 5170 + ((channel_val - 34) * 5)
+
+            self.logger.debug(f"Création mesure WiFi: SSID={ssid}, Signal={signal_percent}% ({signal_dbm}dBm), Canal={channel_val}")
 
             # Create measurement
-            measurement = WifiMeasurement(
+            return WifiMeasurement(
                 ssid=ssid,
-                bssid=wifi_data.get('BSSID', '00:00:00:00:00:00'),
+                bssid=str(wifi_data.get('BSSID', '00:00:00:00:00:00')),
                 signal_percent=signal_percent,
                 signal_dbm=signal_dbm,
                 channel=channel_val,
                 band=band,
                 frequency=band,
-                frequency_mhz=_channel_to_frequency_mhz(channel_val),
-                is_connected=bool(ssid != 'N/A'),
-                channel_utilization=float(wifi_data.get('ChannelUtilization', '0').strip('%')) / 100,
+                frequency_mhz=frequency_mhz,
+                is_connected=ssid != 'N/A',
+                channel_utilization=int(float(str(wifi_data.get('ChannelUtilization', '0')).strip('%'))) / 100,
                 noise_floor=noise_floor,
                 snr=snr_value
             )
 
-            self.logger.debug(f"Mesure WiFi créée: SSID={ssid}, "
-                          f"Signal={signal_percent}% ({signal_dbm}dBm), "
-                          f"Canal={channel_val}")
-
-            return measurement
-
         except Exception as e:
-            self.logger.error(f"Erreur lors de la création de la mesure WiFi: {str(e)}")
+            self.logger.error(f"Erreur lors de la création de la mesure WiFi: {str(e)}", exc_info=True)
             return None
 
     def start_collection(self, zone: str = "", location_tag: str = "", interval: float = 1.0) -> bool:
@@ -295,22 +309,31 @@ class WifiDataCollector:
             if wifi_measurement.ssid != "N/A":
                 try:
                     # Try to ping default gateway
-                    gateway = subprocess.check_output(["route", "print", "0.0.0.0"],
-                                                   encoding='latin1',
-                                                   stderr=subprocess.PIPE).decode('latin1')
-                    gateway_match = re.search(r"0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)", gateway)
-                    if gateway_match:
-                        gateway_ip = gateway_match.group(1)
-                        ping = subprocess.check_output(["ping", "-n", "1", gateway_ip],
-                                                    encoding='latin1',
-                                                    stderr=subprocess.PIPE).decode('latin1')
-                        time_match = re.search(r"temps[<=](\d+)ms", ping)
-                        if time_match:
-                            latency = int(time_match.group(1))
-                            ping_measurement = PingMeasurement(
-                                latency=latency,
-                                packet_loss=0 if latency > 0 else 100
+                    gateway_result = subprocess.run(
+                        ["route", "print", "0.0.0.0"],
+                        capture_output=True,
+                        text=True
+                    )
+
+                    if gateway_result.returncode == 0:
+                        gateway = gateway_result.stdout
+                        gateway_match = re.search(r"0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)", gateway)
+                        if gateway_match:
+                            gateway_ip = gateway_match.group(1)
+                            ping_result = subprocess.run(
+                                ["ping", "-n", "1", gateway_ip],
+                                capture_output=True,
+                                text=True
                             )
+
+                            ping_output = ping_result.stdout
+                            time_match = re.search(r"temps[<=](\d+)ms", ping_output)
+                            if time_match:
+                                latency = int(time_match.group(1))
+                                ping_measurement = PingMeasurement(
+                                    latency=latency,
+                                    packet_loss=0 if latency > 0 else 100
+                                )
                 except Exception as e:
                     self.logger.warning(f"Erreur lors du ping: {str(e)}")
 
