@@ -94,6 +94,18 @@ class WifiView:
         if MATPLOTLIB_AVAILABLE:
             self._setup_graphs()
 
+    def update_data(self) -> None:
+        """Public wrapper to update graphs and labels."""
+        self._update_data()
+
+    def update_status(self) -> None:
+        """Public wrapper to refresh status display."""
+        self._update_stats()
+
+    def update_stats(self) -> None:
+        """Backward compatibility wrapper for old tests."""
+        self._update_stats()
+
     def _setup_styles(self) -> None:
         """Configure basic ttk styles for the view."""
         if "PYTEST_CURRENT_TEST" in os.environ:
@@ -489,6 +501,14 @@ class WifiView:
                     text=f"Qualité : {avg_quality:.1f}%",
                     foreground="green" if avg_quality > 50 else "red"
                 )
+
+            # Display TX/RX rates from the latest sample when available
+            last_sample = self.samples[-1]
+            if hasattr(self, 'tx_label'):
+                self.tx_label.config(text=f"TX : {last_sample.transmit_rate}")
+
+            if hasattr(self, 'rx_label'):
+                self.rx_label.config(text=f"RX : {last_sample.receive_rate}")
 
         except Exception as e:
             logging.error(f"Error updating stats: {e}")
