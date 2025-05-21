@@ -140,12 +140,20 @@ class WifiView:
         self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
         self.scan_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
 
+        # Entry for filtering scan results by SSID
+        self.scan_filter_var = tk.StringVar()
+        self.scan_filter_var.trace_add("write", lambda *_: self._refresh_scan_tree())
+        ttk.Entry(self.scan_frame, textvariable=self.scan_filter_var).pack(fill=tk.X)
+
         columns = ("ssid", "signal", "channel", "band")
         self.scan_tree = ttk.Treeview(self.scan_frame, columns=columns, show="headings", height=8)
         for col, title in zip(columns, ["SSID", "Signal (dBm)", "Canal", "Bande"]):
-            self.scan_tree.heading(col, text=title)
+            self.scan_tree.heading(col, text=title, command=lambda c=col: self._on_heading_click(c))
             self.scan_tree.column(col, width=100)
         self.scan_tree.pack(fill=tk.BOTH, expand=True)
+
+        self._sort_column = "ssid"
+        self._sort_reverse = False
 
 
         self.alerts_frame = ttk.LabelFrame(
@@ -223,12 +231,28 @@ class WifiView:
         scan_fn = _get_scan_wifi()
         results = scan_fn()
         self.scan_results = results
-        for row in self.scan_tree.get_children():
-            self.scan_tree.delete(row)
-        for ap in results:
-            self.scan_tree.insert("", "end", values=(ap.get("ssid", ""), ap.get("signal", ""), ap.get("channel", ""), ap.get("frequency", "")))
+        self._refresh_scan_tree()
         if results:
             self.export_scan_button.config(state=tk.NORMAL)
+
+    def _on_heading_click(self, column: str) -> None:
+        """Handle column header click to sort results."""
+        if self._sort_column == column:
+            self._sort_reverse = not self._sort_reverse
+        else:
+            self._sort_column = column
+            self._sort_reverse = False
+        self._refresh_scan_tree()
+
+    def _refresh_scan_tree(self) -> None:
+        """Refresh the Treeview according to filter and sort settings."""
+        for row in self.scan_tree.get_children():
+            self.scan_tree.delete(row)
+        term = self.scan_filter_var.get().lower()
+        filtered = [ap for ap in self.scan_results if term in ap.get("ssid", "").lower()]
+        sorted_results = sorted(filtered, key=lambda x: x.get(self._sort_column, ""), reverse=self._sort_reverse)
+        for ap in sorted_results:
+            self.scan_tree.insert("", "end", values=(ap.get("ssid", ""), ap.get("signal", ""), ap.get("channel", ""), ap.get("frequency", "")))
 
     def export_scan_results(self) -> None:
         """Export scan results to a CSV file."""

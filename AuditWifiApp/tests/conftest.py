@@ -105,7 +105,7 @@ def patch_ttk_style():
             self._items = []
             self.headings = {}
 
-        def heading(self, col, text=None):
+        def heading(self, col, text=None, command=None):
             self.headings[col] = text
 
         def column(self, col, width=None):
@@ -117,6 +117,9 @@ def patch_ttk_style():
         def insert(self, parent, index, values=()):
             self._items.append(values)
             return str(len(self._items))
+
+        def delete(self, item):
+            self._items = []
 
         def get_children(self):
             return [str(i + 1) for i in range(len(self._items))]
@@ -139,12 +142,29 @@ def patch_ttk_style():
         def __getitem__(self, key):
             return self.options.get(key)
 
+    class DummyStringVar:
+        def __init__(self, *args, **kwargs):
+            self._value = ""
+            self._callbacks = []
+
+        def get(self) -> str:
+            return self._value
+
+        def set(self, value: str) -> None:
+            self._value = value
+            for cb in self._callbacks:
+                cb()
+
+        def trace_add(self, mode: str, callback):
+            self._callbacks.append(callback)
+
     patches = [
         patch('tkinter.ttk.Style'),
         patch('tkinter.messagebox'),
         patch('log_manager.messagebox'),
 
         patch('tkinter.Text'),
+        patch('tkinter.StringVar', DummyStringVar),
         patch('tkinter.ttk.Treeview', DummyTreeview),
         patch('tkinter.ttk.Button', DummyButton),
         patch('tkinter.ttk.OptionMenu'),
