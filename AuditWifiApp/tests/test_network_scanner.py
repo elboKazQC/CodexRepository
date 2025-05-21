@@ -40,7 +40,7 @@ SSID 2 : Network2
         "netsh wlan show all": "",
     }
 
-    with patch("network_scanner.subprocess.run", side_effect=fake_subprocess_run_factory(output_mapping)):
+    with patch("network_scanner.parser.subprocess.run", side_effect=fake_subprocess_run_factory(output_mapping)):
         networks = scan_wifi()
 
     assert isinstance(networks, list)
@@ -73,7 +73,7 @@ SSID 1 : Network1
         "netsh wlan show all": "",
     }
 
-    with patch("network_scanner.subprocess.run", side_effect=fake_subprocess_run_factory(output_mapping)):
+    with patch("network_scanner.parser.subprocess.run", side_effect=fake_subprocess_run_factory(output_mapping)):
         networks = scan_wifi()
 
     # Two BSSIDs should produce two networks

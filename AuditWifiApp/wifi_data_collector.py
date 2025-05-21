@@ -19,7 +19,6 @@ from models.measurement_record import WifiMeasurement, PingMeasurement, NetworkS
 from models.wifi_record import WifiRecord
 from wifi.powershell_collector import PowerShellWiFiCollector
 from app_config import load_config
-from config_manager import ConfigurationManager
 
 
 # Constantes de configuration
