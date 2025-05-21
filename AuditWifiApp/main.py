@@ -13,6 +13,16 @@ import sys
 import tkinter as tk
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
+
+
+def load_environment() -> None:
+    """
+    Load environment variables from .env file.
+    """
+    env_path = Path(__file__).parent / ".env"
+    if env_path.is_file():
+        load_dotenv(env_path)
 
 
 def get_venv_site_packages() -> Optional[Path]:
@@ -60,6 +70,7 @@ def main() -> None:
     This function creates and runs the main application window using the
     theme stored in the configuration.
     """
+    load_environment()
     setup_environment()
     from bootstrap_ui import BootstrapNetworkAnalyzerUI
 
