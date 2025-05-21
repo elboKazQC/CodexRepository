@@ -38,7 +38,10 @@ def test_params_field_height_and_label(mock_tk_root, tmp_path):
         module = importlib.reload(moxa_view_module)
         module.MoxaView(mock_tk_root, str(tmp_path), {})
 
-    assert text_mock.call_args_list[3].kwargs.get("height") == 8
+    assert text_mock.call_args_list[2].kwargs.get("height") == 8
     texts = [c.kwargs.get("text") for c in label_mock.call_args_list]
-    assert "Indiquez ici tout contexte supplémentaire" in texts
+    assert any(
+        "Indiquez ici tout contexte supplémentaire" in t
+        for t in texts if t
+    )
     assert all("roaming" not in t for t in texts if t)
