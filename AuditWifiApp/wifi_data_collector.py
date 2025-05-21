@@ -266,15 +266,13 @@ class WifiDataCollector:
 
             return NetworkStatus.CRITICAL
 
-        if not ping_meas:
-            return NetworkStatus.WARNING
+        if not ping_meas:            return NetworkStatus.WARNING
 
-
-        if (ping_meas.lost_percent >= loss_crit or
+        if (ping_meas.packet_loss >= loss_crit or
             ping_meas.latency >= latency_crit):
             return NetworkStatus.CRITICAL
 
-        if (ping_meas.lost_percent >= loss_warn or
+        if (ping_meas.packet_loss >= loss_warn or
             ping_meas.latency >= latency_warn):
 
             return NetworkStatus.WARNING

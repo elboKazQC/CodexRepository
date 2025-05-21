@@ -19,7 +19,11 @@ from app_config import load_config, save_config
 try:
     import ttkbootstrap
     from ttkbootstrap import Style
-    from ttkbootstrap.constants import *
+    from ttkbootstrap.constants import (
+        PRIMARY, SECONDARY, SUCCESS, INFO, WARNING, DANGER,
+        LEFT, RIGHT, TOP, BOTTOM, CENTER, BOTH, X, Y,
+        HORIZONTAL, VERTICAL, N, S, E, W, NW, NE, SW, SE
+    )
     BOOTSTRAP_AVAILABLE = True
 except ImportError:  # pragma: no cover - library may be missing
     BOOTSTRAP_AVAILABLE = False

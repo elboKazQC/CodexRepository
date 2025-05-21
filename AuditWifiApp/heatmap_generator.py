@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import List, Tuple, Optional, Dict
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
+from typing import cast
 
 from models.wifi_record import WifiRecord
 
@@ -36,7 +38,7 @@ def generate_heatmap(
     grid_size: int = 100,
     *,
     tag_map: Optional[Dict[str, Tuple[float, float]]] = None,
-) -> plt.Figure:
+) -> Figure:
     """Create a signal heatmap from ``records``.
 
     Parameters
@@ -86,13 +88,13 @@ def generate_heatmap(
         else:
             heatmap[iy, ix] = (heatmap[iy, ix] + val) / 2
 
-    fig, ax = plt.subplots()
+        fig, ax = plt.subplots()
     cax = ax.imshow(
         heatmap,
         origin="lower",
-        extent=[min(xs), max(xs), min(ys), max(ys)],
+        extent=(min(xs), max(xs), min(ys), max(ys)),  # Convert list to tuple
         aspect="auto",
-        interpolation="nearest",
+        interpolation="nearest"
     )
     fig.colorbar(cax, ax=ax, label="Signal (dBm)")
     ax.set_xlabel("X")
