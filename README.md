@@ -72,8 +72,10 @@ Two buttons help manage the configuration:
 * **Exporter JSON** saves it to a file of your choice.
 
 ## Running tests
+Make sure dependencies are installed with the setup script before launching tests.
 
 ```bash
+bash setup.sh    # on Windows use ./setup.ps1
 pytest -v
 npm test # run TypeScript unit tests
 ```
