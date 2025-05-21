@@ -23,10 +23,12 @@ class PingStatus:
 
 
 class AmrPingMonitor:
+
     """Monitor multiple AMR IPs with periodic pings.
 
     IP addresses can be added or removed while monitoring is running.
     """
+
 
     def __init__(
         self,
@@ -45,7 +47,9 @@ class AmrPingMonitor:
         callback:
             Optional function invoked when an IP status changes.
         """
+
         self.ips = list(ips)
+
         self.interval = interval
         self.callback = callback
         self.status: Dict[str, PingStatus] = {
@@ -53,6 +57,7 @@ class AmrPingMonitor:
         }
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
+
 
     # ------------------------------------------------------------------
     # IP list management
@@ -68,6 +73,7 @@ class AmrPingMonitor:
         if ip in self.ips:
             self.ips.remove(ip)
             self.status.pop(ip, None)
+
 
     def start(self) -> None:
         """Start monitoring in a background thread."""
@@ -88,7 +94,9 @@ class AmrPingMonitor:
     # ------------------------------------------------------------------
     def _monitor_loop(self) -> None:
         while not self._stop_event.is_set():
+
             for ip in list(self.ips):
+
                 reachable = self._ping(ip)
                 info = self.status[ip]
                 if reachable != info.reachable:

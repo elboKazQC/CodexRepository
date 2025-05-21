@@ -94,6 +94,7 @@ class WifiView:
         if MATPLOTLIB_AVAILABLE:
             self._setup_graphs()
 
+
     def _place(self, widget: Any, **grid_kwargs) -> None:
         """Place a Tkinter widget even when the test dummy lacks ``grid``."""
         if hasattr(widget, "grid"):
@@ -112,6 +113,7 @@ class WifiView:
 
     def update_stats(self) -> None:  # pragma: no cover - compatibility alias
         """Alias kept for older tests."""
+
         self._update_stats()
 
     def _setup_styles(self) -> None:
@@ -418,8 +420,8 @@ class WifiView:
             if hasattr(self.canvas, '_tkcanvas'):
                 self.canvas._tkcanvas.config(cursor="watch")
 
-            # Extract data points
-            signals = [-s.signal_strength for s in self.samples]
+            # Extract data points directly from samples
+            signals = [s.signal_strength for s in self.samples]
             qualities = [s.quality for s in self.samples]
             x_data = list(range(len(signals)))
 
@@ -492,7 +494,7 @@ class WifiView:
 
         try:
             # Calculate statistics
-            signals = [-s.signal_strength for s in self.samples[-10:]]
+            signals = [s.signal_strength for s in self.samples[-10:]]
             qualities = [s.quality for s in self.samples[-10:]]
 
             avg_signal = sum(signals) / len(signals)
@@ -500,8 +502,10 @@ class WifiView:
 
             # Color coding function for signal strength
             def col_sig(s):
-                if s > -50: return "green"
-                if s > -70: return "orange"
+                if s >= -50:
+                    return "green"
+                if s >= -70:
+                    return "orange"
                 return "red"
 
             # Update labels
@@ -517,12 +521,14 @@ class WifiView:
                     foreground="green" if avg_quality > 50 else "red"
                 )
 
+
             # Update throughput labels using last sample
             last = self.samples[-1]
             if hasattr(self, 'tx_label'):
                 self.tx_label.config(text=f"TX : {last.transmit_rate}")
             if hasattr(self, 'rx_label'):
                 self.rx_label.config(text=f"RX : {last.receive_rate}")
+
 
         except Exception as e:
             logging.error(f"Error updating stats: {e}")

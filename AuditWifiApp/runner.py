@@ -53,9 +53,11 @@ class NetworkAnalyzerUI:
         self.create_interface()
 
     def setup_graphs(self) -> None:
+
         """Deprecated compatibility method for tests."""
         # The graph setup logic now lives in WifiView.
         pass
+
 
     def create_interface(self):
         """Crée l'interface principale"""

@@ -9,7 +9,9 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import scrolledtext, ttk
 from datetime import datetime
+
 from typing import Dict, List
+
 import os
 
 from amr_ping_monitor import AmrPingMonitor
@@ -23,10 +25,12 @@ class AmrMonitorView:
         self.frame = ttk.Frame(master)
         self.monitor: AmrPingMonitor | None = None
 
+
         self.ip_entry_var = tk.StringVar()
         self.rows: Dict[str, ttk.Frame] = {}
 
         self.ip_input: ttk.Entry
+
         self.log_text: scrolledtext.ScrolledText
         self.start_button: ttk.Button
         self.stop_button: ttk.Button
@@ -38,6 +42,7 @@ class AmrMonitorView:
     # ------------------------------------------------------------------
     def create_interface(self) -> None:
         """Create widgets for AMR monitoring."""
+
         input_frame = ttk.LabelFrame(self.frame, text="Ajouter une adresse IP", padding=5)
         input_frame.pack(fill=tk.X, padx=5, pady=5)
 
@@ -48,6 +53,7 @@ class AmrMonitorView:
 
         self.list_frame = ttk.Frame(self.frame)
         self.list_frame.pack(fill=tk.X, padx=5, pady=5)
+
 
         btn_frame = ttk.Frame(self.frame)
         btn_frame.pack(pady=5)
@@ -68,6 +74,7 @@ class AmrMonitorView:
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
     # ------------------------------------------------------------------
+
     # IP management
     # ------------------------------------------------------------------
     def add_ip(self) -> None:
@@ -98,11 +105,14 @@ class AmrMonitorView:
             self.monitor.remove_ip(ip)
 
     # ------------------------------------------------------------------
+
     # Monitoring control
     # ------------------------------------------------------------------
     def start_monitoring(self) -> None:
         """Start ping monitoring for the listed IPs."""
+
         ips = list(self.rows.keys())
+
         if not ips:
             return
 
@@ -129,6 +139,7 @@ class AmrMonitorView:
         status = "OK" if reachable else "Perte de connexion"
         timestamp = datetime.now().strftime("%H:%M:%S")
         msg = f"{timestamp} - {ip} - {status}"
+
         self.frame.after(0, self._update_row_status, ip, reachable)
         self.frame.after(0, self._append_log, msg)
 
@@ -139,6 +150,7 @@ class AmrMonitorView:
         color = "green" if reachable else "red"
         _frame, canvas = entry
         canvas.itemconfigure(1, fill=color)
+
 
     def _append_log(self, message: str) -> None:
         self.log_text.configure(state=tk.NORMAL)

@@ -127,11 +127,23 @@ def patch_ttk_style():
         def item(self, iid):
             return {"values": self._items[int(iid) - 1]}
 
+        def yview(self, *args, **kwargs):
+            return (0, 1)
+
+        def configure(self, **kwargs):
+            pass
+
+        def grid(self, *args, **kwargs):
+            pass
+
     class DummyButton:
         def __init__(self, *args, **kwargs):
             self.options = {"state": kwargs.get("state")}
 
         def pack(self, *args, **kwargs):
+            pass
+
+        def grid(self, *args, **kwargs):
             pass
 
         def config(self, **kwargs):
@@ -168,6 +180,7 @@ def patch_ttk_style():
         patch('tkinter.Text'),
 
         patch('tkinter.StringVar', DummyStringVar),
+        patch('tkinter.BooleanVar', DummyStringVar),
 
         patch('tkinter.ttk.Treeview', DummyTreeview),
         patch('tkinter.ttk.Button', DummyButton),
