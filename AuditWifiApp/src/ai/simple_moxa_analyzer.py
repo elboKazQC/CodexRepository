@@ -60,6 +60,11 @@ def truncate_logs(logs, max_length=8000):
     half_length = max_length // 2
     return f"{logs[:half_length]}\n...[LOGS TRONQUÉS]...\n{logs[-half_length:]}"
 
+
+def _format_config_bullet_list(config: dict) -> str:
+    """Return configuration as a bullet list formatted as 'paramètre : valeur'."""
+    return "\n".join(f"- {k} : {v}" for k, v in config.items())
+
 def get_api_key():
     """Retourne la clé API OpenAI depuis la variable d'environnement."""
     api_key = os.getenv("OPENAI_API_KEY")
@@ -94,21 +99,20 @@ def analyze_moxa_logs(logs, current_config, additional_params: str | None = None
     if additional_params:
         sanitized_params = _sanitize_additional_params(additional_params)
 
+    config_bullets = _format_config_bullet_list(current_config)
     extra = f"\nParamètres supplémentaires:\n{sanitized_params}" if sanitized_params else ""
 
     prompt = f"""Analysez ces logs Moxa et la configuration actuelle.
 Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.
 
-Configuration actuelle:
-{json.dumps(current_config, indent=2)}{extra}
+Configuration actuelle (liste à puces paramètre : valeur) :
+{config_bullets}{extra}
 
-Logs à analyser:
+Logs à analyser :
 {truncated_logs}
 
-Donnez une analyse détaillée avec:
-1. Les problèmes détectés
-2. Les recommandations d'ajustements de configuration
-3. Une explication de l'impact attendu de ces changements"""
+Indiquez pour chaque paramètre à modifier la nouvelle valeur suggérée et une raison courte.
+Répondez uniquement en JSON structuré."""
 
     session = create_retry_session()
 

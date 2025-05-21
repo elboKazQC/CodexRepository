@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext, ttk
+from tkinter import filedialog, messagebox, ttk
 
 from config_manager import ConfigurationManager
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
@@ -48,7 +48,7 @@ class MoxaView:
         )
 
         self.moxa_input: tk.Text
-        self.moxa_config_text: scrolledtext.ScrolledText
+        self.config_vars: dict[str, tk.Variable]
         self.moxa_params_text: tk.Text
         self.moxa_results: tk.Text
         self.analyze_button: ttk.Button
@@ -89,41 +89,45 @@ class MoxaView:
         res_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         # ----- Right column: configuration, parameters and action buttons -----
-        cfg_frame = ttk.LabelFrame(right_pane, text="Configuration Moxa actuelle (JSON) :", padding=10)
+        cfg_frame = ttk.LabelFrame(right_pane, text="Configuration Moxa actuelle :", padding=10)
         cfg_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-        scrolled_cls = scrolledtext.ScrolledText
-        if "PYTEST_CURRENT_TEST" in os.environ:
-            scrolled_cls = tk.Text
-
-        self.moxa_config_text = scrolled_cls(cfg_frame, height=8, wrap=tk.WORD)
-        self.moxa_config_text.pack(fill=tk.BOTH, expand=True)
-        self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
-        self.setup_json_tags()
-        self.highlight_json()
+        self.config_vars = {}
+        for row, (key, value) in enumerate(self.current_config.items()):
+            label = key.replace("_", " ").capitalize()
+            ttk.Label(cfg_frame, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
+            if isinstance(value, bool):
+                var = tk.BooleanVar(value=value)
+                ttk.Checkbutton(cfg_frame, variable=var).grid(row=row, column=1, sticky=tk.W, padx=5, pady=2)
+            else:
+                var = tk.StringVar(value=str(value))
+                ttk.Entry(cfg_frame, textvariable=var, width=20).grid(row=row, column=1, padx=5, pady=2)
+            var.trace_add("write", lambda *_ , k=key, v=var: self._on_config_change(k, v))
+            self.config_vars[key] = var
 
         params_frame = ttk.LabelFrame(right_pane, text="Param\u00e8tres suppl\u00e9mentaires :", padding=10)
         params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         help_btn = ttk.Button(params_frame, text="\u2753", width=3, command=self.show_metrics_help)
         help_btn.pack(side=tk.RIGHT, padx=5)
-        self.moxa_params_text = tk.Text(params_frame, height=4, wrap=tk.WORD)
+        # Additional parameters from the user
+        self.moxa_params_text = tk.Text(params_frame, height=8, wrap=tk.WORD)
         params_scroll = ttk.Scrollbar(params_frame, command=self.moxa_params_text.yview)
         self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
         self.moxa_params_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
         ttk.Label(
             params_frame,
             text=(
                 "Indiquez ici tout contexte suppl\u00e9mentaire (ex. roaming=snr). "
                 "Le contenu sera ajout\u00e9 au prompt OpenAI."
             ),
+
         ).pack(anchor=tk.W, pady=(5, 0))
 
         cfg_btn_frame = ttk.Frame(right_pane)
         cfg_btn_frame.pack(pady=5)
         ttk.Button(cfg_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(cfg_btn_frame, text="\xc9diter config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
-
         ttk.Button(cfg_btn_frame, text="Copier JSON", command=self.copy_json).pack(side=tk.LEFT, padx=5)
         ttk.Button(cfg_btn_frame, text="Exporter JSON", command=self.export_json).pack(side=tk.LEFT, padx=5)
 
@@ -174,13 +178,9 @@ class MoxaView:
         self.moxa_results.insert('1.0', "\U0001F504 Analyse en cours avec OpenAI...\n\n")
         self.analyze_button.config(state=tk.DISABLED)
         self.moxa_results.update()
-        try:
-            config_text = self.moxa_config_text.get('1.0', tk.END).strip()
-            if config_text:
-                self.current_config = json.loads(config_text)
-        except json.JSONDecodeError:
-            messagebox.showerror("Configuration invalide", "La configuration Moxa n'est pas un JSON valide.")
-            return
+        # Ensure configuration values from widgets are stored
+        self.update_config_from_vars()
+        self.current_config = self.config_manager.get_config()
         params_text = self.moxa_params_text.get('1.0', tk.END).strip()
         analysis = analyze_moxa_logs(logs, self.current_config, params_text or None)
         if analysis:
@@ -253,73 +253,15 @@ class MoxaView:
                 with open(filepath, "r", encoding="utf-8") as f:
                     self.config_manager.config = json.load(f)
                 self.current_config = self.config_manager.get_config()
-                self.moxa_config_text.delete('1.0', tk.END)
-                self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
-                self.highlight_json()
+                for key, var in self.config_vars.items():
+                    if key in self.current_config:
+                        if isinstance(var, tk.BooleanVar):
+                            var.set(bool(self.current_config[key]))
+                        else:
+                            var.set(str(self.current_config[key]))
                 messagebox.showinfo("Configuration", f"Configuration charg\u00e9e depuis {filepath}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Impossible de charger la configuration:\n{e}")
-
-    def edit_config(self) -> None:
-        """Open a dialog allowing edition of the current JSON configuration.
-
-        Boolean options are displayed with checkboxes while numeric and string
-        options keep text fields. A ``R\u00e9initialiser`` button restores default
-        values.
-        """
-
-        dialog = tk.Toplevel(self.master)
-        dialog.title("\xc9diter la configuration")
-
-        str_entries: dict[str, tk.StringVar] = {}
-        bool_entries: dict[str, tk.BooleanVar] = {}
-
-        for row, (key, value) in enumerate(self.config_manager.get_config().items()):
-            label = key.replace("_", " ").capitalize()
-            ttk.Label(dialog, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
-            if isinstance(value, bool):
-                var = tk.BooleanVar(value=value)
-                ttk.Checkbutton(dialog, variable=var).grid(row=row, column=1, padx=5, pady=2, sticky=tk.W)
-                bool_entries[key] = var
-            else:
-                var = tk.StringVar(value=str(value))
-                ttk.Entry(dialog, textvariable=var, width=20).grid(row=row, column=1, padx=5, pady=2)
-                str_entries[key] = var
-
-        def reset() -> None:
-            """Reset fields to the default configuration."""
-            defaults = self.config_manager.default_config
-            for key, val in defaults.items():
-                if key in bool_entries:
-                    bool_entries[key].set(bool(val))
-                elif key in str_entries:
-                    str_entries[key].set(str(val))
-
-        def save() -> None:
-            """Persist edited values and refresh the JSON display."""
-            for k, v in str_entries.items():
-                val = v.get()
-                try:
-                    parsed = int(val)
-                except ValueError:
-                    try:
-                        parsed = float(val)
-                    except ValueError:
-                        parsed = val
-                self.config_manager.update_config(k, parsed)
-            for k, v in bool_entries.items():
-                self.config_manager.update_config(k, bool(v.get()))
-
-            self.current_config = self.config_manager.get_config()
-            self.moxa_config_text.delete("1.0", tk.END)
-            self.moxa_config_text.insert("1.0", json.dumps(self.current_config, indent=2))
-            self.highlight_json()
-            dialog.destroy()
-
-        row = len(str_entries) + len(bool_entries)
-        ttk.Button(dialog, text="R\u00e9initialiser", command=reset).grid(row=row, column=0, padx=5, pady=10)
-        ttk.Button(dialog, text="OK", command=save).grid(row=row, column=1, padx=5, pady=10)
-        ttk.Button(dialog, text="Annuler", command=dialog.destroy).grid(row=row, column=2, padx=5, pady=10)
 
     def save_last_config(self) -> None:
         """Save current configuration for later reuse."""
@@ -329,30 +271,27 @@ class MoxaView:
         except Exception:
             pass
 
-    def setup_json_tags(self) -> None:
-        """Configure tags for JSON highlighting."""
-        self.moxa_config_text.tag_config("key", foreground="blue")
-        self.moxa_config_text.tag_config("string", foreground="green")
-        self.moxa_config_text.tag_config("number", foreground="purple")
-        self.moxa_config_text.tag_config("bool", foreground="orange")
+    def _on_config_change(self, key: str, var: tk.Variable) -> None:
+        """Callback when a configuration field changes."""
+        value = var.get()
+        if isinstance(var, tk.BooleanVar):
+            parsed = bool(value)
+        else:
+            try:
+                parsed = int(value)
+            except ValueError:
+                try:
+                    parsed = float(value)
+                except ValueError:
+                    parsed = value
+        self.config_manager.update_config(key, parsed)
+        self.current_config = self.config_manager.get_config()
 
-    def highlight_json(self) -> None:
-        """Apply a minimal JSON coloration in the config text widget."""
-        import re
+    def update_config_from_vars(self) -> None:
+        """Persist all config widget values into the manager."""
+        for key, var in self.config_vars.items():
+            self._on_config_change(key, var)
 
-        text = self.moxa_config_text.get("1.0", tk.END)
-        if not isinstance(text, str):
-            return
-        for tag in ("key", "string", "number", "bool"):
-            self.moxa_config_text.tag_remove(tag, "1.0", tk.END)
-        for m in re.finditer(r'"[^"\n]*"(?=\s*:)', text):
-            self.moxa_config_text.tag_add("key", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
-        for m in re.finditer(r'"[^"\n]*"', text):
-            self.moxa_config_text.tag_add("string", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
-        for m in re.finditer(r'\b\d+(?:\.\d+)?\b', text):
-            self.moxa_config_text.tag_add("number", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
-        for m in re.finditer(r'\b(?:true|false|null)\b', text, re.IGNORECASE):
-            self.moxa_config_text.tag_add("bool", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
 
     def copy_json(self) -> None:
         """Copy the configuration JSON to the clipboard."""
@@ -430,3 +369,4 @@ class MoxaView:
             "Le contenu de \u201cParamètres supplémentaires\u201d est ajouté au prompt OpenAI."
         )
         messagebox.showinfo("Aide", text)
+
