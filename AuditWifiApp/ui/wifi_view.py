@@ -94,6 +94,7 @@ class WifiView:
         if MATPLOTLIB_AVAILABLE:
             self._setup_graphs()
 
+
     def _place(self, widget: Any, **grid_kwargs) -> None:
         """Place a Tkinter widget even when the test dummy lacks ``grid``."""
         if hasattr(widget, "grid"):
@@ -112,6 +113,7 @@ class WifiView:
 
     def update_stats(self) -> None:  # pragma: no cover - compatibility alias
         """Alias kept for older tests."""
+
         self._update_stats()
 
     def _setup_styles(self) -> None:
@@ -519,12 +521,14 @@ class WifiView:
                     foreground="green" if avg_quality > 50 else "red"
                 )
 
+
             # Update throughput labels using last sample
             last = self.samples[-1]
             if hasattr(self, 'tx_label'):
                 self.tx_label.config(text=f"TX : {last.transmit_rate}")
             if hasattr(self, 'rx_label'):
                 self.rx_label.config(text=f"RX : {last.receive_rate}")
+
 
         except Exception as e:
             logging.error(f"Error updating stats: {e}")

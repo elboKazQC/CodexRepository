@@ -30,6 +30,9 @@ def test_update_stats_colours_labels(mock_tk_root):
         def pack(self, *a, **kw):
             pass
 
+        def grid(self, *a, **kw):
+            pass
+
         def config(self, **kw):
             self.options.update(kw)
 
