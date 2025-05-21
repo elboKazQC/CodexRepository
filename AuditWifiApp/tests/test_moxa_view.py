@@ -22,14 +22,11 @@ def test_show_metrics_help_displays_message(mock_tk_root, tmp_path):
     module.messagebox.showinfo.assert_called_once()
 
 
-def test_edit_config_uses_checkbutton_for_bool(mock_tk_root, tmp_path):
-    """Boolean fields should render as checkboxes in the edit dialog."""
+def test_boolean_field_uses_checkbutton(mock_tk_root, tmp_path):
+    """Boolean options should create a Checkbutton widget."""
     module = importlib.reload(moxa_view_module)
-    view = module.MoxaView(mock_tk_root, str(tmp_path), {"enabled": True, "power": 5})
-
-    with patch.object(module.ttk, "Checkbutton") as check_mock, \
-         patch.object(module.tk, "Toplevel"):
-        view.edit_config()
+    with patch.object(module.ttk, "Checkbutton") as check_mock:
+        module.MoxaView(mock_tk_root, str(tmp_path), {"enabled": True, "power": 5})
 
     # Only one boolean field should generate one Checkbutton
     assert check_mock.call_count == 1
