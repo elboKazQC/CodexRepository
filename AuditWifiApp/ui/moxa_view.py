@@ -115,10 +115,14 @@ class MoxaView:
         self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
         self.moxa_params_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        # Hint label for the parameters field
+
         ttk.Label(
             params_frame,
-            text="Indiquez ici tout contexte supplémentaire",
+            text=(
+                "Indiquez ici tout contexte suppl\u00e9mentaire (ex. roaming=snr). "
+                "Le contenu sera ajout\u00e9 au prompt OpenAI."
+            ),
+
         ).pack(anchor=tk.W, pady=(5, 0))
 
         cfg_btn_frame = ttk.Frame(right_pane)
@@ -149,9 +153,11 @@ class MoxaView:
         self.moxa_input.insert('1.0', content)
 
     def show_metrics_help(self) -> None:
-        """Display a short help message about available metrics."""
+        """Explain metrics and how extra parameters are used."""
         message = (
-            "Collez vos journaux Moxa ici pour obtenir une analyse et des recommandations."
+            "Collez vos journaux Moxa ici pour obtenir une analyse et des "
+            "recommandations. Le contenu de \u201cParam\u00e8tres suppl\u00e9mentaires\u201d "
+            "sera ajout\u00e9 au prompt OpenAI (ex. roaming=snr)."
         )
         messagebox.showinfo("Aide", message)
 
@@ -342,4 +348,25 @@ class MoxaView:
         except Exception as exc:  # pragma: no cover - best effort
             messagebox.showerror("Erreur", f"Impossible d'exporter les donn\u00e9es : {exc}")
 
+
+    def load_example_log(self) -> None:
+        """Insert the bundled example log into the input widget."""
+        try:
+            with open(self.example_log_path, "r", encoding="utf-8") as f:
+                sample = f.read()
+            self.moxa_input.delete("1.0", tk.END)
+            self.moxa_input.insert("1.0", sample)
+        except Exception as exc:  # pragma: no cover - any failure just warns
+            messagebox.showerror("Erreur", f"Impossible de charger l'exemple : {exc}")
+
+    def show_metrics_help(self) -> None:
+        """Display metrics info and explain how extra params modify the prompt."""
+        text = (
+            "Les principales métriques analysées sont :\n"
+            "- Handoff time (temps de bascule entre AP).\n"
+            "- Taux de déauthentifications.\n"
+            "- Niveau de SNR et de RSSI.\n\n"
+            "Le contenu de \u201cParamètres supplémentaires\u201d est ajouté au prompt OpenAI."
+        )
+        messagebox.showinfo("Aide", text)
 
