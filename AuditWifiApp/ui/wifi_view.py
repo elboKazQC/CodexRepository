@@ -87,9 +87,14 @@ class WifiView:
             pass
 
     def create_interface(self) -> None:
-        """Create all widgets used in the WiFi tab."""
+        """Create all widgets used in the WiFi tab with a two-column grid layout."""
+        # Layout in two columns: controls on the left, visualisation on the right
+        self.frame.columnconfigure(0, weight=0)
+        self.frame.columnconfigure(1, weight=1)
+        self.frame.rowconfigure(0, weight=1)
+
         self.control_frame = ttk.LabelFrame(self.frame, text="Contr\u00f4les", padding=10)
-        self.control_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        self.control_frame.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
 
         self.start_button = ttk.Button(self.control_frame, text="\u25B6 D\u00e9marrer l'analyse", command=self.start_collection)
         self.start_button.pack(fill=tk.X, pady=5)
@@ -109,10 +114,12 @@ class WifiView:
         self.stats_text.pack(fill=tk.X, pady=5)
 
         self.viz_frame = ttk.Frame(self.frame)
-        self.viz_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.viz_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        self.viz_frame.columnconfigure(0, weight=1)
+        self.viz_frame.rowconfigure(1, weight=1)
 
         self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
-        self.scan_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
+        self.scan_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
 
         columns = ("ssid", "signal", "channel", "band")
         self.scan_tree = ttk.Treeview(self.scan_frame, columns=columns, show="headings", height=8)
@@ -122,7 +129,7 @@ class WifiView:
         self.scan_tree.pack(fill=tk.BOTH, expand=True)
 
         self.alerts_frame = ttk.LabelFrame(self.viz_frame, text="Zones probl\u00e9matiques d\u00e9tect\u00e9es", padding=5)
-        self.alerts_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
+        self.alerts_frame.grid(row=2, column=0, sticky="ew", pady=5)
 
         self.wifi_alert_text = tk.Text(self.alerts_frame, height=4, wrap=tk.WORD)
         wifi_scroll = ttk.Scrollbar(self.alerts_frame, command=self.wifi_alert_text.yview)
@@ -158,7 +165,8 @@ class WifiView:
             return
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.viz_frame)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Place the canvas in the grid so it expands with the window
+        self.canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
     # ------------------------------------------------------------------
     # WiFi actions

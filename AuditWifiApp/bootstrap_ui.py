@@ -36,7 +36,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Liste des thèmes disponibles
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
-            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero"]
+            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero", "noovelia"]
         }
 
         # Load theme from YAML config if not provided
