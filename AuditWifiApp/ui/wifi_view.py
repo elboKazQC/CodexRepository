@@ -16,6 +16,11 @@ from tkinter import filedialog, messagebox, ttk
 from typing import List
 
 try:
+    import mplcursors
+except Exception:  # pragma: no cover - optional dependency
+    mplcursors = None
+
+try:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     MATPLOTLIB_AVAILABLE = True
@@ -54,6 +59,7 @@ class WifiView:
         self.stop_button: ttk.Button
         self.scan_button: ttk.Button
         self.export_scan_button: ttk.Button
+        self.fullscreen_button: ttk.Button
         self.stats_text: tk.Text
         self.wifi_alert_text: tk.Text
         self.scan_tree: ttk.Treeview
@@ -94,9 +100,11 @@ class WifiView:
             pass
 
     def create_interface(self) -> None:
+
         """Create all widgets used in the WiFi tab."""
         # Layout uses a grid with a journal area on the right
         self.frame.columnconfigure(1, weight=1)
+
 
         self.control_frame = ttk.LabelFrame(self.frame, text="Contr\u00f4les", padding=10)
         self.control_frame.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
@@ -113,6 +121,13 @@ class WifiView:
         self.export_scan_button = ttk.Button(self.control_frame, text="\U0001F4C3 Exporter le scan", command=self.export_scan_results, state=tk.DISABLED)
         self.export_scan_button.pack(fill=tk.X, pady=5)
 
+        self.fullscreen_button = ttk.Button(
+            self.control_frame,
+            text="\U0001F5D6 Plein \u00e9cran",
+            command=self.open_fullscreen
+        )
+        self.fullscreen_button.pack(fill=tk.X, pady=5)
+
         stats_frame = ttk.LabelFrame(self.control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=10)
         self.stats_text = tk.Text(stats_frame, height=6, width=30)
@@ -121,8 +136,9 @@ class WifiView:
         self.viz_frame = ttk.Frame(self.frame)
         self.viz_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
+
         self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
-        self.scan_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
+        self.scan_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
 
         columns = ("ssid", "signal", "channel", "band")
         self.scan_tree = ttk.Treeview(self.scan_frame, columns=columns, show="headings", height=8)
@@ -130,6 +146,7 @@ class WifiView:
             self.scan_tree.heading(col, text=title)
             self.scan_tree.column(col, width=100)
         self.scan_tree.pack(fill=tk.BOTH, expand=True)
+
 
         self.alerts_frame = ttk.LabelFrame(
             self.frame,
@@ -139,6 +156,7 @@ class WifiView:
         )
         self.alerts_frame.grid(row=0, column=2, sticky="ns", padx=5, pady=5)
 
+
         self.wifi_alert_text = tk.Text(self.alerts_frame, height=4, wrap=tk.WORD)
         wifi_scroll = ttk.Scrollbar(self.alerts_frame, command=self.wifi_alert_text.yview)
         self.wifi_alert_text.configure(yscrollcommand=wifi_scroll.set)
@@ -146,7 +164,7 @@ class WifiView:
         wifi_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def setup_graphs(self) -> None:
-        """Initialise matplotlib figures used to display signal quality."""
+        """Initialise matplotlib figures and enable interactive cursors."""
         if not MATPLOTLIB_AVAILABLE:
             return
         self.fig = Figure(figsize=(10, 6))
@@ -173,7 +191,12 @@ class WifiView:
             return
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.viz_frame)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Place the canvas in the grid so it expands with the window
+        self.canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+
+        if mplcursors:
+            mplcursors.cursor(self.ax1.lines, hover=True)
+            mplcursors.cursor(self.ax2.lines, hover=True)
 
     # ------------------------------------------------------------------
     # WiFi actions
@@ -220,6 +243,16 @@ class WifiView:
                 for ap in self.scan_results:
                     writer.writerow([ap.get("ssid", ""), ap.get("signal", ""), ap.get("channel", ""), ap.get("frequency", "")])
             messagebox.showinfo("Export", f"R\u00e9sultats export\u00e9s vers {filepath}")
+
+    def open_fullscreen(self) -> None:
+        """Display the current figure in a new fullscreen window."""
+        if not MATPLOTLIB_AVAILABLE:
+            return
+        window = tk.Toplevel(self.master)
+        window.title("Visualisation WiFi")
+        canvas = FigureCanvasTkAgg(self.fig, master=window)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        window.state("zoomed")
 
     def update_data(self) -> None:
         """Fetch samples and refresh graphs periodically."""

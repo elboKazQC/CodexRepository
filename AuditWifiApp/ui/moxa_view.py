@@ -33,6 +33,9 @@ class MoxaView:
             except Exception:
                 pass
         self.current_config = self.config_manager.get_config()
+        self.example_log_path = os.path.join(
+            os.path.dirname(__file__), "..", "config", "example_moxa_log.txt"
+        )
 
         self.moxa_input: tk.Text
         self.moxa_config_text: tk.Text
@@ -47,15 +50,19 @@ class MoxaView:
     # Interface building
     # ------------------------------------------------------------------
     def create_interface(self) -> None:
-        """Create widgets for Moxa log analysis."""
-        paned = ttk.Panedwindow(self.frame, orient=tk.VERTICAL)
+        """Create widgets for Moxa log analysis using two columns."""
+        # Split the view horizontally: left column for logs/results, right column
+        # for configuration and actions. Panedwindow allows manual resizing.
+        paned = ttk.Panedwindow(self.frame, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True)
-        top_pane = ttk.Frame(paned)
-        bottom_pane = ttk.Frame(paned)
-        paned.add(top_pane, weight=1)
-        paned.add(bottom_pane, weight=1)
 
-        input_frame = ttk.LabelFrame(top_pane, text="Collez vos logs Moxa ici :", padding=10)
+        left_pane = ttk.Frame(paned)
+        right_pane = ttk.Frame(paned)
+        paned.add(left_pane, weight=3)
+        paned.add(right_pane, weight=2)
+
+        # ----- Left column: logs to analyze and resulting report -----
+        input_frame = ttk.LabelFrame(left_pane, text="Collez vos logs Moxa ici :", padding=10)
         input_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.moxa_input = tk.Text(input_frame, wrap=tk.WORD)
         input_scroll = ttk.Scrollbar(input_frame, command=self.moxa_input.yview)
@@ -63,7 +70,16 @@ class MoxaView:
         self.moxa_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         input_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        cfg_frame = ttk.LabelFrame(top_pane, text="Configuration Moxa actuelle (JSON) :", padding=10)
+        results_frame = ttk.LabelFrame(left_pane, text="R\u00e9sultats de l'analyse :", padding=10)
+        results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        self.moxa_results = tk.Text(results_frame, wrap=tk.WORD)
+        res_scroll = ttk.Scrollbar(results_frame, command=self.moxa_results.yview)
+        self.moxa_results.configure(yscrollcommand=res_scroll.set)
+        self.moxa_results.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        res_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # ----- Right column: configuration, parameters and action buttons -----
+        cfg_frame = ttk.LabelFrame(right_pane, text="Configuration Moxa actuelle (JSON) :", padding=10)
         cfg_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.moxa_config_text = tk.Text(cfg_frame, height=8, wrap=tk.WORD)
         cfg_scroll = ttk.Scrollbar(cfg_frame, command=self.moxa_config_text.yview)
@@ -72,8 +88,10 @@ class MoxaView:
         cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
 
-        params_frame = ttk.LabelFrame(top_pane, text="Param\u00e8tres suppl\u00e9mentaires :", padding=10)
+        params_frame = ttk.LabelFrame(right_pane, text="Param\u00e8tres suppl\u00e9mentaires :", padding=10)
         params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        help_btn = ttk.Button(params_frame, text="\u2753", width=3, command=self.show_metrics_help)
+        help_btn.pack(side=tk.RIGHT, padx=5)
         self.moxa_params_text = tk.Text(params_frame, height=4, wrap=tk.WORD)
         params_scroll = ttk.Scrollbar(params_frame, command=self.moxa_params_text.yview)
         self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
@@ -81,23 +99,16 @@ class MoxaView:
         params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Label(params_frame, text="Indiquez ici tout contexte suppl\u00e9mentaire (ex. roaming=snr)").pack(anchor=tk.W, pady=(5, 0))
 
-        cfg_btn_frame = ttk.Frame(top_pane)
+        cfg_btn_frame = ttk.Frame(right_pane)
         cfg_btn_frame.pack(pady=5)
         ttk.Button(cfg_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(cfg_btn_frame, text="\xc9diter config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
+        ttk.Button(cfg_btn_frame, text="Exemple de log", command=self.load_example_log).pack(side=tk.LEFT, padx=5)
 
-        self.analyze_button = ttk.Button(top_pane, text="\U0001F50E Analyser les logs", command=self.analyze_moxa_logs)
+        self.analyze_button = ttk.Button(right_pane, text="\U0001F50E Analyser les logs", command=self.analyze_moxa_logs)
         self.analyze_button.pack(pady=10)
 
-        results_frame = ttk.LabelFrame(bottom_pane, text="R\u00e9sultats de l'analyse :", padding=10)
-        results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        self.moxa_results = tk.Text(results_frame, wrap=tk.WORD)
-        res_scroll = ttk.Scrollbar(results_frame, command=self.moxa_results.yview)
-        self.moxa_results.configure(yscrollcommand=res_scroll.set)
-        self.moxa_results.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        res_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.export_button = ttk.Button(bottom_pane, text="\U0001F4BE Exporter l'analyse", command=self.export_data, state=tk.DISABLED)
+        self.export_button = ttk.Button(right_pane, text="\U0001F4BE Exporter l'analyse", command=self.export_data, state=tk.DISABLED)
         self.export_button.pack(pady=5)
 
     # ------------------------------------------------------------------
@@ -146,6 +157,7 @@ class MoxaView:
             self.display_text_analysis(analysis)
 
     def display_structured_analysis(self, data: dict) -> None:
+        """Display structured analysis returned by OpenAI."""
         if "score_global" in data:
             score = data["score_global"]
             self.moxa_results.insert('end', f"Score Global: {score}/100\n", "title")
@@ -177,6 +189,7 @@ class MoxaView:
             self.moxa_results.insert('end', f"{data['conclusion']}\n", "normal")
 
     def display_text_analysis(self, text: str) -> None:
+        """Display plain text analysis from OpenAI."""
         sections = text.split('\n\n')
         for section in sections:
             if section.strip():
@@ -240,5 +253,34 @@ class MoxaView:
             pass
 
     def export_data(self) -> None:
-        """Placeholder for compatibility with previous UI."""
-        messagebox.showinfo("Export", "Fonction d'export non impl\u00e9ment\u00e9e pour l'analyse Moxa.")
+
+        """Export current analysis results to a JSON or PDF file."""
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("Fichiers JSON", "*.json"), ("Fichiers PDF", "*.pdf")],
+            title="Exporter l'analyse",
+        )
+        if not filepath:
+            return
+
+        content = self.moxa_results.get("1.0", tk.END).strip()
+
+        try:
+            if filepath.lower().endswith(".pdf"):
+                from matplotlib.backends.backend_pdf import PdfPages
+                import matplotlib.pyplot as plt
+
+                fig = plt.figure(figsize=(8.27, 11.69))
+                plt.axis("off")
+                fig.text(0.05, 0.95, content, va="top", wrap=True)
+                with PdfPages(filepath) as pdf:
+                    pdf.savefig(fig, bbox_inches="tight")
+                plt.close(fig)
+            else:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    json.dump({"analysis": content}, f, indent=2, ensure_ascii=False)
+
+            messagebox.showinfo("Export r\u00e9ussi", f"Les r\u00e9sultats ont \u00e9t\u00e9 export\u00e9s vers :\n{filepath}")
+        except Exception as exc:  # pragma: no cover - best effort
+            messagebox.showerror("Erreur", f"Impossible d'exporter les donn\u00e9es : {exc}")
+
