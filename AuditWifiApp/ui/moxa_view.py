@@ -33,6 +33,9 @@ class MoxaView:
             except Exception:
                 pass
         self.current_config = self.config_manager.get_config()
+        self.example_log_path = os.path.join(
+            os.path.dirname(__file__), "..", "config", "example_moxa_log.txt"
+        )
 
         self.moxa_input: tk.Text
         self.moxa_config_text: tk.Text
@@ -87,6 +90,8 @@ class MoxaView:
 
         params_frame = ttk.LabelFrame(right_pane, text="Param\u00e8tres suppl\u00e9mentaires :", padding=10)
         params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        help_btn = ttk.Button(params_frame, text="\u2753", width=3, command=self.show_metrics_help)
+        help_btn.pack(side=tk.RIGHT, padx=5)
         self.moxa_params_text = tk.Text(params_frame, height=4, wrap=tk.WORD)
         params_scroll = ttk.Scrollbar(params_frame, command=self.moxa_params_text.yview)
         self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
@@ -98,6 +103,7 @@ class MoxaView:
         cfg_btn_frame.pack(pady=5)
         ttk.Button(cfg_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(cfg_btn_frame, text="\xc9diter config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
+        ttk.Button(cfg_btn_frame, text="Exemple de log", command=self.load_example_log).pack(side=tk.LEFT, padx=5)
 
         self.analyze_button = ttk.Button(right_pane, text="\U0001F50E Analyser les logs", command=self.analyze_moxa_logs)
         self.analyze_button.pack(pady=10)
@@ -247,3 +253,23 @@ class MoxaView:
     def export_data(self) -> None:
         """Placeholder for compatibility with previous UI."""
         messagebox.showinfo("Export", "Fonction d'export non impl\u00e9ment\u00e9e pour l'analyse Moxa.")
+
+    def load_example_log(self) -> None:
+        """Insert the bundled example log into the input widget."""
+        try:
+            with open(self.example_log_path, "r", encoding="utf-8") as f:
+                sample = f.read()
+            self.moxa_input.delete("1.0", tk.END)
+            self.moxa_input.insert("1.0", sample)
+        except Exception as exc:  # pragma: no cover - any failure just warns
+            messagebox.showerror("Erreur", f"Impossible de charger l'exemple : {exc}")
+
+    def show_metrics_help(self) -> None:
+        """Display a short description of the metrics used for analysis."""
+        text = (
+            "Les principales métriques analysées sont :\n"
+            "- Handoff time (temps de bascule entre AP).\n"
+            "- Taux de déauthentifications.\n"
+            "- Niveau de SNR et de RSSI."
+        )
+        messagebox.showinfo("Aide", text)
