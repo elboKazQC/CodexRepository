@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import logging
 import os
+import threading
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog, messagebox, ttk
@@ -672,24 +673,39 @@ class WifiView:
             messagebox.showerror("Erreur", f"Erreur à l'arrêt de la collecte : {e}")
 
     def scan_nearby_aps(self) -> None:
-        """Scan for nearby access points."""
+        """Scan for nearby access points in a background thread."""
         try:
-            # Get the scan function
             scan_wifi = _get_scan_wifi()
 
-            # Perform scan
-            self.scan_results = scan_wifi()
-            self._refresh_scan_tree()
+            def worker() -> None:
+                """Execute scan and update the UI once finished."""
+                try:
+                    results = scan_wifi()
+                except Exception as exc:  # pragma: no cover - unexpected runtime errors
+                    logging.error(f"Error scanning APs: {exc}")
+                    self.frame.after(0, lambda: messagebox.showerror(
+                        "Erreur", f"Erreur lors du scan : {exc}"
+                    ))
+                    return
 
-            # Enable export if we have results
-            if self.scan_results:
-                self.export_scan_button.config(state=tk.NORMAL)
-                self._log_event(f"Scan terminé : {len(self.scan_results)} réseaux trouvés")
-            else:
-                self._log_event("Scan terminé : aucun réseau trouvé")
+                def on_complete() -> None:
+                    self.scan_results = results
+                    self._refresh_scan_tree()
+                    if self.scan_results:
+                        self.export_scan_button.config(state=tk.NORMAL)
+                        self._log_event(
+                            f"Scan terminé : {len(self.scan_results)} réseaux trouvés"
+                        )
+                    else:
+                        self._log_event("Scan terminé : aucun réseau trouvé")
 
-        except Exception as e:
-            logging.error(f"Error scanning APs: {e}")
+                self.frame.after(0, on_complete)
+
+            self._scan_thread = threading.Thread(target=worker, daemon=True)
+            self._scan_thread.start()
+
+        except Exception as e:  # pragma: no cover - safeguard for thread creation
+            logging.error(f"Error starting scan thread: {e}")
             messagebox.showerror("Erreur", f"Erreur lors du scan : {e}")
 
     def _refresh_scan_tree(self) -> None:

@@ -186,6 +186,7 @@ def patch_ttk_style():
         patch('tkinter.ttk.Button', DummyButton),
         patch('tkinter.ttk.OptionMenu'),
         patch('tkinter.Menu'),
+        patch('tkinter.Misc.after', lambda self, ms, func=None: func() if func else None),
         patch('matplotlib.backends.backend_tkagg.FigureCanvasTkAgg'),
         patch('runner.NetworkAnalyzerUI.setup_graphs', lambda self: None),
     ]
