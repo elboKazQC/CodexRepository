@@ -44,7 +44,12 @@ def _get_scan_wifi():
         return scan_wifi
 
 class WifiView:
-    """Tkinter view dedicated to WiFi collection and visualisation."""
+    """Tkinter view dedicated to WiFi collection and visualisation.
+
+    The class builds the graphical interface used to monitor WiFi metrics. The
+    ``use_simple_graph`` option of :meth:`__init__` allows disabling matplotlib
+    plots in favour of a basic Tkinter ``Canvas``.
+    """
 
     STATS_LABELS = {
         'signal': {'text': "Signal : -- dBm", 'color': 'gray'},
@@ -53,12 +58,20 @@ class WifiView:
         'rx': {'text': "RX : -- Mbps", 'color': 'gray'}
     }
 
-    def __init__(self, master: tk.Misc, analyzer: NetworkAnalyzer) -> None:
+    def __init__(
+        self,
+        master: tk.Misc,
+        analyzer: NetworkAnalyzer,
+        use_simple_graph: bool = False,
+    ) -> None:
         """Instantiate the view and create the underlying frame.
 
         Args:
             master: Widget parent that will host the view's frame.
             analyzer: Network analyzer used to compute WiFi statistics.
+            use_simple_graph: When set to ``True``, force the use of a simple
+                Tkinter ``Canvas`` for plotting even if ``matplotlib`` is
+                available.
 
         The constructor sets up Tk variables, initializes plotting
         components and builds the user interface.
@@ -66,6 +79,7 @@ class WifiView:
         # Initialize instance variables
         self.master = master
         self.analyzer = analyzer
+        self.use_simple_graph = use_simple_graph
         self.frame = ttk.Frame(master)
 
         # Initialize data structures
@@ -99,7 +113,7 @@ class WifiView:
         # Set up UI
         self._setup_styles()
         self.create_interface()
-        if MATPLOTLIB_AVAILABLE:
+        if MATPLOTLIB_AVAILABLE and not self.use_simple_graph:
             self._setup_graphs()
         else:
             self._setup_canvas_fallback()
