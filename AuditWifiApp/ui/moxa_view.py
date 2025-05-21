@@ -119,8 +119,10 @@ class MoxaView:
         ttk.Label(
             params_frame,
             text=(
+
                 "Indiquez ici tout contexte suppl\u00e9mentaire. "
                 "Le contenu sera ajout\u00e9 au prompt OpenAI."
+
             ),
 
         ).pack(anchor=tk.W, pady=(5, 0))

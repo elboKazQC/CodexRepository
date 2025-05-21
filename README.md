@@ -71,7 +71,9 @@ Two buttons help manage the configuration:
 Make sure dependencies are installed with the setup script before launching tests.
 
 ```bash
+
 bash setup.sh [-f] [--offline]    # on Windows use ./setup.ps1
+
 pytest -v
 npm test # run TypeScript unit tests
 ```
