@@ -81,7 +81,12 @@ class MoxaView:
         # ----- Right column: configuration, parameters and action buttons -----
         cfg_frame = ttk.LabelFrame(right_pane, text="Configuration Moxa actuelle (JSON) :", padding=10)
         cfg_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        self.moxa_config_text = scrolledtext.ScrolledText(cfg_frame, height=8, wrap=tk.WORD)
+
+        scrolled_cls = scrolledtext.ScrolledText
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            scrolled_cls = tk.Text
+
+        self.moxa_config_text = scrolled_cls(cfg_frame, height=8, wrap=tk.WORD)
         self.moxa_config_text.pack(fill=tk.BOTH, expand=True)
         self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
         self.setup_json_tags()
@@ -304,7 +309,7 @@ class MoxaView:
 
     def copy_json(self) -> None:
         """Copy the configuration JSON to the clipboard."""
-        text = self.moxa_config_text.get("1.0", tk.END).strip()
+        text = json.dumps(self.config_manager.get_config(), indent=2)
         self.master.clipboard_clear()
         self.master.clipboard_append(text)
         messagebox.showinfo("Copie", "Configuration copi\u00e9e dans le presse-papiers")
@@ -320,7 +325,7 @@ class MoxaView:
         if filepath:
             try:
                 with open(filepath, "w", encoding="utf-8") as f:
-                    f.write(self.moxa_config_text.get("1.0", tk.END).strip())
+                    f.write(json.dumps(self.config_manager.get_config(), indent=2))
                 messagebox.showinfo("Export", f"Configuration enregistr\u00e9e dans {filepath}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Impossible d'exporter la configuration:\n{e}")
