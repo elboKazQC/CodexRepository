@@ -1,7 +1,0 @@
-{
-    "score": 0,
-    "max_score": 100,
-    "status": "ERREUR",
-    "error_message": "Erreur lors de l'analyse de la configuration: Invalid format specifier ' 0,\n    \"avg_handoff_time\": 0,\n    \"min_handoff_time\": 0,\n    \"max_handoff_time\": 0,\n    \"avg_snr_before\": 0,\n    \"avg_snr_after\": 0,\n    \"snr_improvement\": 0\n  ' for object of type 'str'",
-    "timestamp": "2025-05-08 15:34:13"
-}
