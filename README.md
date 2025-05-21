@@ -12,14 +12,21 @@ AuditWifiApp is a Python application for auditing Wi-Fi coverage in factories. I
    ./setup.ps1
    ```
    On Linux/macOS you can run `bash setup.sh` instead.
-3. Copy `.env.example` to `.env` at the project root and place your API key inside:
+3. Install Node.js (18+), then install the TypeScript tooling and build the extension:
+   ```bash
+   cd AuditWifiApp
+   npm install
+   npm run build
+   cd ..
+   ```
+4. Copy `.env.example` to `.env` at the project root and place your API key inside:
    ```bash
    cp .env.example .env
    # then edit .env and set your key
    OPENAI_API_KEY=your-key
    ```
    `.env` is ignored by Git so your key stays local.
-4. Launch the user interface:
+5. Launch the user interface:
    ```bash
    python AuditWifiApp/runner.py
    ```

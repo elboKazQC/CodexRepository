@@ -1,2 +1,6 @@
-
-
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+# compiled JS output
+AuditWifiApp/src/*.js
