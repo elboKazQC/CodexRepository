@@ -1,6 +1,7 @@
 requests>=2.31.0
 numpy>=1.24
 matplotlib>=3.7
+mplcursors>=0.5
 python-dotenv>=1.0.0
 pytest>=8.0
 responses>=0.25.7

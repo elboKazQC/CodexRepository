@@ -16,6 +16,11 @@ from tkinter import filedialog, messagebox, ttk
 from typing import List
 
 try:
+    import mplcursors
+except Exception:  # pragma: no cover - optional dependency
+    mplcursors = None
+
+try:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     MATPLOTLIB_AVAILABLE = True
@@ -54,6 +59,7 @@ class WifiView:
         self.stop_button: ttk.Button
         self.scan_button: ttk.Button
         self.export_scan_button: ttk.Button
+        self.fullscreen_button: ttk.Button
         self.stats_text: tk.Text
         self.wifi_alert_text: tk.Text
         self.scan_tree: ttk.Treeview
@@ -108,6 +114,13 @@ class WifiView:
         self.export_scan_button = ttk.Button(self.control_frame, text="\U0001F4C3 Exporter le scan", command=self.export_scan_results, state=tk.DISABLED)
         self.export_scan_button.pack(fill=tk.X, pady=5)
 
+        self.fullscreen_button = ttk.Button(
+            self.control_frame,
+            text="\U0001F5D6 Plein \u00e9cran",
+            command=self.open_fullscreen
+        )
+        self.fullscreen_button.pack(fill=tk.X, pady=5)
+
         stats_frame = ttk.LabelFrame(self.control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=10)
         self.stats_text = tk.Text(stats_frame, height=6, width=30)
@@ -138,7 +151,7 @@ class WifiView:
         wifi_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def setup_graphs(self) -> None:
-        """Initialise matplotlib figures used to display signal quality."""
+        """Initialise matplotlib figures and enable interactive cursors."""
         if not MATPLOTLIB_AVAILABLE:
             return
         self.fig = Figure(figsize=(10, 6))
@@ -167,6 +180,10 @@ class WifiView:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.viz_frame)
         # Place the canvas in the grid so it expands with the window
         self.canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+
+        if mplcursors:
+            mplcursors.cursor(self.ax1.lines, hover=True)
+            mplcursors.cursor(self.ax2.lines, hover=True)
 
     # ------------------------------------------------------------------
     # WiFi actions
@@ -213,6 +230,16 @@ class WifiView:
                 for ap in self.scan_results:
                     writer.writerow([ap.get("ssid", ""), ap.get("signal", ""), ap.get("channel", ""), ap.get("frequency", "")])
             messagebox.showinfo("Export", f"R\u00e9sultats export\u00e9s vers {filepath}")
+
+    def open_fullscreen(self) -> None:
+        """Display the current figure in a new fullscreen window."""
+        if not MATPLOTLIB_AVAILABLE:
+            return
+        window = tk.Toplevel(self.master)
+        window.title("Visualisation WiFi")
+        canvas = FigureCanvasTkAgg(self.fig, master=window)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        window.state("zoomed")
 
     def update_data(self) -> None:
         """Fetch samples and refresh graphs periodically."""
