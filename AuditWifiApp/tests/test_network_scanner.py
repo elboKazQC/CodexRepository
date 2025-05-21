@@ -48,3 +48,35 @@ SSID 2 : Network2
     for net in networks:
         assert isinstance(net, dict)
         assert set(["ssid", "signal", "channel", "frequency"]).issubset(net.keys())
+
+
+def test_scan_wifi_handles_multiple_bssid_per_ssid():
+    """Each BSSID should be returned as a separate network entry."""
+    netsh_output = """
+Interface name : Wi-Fi
+There are 1 networks currently visible.
+
+SSID 1 : Network1
+    BSSID 1                 : aa:bb:cc:dd:ee:ff
+    Signal                  : 80%
+    Radio type              : 802.11ac
+    Channel                 : 36
+    BSSID 2                 : aa:bb:cc:dd:ee:00
+    Signal                  : 70%
+    Radio type              : 802.11ac
+    Channel                 : 40
+"""
+
+    output_mapping = {
+        "netsh wlan show networks mode=bssid": netsh_output,
+        "netsh wlan show interface": "",
+        "netsh wlan show all": "",
+    }
+
+    with patch("network_scanner.subprocess.run", side_effect=fake_subprocess_run_factory(output_mapping)):
+        networks = scan_wifi()
+
+    # Two BSSIDs should produce two networks
+    assert len(networks) == 2
+    bssids = {net["bssid"] for net in networks}
+    assert {"aa:bb:cc:dd:ee:ff", "aa:bb:cc:dd:ee:00"} == bssids

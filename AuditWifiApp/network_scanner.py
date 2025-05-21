@@ -1,6 +1,7 @@
 import subprocess
 import re
 import os
+from typing import List
 
 def percentage_to_dbm(percentage):
     """Convertit un pourcentage de signal en dBm (approximation)"""
@@ -170,9 +171,10 @@ def scan_wifi():
             encoding='utf-8'  # Utiliser UTF-8 pour gérer correctement les caractères spéciaux
         )
 
-        networks = []
-        current_network = {}
-        current_bssid = None
+        networks: List[dict] = []
+        current_network: dict = {}
+        current_bssid: str | None = None
+        current_ssid: str = ""
         lines = result.stdout.splitlines()
         
         # Première analyse pour extraire les informations de base
@@ -181,21 +183,24 @@ def scan_wifi():
             
             # SSID (nom du réseau)
             if "SSID" in line and ":" in line and not "BSSID" in line:
-                if current_network and current_bssid:  # Si on a déjà un réseau en cours, on l'ajoute
+                if current_network and current_bssid:
                     networks.append(current_network.copy())
-                
+
                 ssid_parts = line.split(":", 1)
                 if len(ssid_parts) > 1:
-                    ssid = ssid_parts[1].strip()
-                    current_network = {"ssid": ssid}
+                    current_ssid = ssid_parts[1].strip()
+                    current_network = {"ssid": current_ssid}
                     current_bssid = None
-            
+
             # BSSID (adresse MAC du point d'accès)
             elif "BSSID" in line and ":" in line:
+                if current_bssid is not None and current_network:
+                    networks.append(current_network.copy())
+
                 bssid_parts = line.split(":", 1)
                 if len(bssid_parts) > 1:
                     current_bssid = bssid_parts[1].strip()
-                    current_network["bssid"] = current_bssid
+                    current_network = {"ssid": current_ssid, "bssid": current_bssid}
             
             # Signal
             elif "Signal" in line and ":" in line and current_bssid:
