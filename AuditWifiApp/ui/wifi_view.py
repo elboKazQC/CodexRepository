@@ -15,8 +15,14 @@ from datetime import datetime
 from tkinter import filedialog, messagebox, ttk
 from typing import List
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
+try:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    from matplotlib.figure import Figure
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:  # pragma: no cover - optional dependency
+    MATPLOTLIB_AVAILABLE = False
+    FigureCanvasTkAgg = None  # type: ignore
+    Figure = None  # type: ignore
 import yaml
 
 from heatmap_generator import generate_heatmap
@@ -61,7 +67,8 @@ class WifiView:
 
         self.setup_style()
         self.create_interface()
-        self.setup_graphs()
+        if MATPLOTLIB_AVAILABLE:
+            self.setup_graphs()
 
     # ------------------------------------------------------------------
     # Interface creation
@@ -125,6 +132,8 @@ class WifiView:
 
     def setup_graphs(self) -> None:
         """Initialise matplotlib figures used to display signal quality."""
+        if not MATPLOTLIB_AVAILABLE:
+            return
         self.fig = Figure(figsize=(10, 6))
         self.fig.subplots_adjust(hspace=0.3)
 
@@ -237,15 +246,16 @@ class WifiView:
 
     def update_display(self) -> None:
         """Refresh matplotlib graphs with latest samples."""
-        if not self.samples:
+        if not MATPLOTLIB_AVAILABLE or not self.samples:
             return
         signals = [s.signal_strength for s in self.samples[-self.max_samples:]]
         qualities = [s.quality for s in self.samples[-self.max_samples:]]
-        self.signal_line.set_data(range(len(signals)), signals)
-        self.quality_line.set_data(range(len(qualities)), qualities)
-        self.ax1.set_xlim(0, len(signals))
-        self.ax2.set_xlim(0, len(qualities))
-        self.canvas.draw()
+        if MATPLOTLIB_AVAILABLE:
+            self.signal_line.set_data(range(len(signals)), signals)
+            self.quality_line.set_data(range(len(qualities)), qualities)
+            self.ax1.set_xlim(0, len(signals))
+            self.ax2.set_xlim(0, len(qualities))
+            self.canvas.draw()
 
     def update_stats(self) -> None:
         """Display current statistics in the text area."""
