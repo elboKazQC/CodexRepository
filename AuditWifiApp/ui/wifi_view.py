@@ -99,10 +99,7 @@ class WifiView:
         # Set up UI
         self._setup_styles()
         self.create_interface()
-        if MATPLOTLIB_AVAILABLE:
-            self._setup_graphs()
-        else:
-            self._setup_canvas_fallback()
+        self._setup_graphs()
 
 
     def _place(self, widget: Any, **grid_kwargs) -> None:
@@ -368,8 +365,20 @@ class WifiView:
 
     def _setup_graphs(self) -> None:
         """Initialize matplotlib figures and enable interactive cursors."""
-        if not MATPLOTLIB_AVAILABLE or not self.fig:
+        if not MATPLOTLIB_AVAILABLE:
+            if "PYTEST_CURRENT_TEST" not in os.environ:
+                messagebox.showinfo(
+                    "Dépendance manquante",
+                    (
+                        "Le mode graphique avancé nécessite matplotlib.\n"
+                        "Installez les dépendances avec 'pip install -r requirements.txt'."
+                    ),
+                )
+            self._setup_canvas_fallback()
             logging.warning("Matplotlib not available or figure not initialized")
+            return
+        if not self.fig:
+            logging.warning("Figure not initialized")
             return
 
         try:
