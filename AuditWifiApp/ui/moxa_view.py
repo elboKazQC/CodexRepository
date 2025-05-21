@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from config_manager import ConfigurationManager
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
@@ -38,7 +38,7 @@ class MoxaView:
         )
 
         self.moxa_input: tk.Text
-        self.moxa_config_text: tk.Text
+        self.moxa_config_text: scrolledtext.ScrolledText
         self.moxa_params_text: tk.Text
         self.moxa_results: tk.Text
         self.analyze_button: ttk.Button
@@ -81,12 +81,11 @@ class MoxaView:
         # ----- Right column: configuration, parameters and action buttons -----
         cfg_frame = ttk.LabelFrame(right_pane, text="Configuration Moxa actuelle (JSON) :", padding=10)
         cfg_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        self.moxa_config_text = tk.Text(cfg_frame, height=8, wrap=tk.WORD)
-        cfg_scroll = ttk.Scrollbar(cfg_frame, command=self.moxa_config_text.yview)
-        self.moxa_config_text.configure(yscrollcommand=cfg_scroll.set)
-        self.moxa_config_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.moxa_config_text = scrolledtext.ScrolledText(cfg_frame, height=8, wrap=tk.WORD)
+        self.moxa_config_text.pack(fill=tk.BOTH, expand=True)
         self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+        self.setup_json_tags()
+        self.highlight_json()
 
         params_frame = ttk.LabelFrame(right_pane, text="Param\u00e8tres suppl\u00e9mentaires :", padding=10)
         params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -103,7 +102,10 @@ class MoxaView:
         cfg_btn_frame.pack(pady=5)
         ttk.Button(cfg_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(cfg_btn_frame, text="\xc9diter config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(cfg_btn_frame, text="Exemple de log", command=self.load_example_log).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(cfg_btn_frame, text="Copier JSON", command=self.copy_json).pack(side=tk.LEFT, padx=5)
+        ttk.Button(cfg_btn_frame, text="Exporter JSON", command=self.export_json).pack(side=tk.LEFT, padx=5)
+
 
         self.analyze_button = ttk.Button(right_pane, text="\U0001F50E Analyser les logs", command=self.analyze_moxa_logs)
         self.analyze_button.pack(pady=10)
@@ -209,6 +211,7 @@ class MoxaView:
                 self.current_config = self.config_manager.get_config()
                 self.moxa_config_text.delete('1.0', tk.END)
                 self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+                self.highlight_json()
                 messagebox.showinfo("Configuration", f"Configuration charg\u00e9e depuis {filepath}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Impossible de charger la configuration:\n{e}")
@@ -240,6 +243,7 @@ class MoxaView:
             self.current_config = self.config_manager.get_config()
             self.moxa_config_text.delete('1.0', tk.END)
             self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+            self.highlight_json()
             dialog.destroy()
         ttk.Button(dialog, text="OK", command=save).grid(row=len(entries), column=0, padx=5, pady=10)
         ttk.Button(dialog, text="Annuler", command=dialog.destroy).grid(row=len(entries), column=1, padx=5, pady=10)
@@ -251,6 +255,54 @@ class MoxaView:
                 json.dump(self.config_manager.get_config(), f, indent=2)
         except Exception:
             pass
+
+    def setup_json_tags(self) -> None:
+        """Configure tags for JSON highlighting."""
+        self.moxa_config_text.tag_config("key", foreground="blue")
+        self.moxa_config_text.tag_config("string", foreground="green")
+        self.moxa_config_text.tag_config("number", foreground="purple")
+        self.moxa_config_text.tag_config("bool", foreground="orange")
+
+    def highlight_json(self) -> None:
+        """Apply a minimal JSON coloration in the config text widget."""
+        import re
+
+        text = self.moxa_config_text.get("1.0", tk.END)
+        if not isinstance(text, str):
+            return
+        for tag in ("key", "string", "number", "bool"):
+            self.moxa_config_text.tag_remove(tag, "1.0", tk.END)
+        for m in re.finditer(r'"[^"\n]*"(?=\s*:)', text):
+            self.moxa_config_text.tag_add("key", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
+        for m in re.finditer(r'"[^"\n]*"', text):
+            self.moxa_config_text.tag_add("string", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
+        for m in re.finditer(r'\b\d+(?:\.\d+)?\b', text):
+            self.moxa_config_text.tag_add("number", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
+        for m in re.finditer(r'\b(?:true|false|null)\b', text, re.IGNORECASE):
+            self.moxa_config_text.tag_add("bool", f"1.0+{m.start()}c", f"1.0+{m.end()}c")
+
+    def copy_json(self) -> None:
+        """Copy the configuration JSON to the clipboard."""
+        text = self.moxa_config_text.get("1.0", tk.END).strip()
+        self.master.clipboard_clear()
+        self.master.clipboard_append(text)
+        messagebox.showinfo("Copie", "Configuration copi\u00e9e dans le presse-papiers")
+
+    def export_json(self) -> None:
+        """Save the configuration JSON to a file."""
+        filepath = filedialog.asksaveasfilename(
+            initialdir=self.config_dir,
+            defaultextension=".json",
+            filetypes=[("JSON", "*.json")],
+            title="Exporter la configuration",
+        )
+        if filepath:
+            try:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(self.moxa_config_text.get("1.0", tk.END).strip())
+                messagebox.showinfo("Export", f"Configuration enregistr\u00e9e dans {filepath}")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Impossible d'exporter la configuration:\n{e}")
 
     def export_data(self) -> None:
 

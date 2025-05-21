@@ -50,6 +50,10 @@ the **Paramètres supplémentaires** field to give extra context to the AI. For
 example `roaming=snr` will hint that signal to noise ratio should drive the
 roaming logic.
 
+Two buttons help manage the configuration:
+* **Copier JSON** copies the current JSON to the clipboard.
+* **Exporter JSON** saves it to a file of your choice.
+
 ## Running tests
 
 ```bash
