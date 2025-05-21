@@ -427,11 +427,12 @@ class WifiView:
     def _update_data(self) -> None:
         """Update displayed data."""
         try:
-            # Get latest sample
+            # Get latest sample via collector helper
             collector = getattr(self.analyzer, 'wifi_collector', None)
             if collector:
-                sample = getattr(collector, 'last_sample', None)
-                if sample:
+                # Use dedicated accessor to fetch the latest collected sample
+                sample = collector.get_latest_sample()
+                if sample is not None:
                     self.samples.append(sample)
                     if len(self.samples) > self.max_samples:
                         self.samples.pop(0)
