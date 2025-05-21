@@ -112,6 +112,7 @@ def test_additional_params_in_prompt(sample_moxa_logs):
     with patch('src.ai.simple_moxa_analyzer.create_retry_session', return_value=session):
         analyze_moxa_logs(sample_moxa_logs, {}, "roaming=snr")
 
+    assert "Param\u00e8tres suppl\u00e9mentaires" in captured["prompt"]
     assert "roaming=snr" in captured["prompt"]
 
 

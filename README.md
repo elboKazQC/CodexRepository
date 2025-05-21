@@ -62,10 +62,10 @@ Start the application with:
 python AuditWifiApp/main.py
 ```
 
-When analyzing Moxa logs, paste them in the dedicated tab. Optionally fill in
-the **Paramètres supplémentaires** field to give extra context to the AI. For
-example `roaming=snr` will hint that signal to noise ratio should drive the
-roaming logic.
+When analyzing Moxa logs, paste them in the dedicated tab. You can also add
+custom instructions in the **Paramètres supplémentaires** field. This text is
+appended to the prompt sent to OpenAI. For example `roaming=snr` hints that the
+signal to noise ratio should drive the roaming logic.
 
 Two buttons help manage the configuration:
 * **Copier JSON** copies the current JSON to the clipboard.
