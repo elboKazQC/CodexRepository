@@ -11,9 +11,16 @@ import sys
 import tkinter as tk
 
 from tkinter import ttk, messagebox, filedialog, simpledialog
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    from matplotlib.figure import Figure
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:  # pragma: no cover - optional dependency
+    MATPLOTLIB_AVAILABLE = False
+    plt = None
+    FigureCanvasTkAgg = None  # type: ignore
+    Figure = None  # type: ignore
 import numpy as np
 from typing import List, Optional
 
@@ -624,18 +631,20 @@ class NetworkAnalyzerUI:
 
 
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
-    """Backward-compatible alias used in tests."""
+    """Backward-compatible alias without side effects."""
+    pass
 
+
+def main() -> None:
+    """Standalone entry point for manual execution."""
     try:
         root = tk.Tk()
-        # Instantiate the UI using the theme defined in the configuration
         from bootstrap_ui import BootstrapNetworkAnalyzerUI
         app = BootstrapNetworkAnalyzerUI(root)
         root.mainloop()
-    except Exception as e:
-        print(f"Erreur fatale: {str(e)}")
-        tk.messagebox.showerror("Erreur fatale", str(e))
-        sys.exit(1)
+    except Exception as exc:  # pragma: no cover - runtime protection
+        print(f"Erreur fatale: {exc}")
+        tk.messagebox.showerror("Erreur fatale", str(exc))
 
 
 if __name__ == "__main__":
