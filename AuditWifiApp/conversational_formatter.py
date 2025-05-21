@@ -4,8 +4,6 @@ semblable à une réponse de ChatGPT, pour une lecture plus fluide et naturelle.
 """
 from datetime import datetime
 
-from datetime import datetime
-
 def format_conversationally(analysis_results):
     """
     Transforme les résultats d'analyse JSON en un texte conversationnel.

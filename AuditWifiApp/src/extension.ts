@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import MoxaAnalyzer from './moxaAnalyzer';
@@ -10,8 +9,8 @@ import { RecommendationsViewProvider } from './recommendationsViewProvider';
 // Charger les variables d'environnement
 dotenv.config();
 
-// État global pour les résultats d'analyse
-let analysisResults: any = null;
+// Clé utilisée pour stocker les résultats d'analyse dans l'état de l'extension
+const RESULTS_KEY = 'analysisResults';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Extension "moxa-wifi-analyzer" is now active');
@@ -30,6 +29,13 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider('moxaLogs', logsViewProvider),
         vscode.window.registerWebviewViewProvider('moxaRecommendations', recommendationsViewProvider)
     );
+
+    // Charger d'éventuels résultats précédemment stockés
+    const previousResults = context.workspaceState.get(RESULTS_KEY);
+    if (previousResults) {
+        logsViewProvider.updateResults(previousResults);
+        recommendationsViewProvider.updateResults(previousResults);
+    }
 
     // Commande pour analyser les logs
     const analyzeCommand = vscode.commands.registerCommand('moxa-wifi-analyzer.analyze', async () => {
@@ -70,13 +76,15 @@ export function activate(context: vscode.ExtensionContext) {
                 try {
                     progress.report({ increment: 30, message: "Traitement des logs..." });
                     
-                    analysisResults = await moxaAnalyzer.analyzeLog(logContent, config);
-                    
+                    const results = await moxaAnalyzer.analyzeLog(logContent, config);
+                    await context.workspaceState.update(RESULTS_KEY, results);
+
                     progress.report({ increment: 70, message: "Génération des recommandations..." });
 
-                    // Mettre à jour les vues avec les résultats
-                    logsViewProvider.updateResults(analysisResults);
-                    recommendationsViewProvider.updateResults(analysisResults);
+                    // Mettre à jour les vues avec les résultats stockés
+                    const stored = context.workspaceState.get(RESULTS_KEY);
+                    logsViewProvider.updateResults(stored);
+                    recommendationsViewProvider.updateResults(stored);
 
                     progress.report({ increment: 100, message: "Analyse terminée!" });
 
@@ -84,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
                     vscode.commands.executeCommand('moxaRecommendations.focus');
                     
                     vscode.window.showInformationMessage(
-                        `Analyse terminée avec score: ${analysisResults.score}/100. Voir les recommandations pour plus de détails.`
+                        `Analyse terminée avec score: ${results.score}/100. Voir les recommandations pour plus de détails.`
                     );
                 } catch (error) {
                     vscode.window.showErrorMessage(`Erreur lors de l'analyse: ${error}`);
@@ -99,11 +107,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Commande pour afficher les recommandations
     const showRecommendationsCommand = vscode.commands.registerCommand('moxa-wifi-analyzer.showRecommendations', () => {
-        if (!analysisResults) {
+        const stored = context.workspaceState.get(RESULTS_KEY);
+        if (!stored) {
             vscode.window.showInformationMessage('Veuillez d\'abord analyser un fichier log.');
             return;
         }
 
+        logsViewProvider.updateResults(stored);
+        recommendationsViewProvider.updateResults(stored);
         vscode.commands.executeCommand('moxaRecommendations.focus');
     });
 
