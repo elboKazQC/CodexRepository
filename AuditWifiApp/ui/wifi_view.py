@@ -89,15 +89,22 @@ class WifiView:
             style.configure("Alert.TLabel", foreground="red", font=("Helvetica", 12))
             style.configure("Stats.TLabel", font=("Helvetica", 10))
             style.configure("Analyze.TButton", font=("Helvetica", 12), padding=10)
+            # Custom style for the journal area on the right
+            style.configure("Journal.TLabelframe", background="#f0f0f0")
+            style.configure(
+                "Journal.TLabelframe.Label",
+                background="#f0f0f0",
+                foreground="red",
+            )
         except Exception:
             pass
 
     def create_interface(self) -> None:
-        """Create all widgets used in the WiFi tab with a two-column grid layout."""
-        # Layout in two columns: controls on the left, visualisation on the right
-        self.frame.columnconfigure(0, weight=0)
+
+        """Create all widgets used in the WiFi tab."""
+        # Layout uses a grid with a journal area on the right
         self.frame.columnconfigure(1, weight=1)
-        self.frame.rowconfigure(0, weight=1)
+
 
         self.control_frame = ttk.LabelFrame(self.frame, text="Contr\u00f4les", padding=10)
         self.control_frame.grid(row=0, column=0, sticky="ns", padx=5, pady=5)
@@ -128,8 +135,7 @@ class WifiView:
 
         self.viz_frame = ttk.Frame(self.frame)
         self.viz_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-        self.viz_frame.columnconfigure(0, weight=1)
-        self.viz_frame.rowconfigure(1, weight=1)
+
 
         self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
         self.scan_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
@@ -141,8 +147,15 @@ class WifiView:
             self.scan_tree.column(col, width=100)
         self.scan_tree.pack(fill=tk.BOTH, expand=True)
 
-        self.alerts_frame = ttk.LabelFrame(self.viz_frame, text="Zones probl\u00e9matiques d\u00e9tect\u00e9es", padding=5)
-        self.alerts_frame.grid(row=2, column=0, sticky="ew", pady=5)
+
+        self.alerts_frame = ttk.LabelFrame(
+            self.frame,
+            text="\U0001F534 Journal",
+            padding=5,
+            style="Journal.TLabelframe",
+        )
+        self.alerts_frame.grid(row=0, column=2, sticky="ns", padx=5, pady=5)
+
 
         self.wifi_alert_text = tk.Text(self.alerts_frame, height=4, wrap=tk.WORD)
         wifi_scroll = ttk.Scrollbar(self.alerts_frame, command=self.wifi_alert_text.yview)
