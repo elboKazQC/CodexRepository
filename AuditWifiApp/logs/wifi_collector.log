@@ -1206,3 +1206,5 @@
 2025-05-21 13:47:21,207 - INFO - [wifi_collector.py:98] - Démarrage de la collecte WiFi
 2025-05-21 13:47:21,909 - DEBUG - [wifi_collector.py:135] - Échantillon collecté: Noovelia - -54dBm
 2025-05-21 13:47:32,249 - INFO - [wifi_collector.py:168] - Arrêt de la collecte WiFi
+2025-05-21 13:50:20,898 - INFO - [wifi_collector.py:98] - Démarrage de la collecte WiFi
+2025-05-21 13:50:21,537 - DEBUG - [wifi_collector.py:135] - Échantillon collecté: Noovelia - -56dBm

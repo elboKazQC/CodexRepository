@@ -5,18 +5,18 @@ import json
 import requests
 
 from config_manager import ConfigurationManager
-from app_config import CONFIG_PATH
+from app_config import Constants
 
 class MoxaLogAnalyzer:
     """
-    Analyse les logs Moxa via l'API OpenAI pour fournir des recommandations 
+    Analyse les logs Moxa via l'API OpenAI pour fournir des recommandations
     d'optimisation des paramètres Moxa. Utilise l'API GPT-4 pour analyser
     les patterns dans les logs et générer des suggestions d'amélioration.
     """
 
     def __init__(self, config_manager: ConfigurationManager | None = None):
         """Initialise l'analyseur avec la configuration fournie."""
-        self.config_manager = config_manager or ConfigurationManager(path=CONFIG_PATH)
+        self.config_manager = config_manager or ConfigurationManager(path=Constants.CONFIG_PATH)
         cfg = self.config_manager.get_config().get("moxa_analyzer", {})
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.max_tokens = cfg.get("max_tokens", 2000)
@@ -25,15 +25,15 @@ class MoxaLogAnalyzer:
         """
         Analyse les logs Moxa via l'API OpenAI pour identifier les problèmes
         et générer des recommandations d'optimisation.
-        
+
         Args:
             log_content (str): Contenu des logs à analyser
             current_config (dict): Configuration Moxa actuelle
-            
+
         Returns:
             dict: Résultat de l'analyse contenant les problèmes détectés
                 et les recommandations d'optimisation
-            
+
         Raises:
             ValueError: Si les logs sont vides ou la clé API n'est pas configurée
             Exception: En cas d'erreur avec l'API OpenAI ou le traitement des logs

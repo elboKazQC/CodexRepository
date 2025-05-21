@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import List, Optional, Dict
 
 from config_manager import ConfigurationManager
-from app_config import CONFIG_PATH
+from app_config import Constants
 
 from models.measurement_record import WifiMeasurement, PingMeasurement, NetworkStatus
 from models.wifi_record import WifiRecord
@@ -60,7 +60,7 @@ class WifiDataCollector:
 
     def __init__(self, base_path: str | None = None, config_manager: ConfigurationManager | None = None):
         """Initialise le collecteur avec les paramètres issus de la configuration."""
-        self.config_manager = config_manager or ConfigurationManager(path=CONFIG_PATH)
+        self.config_manager = config_manager or ConfigurationManager(path=Constants.CONFIG_PATH)
         cfg = self.config_manager.get_config().get("wifi", {})
         collector_cfg = cfg.get("collector", {})
         self.retry_config = collector_cfg.get("retry", {})

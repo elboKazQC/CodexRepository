@@ -42,3 +42,7 @@
 2025-05-18 09:32:56,852 - ERROR - Impossible de collecter les données WiFi
 2025-05-18 09:32:58,854 - INFO - Démarrage de la collecte de données...
 2025-05-18 09:33:08,921 - ERROR - Impossible de collecter les données WiFi
+2025-05-21 14:06:35 - SIMPLE_MOXA_ANALYZER - Impossible de contacter le service OpenAI. VÃ©rifiez votre connexion internet ou votre clÃ© API.
+2025-05-21 14:06:50 - SIMPLE_WIFI_ANALYZER - Erreur API OpenAI (400): <MagicMock name='post().json().get().get()' id='2844046800848'>
+2025-05-21 14:06:50 - SIMPLE_WIFI_ANALYZER - Erreur lors de l'analyse: Erreur API OpenAI (400): <MagicMock name='post().json().get().get()' id='2844046800848'>
+2025-05-21 14:06:50 - SIMPLE_WIFI_ANALYZER - Impossible de contacter le service OpenAI. VÃ©rifiez votre connexion internet ou votre clÃ© API.
