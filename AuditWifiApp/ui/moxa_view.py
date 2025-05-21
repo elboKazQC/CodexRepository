@@ -243,36 +243,65 @@ class MoxaView:
                 messagebox.showerror("Erreur", f"Impossible de charger la configuration:\n{e}")
 
     def edit_config(self) -> None:
-        """Display a small dialog to edit current configuration."""
+        """Open a dialog allowing edition of the current JSON configuration.
+
+        Boolean options are displayed with checkboxes while numeric and string
+        options keep text fields. A ``R\u00e9initialiser`` button restores default
+        values.
+        """
+
         dialog = tk.Toplevel(self.master)
         dialog.title("\xc9diter la configuration")
-        entries = {}
+
+        str_entries: dict[str, tk.StringVar] = {}
+        bool_entries: dict[str, tk.BooleanVar] = {}
+
         for row, (key, value) in enumerate(self.config_manager.get_config().items()):
-            ttk.Label(dialog, text=key).grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
-            var = tk.StringVar(value=str(value))
-            ttk.Entry(dialog, textvariable=var, width=20).grid(row=row, column=1, padx=5, pady=2)
-            entries[key] = var
+            label = key.replace("_", " ").capitalize()
+            ttk.Label(dialog, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
+            if isinstance(value, bool):
+                var = tk.BooleanVar(value=value)
+                ttk.Checkbutton(dialog, variable=var).grid(row=row, column=1, padx=5, pady=2, sticky=tk.W)
+                bool_entries[key] = var
+            else:
+                var = tk.StringVar(value=str(value))
+                ttk.Entry(dialog, textvariable=var, width=20).grid(row=row, column=1, padx=5, pady=2)
+                str_entries[key] = var
+
+        def reset() -> None:
+            """Reset fields to the default configuration."""
+            defaults = self.config_manager.default_config
+            for key, val in defaults.items():
+                if key in bool_entries:
+                    bool_entries[key].set(bool(val))
+                elif key in str_entries:
+                    str_entries[key].set(str(val))
+
         def save() -> None:
-            for k, v in entries.items():
+            """Persist edited values and refresh the JSON display."""
+            for k, v in str_entries.items():
                 val = v.get()
-                if val.lower() in ("true", "false"):
-                    parsed = val.lower() == "true"
-                else:
+                try:
+                    parsed = int(val)
+                except ValueError:
                     try:
-                        parsed = int(val)
+                        parsed = float(val)
                     except ValueError:
-                        try:
-                            parsed = float(val)
-                        except ValueError:
-                            parsed = val
+                        parsed = val
                 self.config_manager.update_config(k, parsed)
+            for k, v in bool_entries.items():
+                self.config_manager.update_config(k, bool(v.get()))
+
             self.current_config = self.config_manager.get_config()
-            self.moxa_config_text.delete('1.0', tk.END)
-            self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
+            self.moxa_config_text.delete("1.0", tk.END)
+            self.moxa_config_text.insert("1.0", json.dumps(self.current_config, indent=2))
             self.highlight_json()
             dialog.destroy()
-        ttk.Button(dialog, text="OK", command=save).grid(row=len(entries), column=0, padx=5, pady=10)
-        ttk.Button(dialog, text="Annuler", command=dialog.destroy).grid(row=len(entries), column=1, padx=5, pady=10)
+
+        row = len(str_entries) + len(bool_entries)
+        ttk.Button(dialog, text="R\u00e9initialiser", command=reset).grid(row=row, column=0, padx=5, pady=10)
+        ttk.Button(dialog, text="OK", command=save).grid(row=row, column=1, padx=5, pady=10)
+        ttk.Button(dialog, text="Annuler", command=dialog.destroy).grid(row=row, column=2, padx=5, pady=10)
 
     def save_last_config(self) -> None:
         """Save current configuration for later reuse."""

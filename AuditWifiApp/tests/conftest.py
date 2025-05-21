@@ -134,6 +134,9 @@ def patch_ttk_style():
         def pack(self, *args, **kwargs):
             pass
 
+        def grid(self, *args, **kwargs):
+            pass
+
         def config(self, **kwargs):
             self.options.update(kwargs)
 
@@ -168,6 +171,7 @@ def patch_ttk_style():
         patch('tkinter.Text'),
 
         patch('tkinter.StringVar', DummyStringVar),
+        patch('tkinter.BooleanVar', DummyStringVar),
 
         patch('tkinter.ttk.Treeview', DummyTreeview),
         patch('tkinter.ttk.Button', DummyButton),
