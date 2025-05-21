@@ -19,6 +19,16 @@ class MoxaView:
     """Tkinter view dedicated to Moxa log analysis."""
 
     def __init__(self, master: tk.Misc, config_dir: str, default_config: dict) -> None:
+        """Create the view and load the latest configuration.
+
+        Args:
+            master: Parent widget hosting the frame.
+            config_dir: Directory where configuration files are stored.
+            default_config: Default configuration to use when none was saved.
+
+        On initialization the previous config is loaded if present and all
+        Tkinter widgets are prepared.
+        """
         self.master = master
         self.frame = ttk.Frame(master)
 

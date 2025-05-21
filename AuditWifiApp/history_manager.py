@@ -18,6 +18,14 @@ class HistoryManager:
     """Persist and retrieve generated reports."""
 
     def __init__(self, db_path: str | None = None, json_dir: str | None = None) -> None:
+        """Set up paths and initialise the SQLite store.
+
+        Args:
+            db_path: Optional path to the SQLite database used to index reports.
+            json_dir: Directory where exported report files are saved.
+
+        The database is created on first run if it does not already exist.
+        """
         self.json_dir = json_dir or os.path.join(os.path.dirname(__file__), "logs")
         self.db_path = db_path or os.path.join(self.json_dir, "reports.db")
         os.makedirs(self.json_dir, exist_ok=True)
