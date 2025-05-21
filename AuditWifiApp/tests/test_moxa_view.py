@@ -33,3 +33,15 @@ def test_edit_config_uses_checkbutton_for_bool(mock_tk_root, tmp_path):
 
     # Only one boolean field should generate one Checkbutton
     assert check_mock.call_count == 1
+
+
+def test_params_field_height_and_label(mock_tk_root, tmp_path):
+    """The params text widget should be taller and label without example."""
+    with patch("tkinter.Text") as text_mock, patch("tkinter.ttk.Label") as label_mock:
+        module = importlib.reload(moxa_view_module)
+        module.MoxaView(mock_tk_root, str(tmp_path), {})
+
+    assert text_mock.call_args_list[3].kwargs.get("height") == 8
+    texts = [c.kwargs.get("text") for c in label_mock.call_args_list]
+    assert "Indiquez ici tout contexte supplémentaire" in texts
+    assert all("roaming" not in t for t in texts if t)

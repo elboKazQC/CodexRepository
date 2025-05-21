@@ -106,12 +106,17 @@ class MoxaView:
         params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         help_btn = ttk.Button(params_frame, text="\u2753", width=3, command=self.show_metrics_help)
         help_btn.pack(side=tk.RIGHT, padx=5)
-        self.moxa_params_text = tk.Text(params_frame, height=4, wrap=tk.WORD)
+        # Additional parameters from the user
+        self.moxa_params_text = tk.Text(params_frame, height=8, wrap=tk.WORD)
         params_scroll = ttk.Scrollbar(params_frame, command=self.moxa_params_text.yview)
         self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
         self.moxa_params_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Label(params_frame, text="Indiquez ici tout contexte suppl\u00e9mentaire (ex. roaming=snr)").pack(anchor=tk.W, pady=(5, 0))
+        # Hint label for the parameters field
+        ttk.Label(
+            params_frame,
+            text="Indiquez ici tout contexte supplémentaire",
+        ).pack(anchor=tk.W, pady=(5, 0))
 
         cfg_btn_frame = ttk.Frame(right_pane)
         cfg_btn_frame.pack(pady=5)
