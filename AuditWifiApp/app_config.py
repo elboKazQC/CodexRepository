@@ -31,6 +31,9 @@ class Constants:
     CONFIG_PATH = Path(__file__).parent / "config.yaml"
     DEFAULT_ENCODING = "utf-8"
 
+# Backward compatibility constant
+CONFIG_PATH = Constants.CONFIG_PATH
+
 
 def load_config(path: Path = Constants.CONFIG_PATH) -> Dict[str, Any]:
     """

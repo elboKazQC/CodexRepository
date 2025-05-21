@@ -44,7 +44,12 @@ def _get_scan_wifi():
         return scan_wifi
 
 class WifiView:
-    """Tkinter view dedicated to WiFi collection and visualisation."""
+    """Tkinter view dedicated to WiFi collection and visualisation.
+
+    The class builds the graphical interface used to monitor WiFi metrics. The
+    ``use_simple_graph`` option of :meth:`__init__` allows disabling matplotlib
+    plots in favour of a basic Tkinter ``Canvas``.
+    """
 
     STATS_LABELS = {
         'signal': {'text': "Signal : -- dBm", 'color': 'gray'},
@@ -53,12 +58,20 @@ class WifiView:
         'rx': {'text': "RX : -- Mbps", 'color': 'gray'}
     }
 
-    def __init__(self, master: tk.Misc, analyzer: NetworkAnalyzer) -> None:
+    def __init__(
+        self,
+        master: tk.Misc,
+        analyzer: NetworkAnalyzer,
+        use_simple_graph: bool = False,
+    ) -> None:
         """Instantiate the view and create the underlying frame.
 
         Args:
             master: Widget parent that will host the view's frame.
             analyzer: Network analyzer used to compute WiFi statistics.
+            use_simple_graph: When set to ``True``, force the use of a simple
+                Tkinter ``Canvas`` for plotting even if ``matplotlib`` is
+                available.
 
         The constructor sets up Tk variables, initializes plotting
         components and builds the user interface.
@@ -66,6 +79,7 @@ class WifiView:
         # Initialize instance variables
         self.master = master
         self.analyzer = analyzer
+        self.use_simple_graph = use_simple_graph
         self.frame = ttk.Frame(master)
 
         # Initialize data structures
@@ -99,10 +113,9 @@ class WifiView:
         # Set up UI
         self._setup_styles()
         self.create_interface()
-        if MATPLOTLIB_AVAILABLE:
-            self._setup_graphs()
-        else:
-            self._setup_canvas_fallback()
+
+        self._setup_graphs()
+
 
 
     def _place(self, widget: Any, **grid_kwargs) -> None:
@@ -368,8 +381,20 @@ class WifiView:
 
     def _setup_graphs(self) -> None:
         """Initialize matplotlib figures and enable interactive cursors."""
-        if not MATPLOTLIB_AVAILABLE or not self.fig:
+        if not MATPLOTLIB_AVAILABLE:
+            if "PYTEST_CURRENT_TEST" not in os.environ:
+                messagebox.showinfo(
+                    "Dépendance manquante",
+                    (
+                        "Le mode graphique avancé nécessite matplotlib.\n"
+                        "Installez les dépendances avec 'pip install -r requirements.txt'."
+                    ),
+                )
+            self._setup_canvas_fallback()
             logging.warning("Matplotlib not available or figure not initialized")
+            return
+        if not self.fig:
+            logging.warning("Figure not initialized")
             return
 
         try:
@@ -524,24 +549,16 @@ class WifiView:
                 logging.warning("No WiFi collector available")
                 return
 
-            # Log collector state
             is_collecting = getattr(collector, 'is_collecting', False)
-            logging.info(f"Collector state - is_collecting: {is_collecting}")
 
             sample = None
             if is_collecting:
-                logging.debug("Collecting new sample...")
                 sample = collector.collect_sample()
-                if sample:
-                    logging.info(f"New sample collected: Signal={sample.signal_strength}dBm, Quality={sample.quality}%")
-                else:
-                    logging.warning("Failed to collect new sample")
 
             if sample is not None:
                 self.samples.append(sample)
                 if len(self.samples) > self.max_samples:
                     self.samples.pop(0)
-                logging.info(f"Total samples in buffer: {len(self.samples)}")
 
             # Update display
             self._update_stats()

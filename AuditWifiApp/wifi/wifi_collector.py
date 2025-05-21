@@ -2,12 +2,16 @@ import os
 import json
 import logging
 import subprocess
+import time
 from datetime import datetime
 from typing import Optional, Dict, List
 from dataclasses import dataclass
+from queue import Queue, Empty
+from threading import Thread
 
 @dataclass
 class WifiSample:
+    """Représente une mesure WiFi provenant du script PowerShell."""
     timestamp: str
     ssid: str
     bssid: str
@@ -44,13 +48,19 @@ class WifiSample:
         )
 
 class WifiCollector:
+    """Collecte des échantillons WiFi via un script PowerShell exécuté en tâche de fond."""
     def __init__(self, script_path: str = None):
-        self.script_path = script_path or os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wifi_monitor.ps1')
+        self.script_path = script_path or os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), 'wifi_monitor.ps1'
+        )
         self.is_collecting = False
         self.samples: List[WifiSample] = []
         self.current_location_tag: str = ""
         self.error_count = 0
         self.max_errors = 5
+        self.collection_interval = 1.0
+        self._queue: Queue[WifiSample] = Queue()
+        self.collection_thread: Optional[Thread] = None
         self.logger = self._setup_logging()
 
     def _setup_logging(self) -> logging.Logger:
@@ -89,6 +99,43 @@ class WifiCollector:
 
         return logger
 
+    def _collection_loop(self) -> None:
+        """Thread loop executing the PowerShell script periodically."""
+        while self.is_collecting:
+            try:
+                result = subprocess.run(
+                    ['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', self.script_path],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+
+                data = json.loads(result.stdout)
+
+                if data.get('Status') == 'Connected':
+                    sample = WifiSample.from_powershell_data(
+                        data, self.current_location_tag
+                    )
+                    self.samples.append(sample)
+                    self._queue.put(sample)
+                    self.error_count = 0
+                    self.logger.debug(
+                        "Échantillon collecté: %s - %sdBm", sample.ssid, sample.signal_strength
+                    )
+                else:
+                    self.logger.warning("Pas de connexion WiFi: %s", data.get('Status'))
+
+            except subprocess.CalledProcessError as e:
+                self._handle_error(
+                    f"Erreur lors de l'exécution du script PowerShell: {e}"
+                )
+            except json.JSONDecodeError as e:
+                self._handle_error(f"Erreur de parsing JSON: {e}")
+            except Exception as e:  # pragma: no cover - unexpected errors
+                self._handle_error(f"Erreur inattendue: {e}")
+
+            time.sleep(self.collection_interval)
+
     def start_collection(self, location_tag: str = "") -> bool:
         """Démarre la collecte WiFi"""
         try:
@@ -100,6 +147,9 @@ class WifiCollector:
             self.error_count = 0
             self.is_collecting = True
             self.samples = []
+            self._queue = Queue()
+            self.collection_thread = Thread(target=self._collection_loop, daemon=True)
+            self.collection_thread.start()
             return True
 
         except Exception as e:
@@ -111,45 +161,13 @@ class WifiCollector:
         self.current_location_tag = tag
 
     def collect_sample(self) -> Optional[WifiSample]:
-        """Collecte un échantillon de données WiFi via PowerShell"""
+        """Retourne le dernier échantillon mis en file."""
         if not self.is_collecting:
             return None
 
         try:
-            # Exécute le script PowerShell
-            result = subprocess.run(
-                ['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', self.script_path],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-
-            # Parse le JSON retourné
-            data = json.loads(result.stdout)
-
-            # Si nous sommes connectés, créer l'échantillon
-            if data.get('Status') == 'Connected':
-                sample = WifiSample.from_powershell_data(data, self.current_location_tag)
-                self.samples.append(sample)
-                self.error_count = 0  # Réinitialise le compteur d'erreurs
-                self.logger.debug(f"Échantillon collecté: {sample.ssid} - {sample.signal_strength}dBm")
-                return sample
-            else:
-                self.logger.warning(f"Pas de connexion WiFi: {data.get('Status')}")
-                return None
-
-        except subprocess.CalledProcessError as e:
-            self.error_count += 1
-            self.logger.error(f"Erreur lors de l'exécution du script PowerShell: {e}")
-            if self.error_count >= self.max_errors:
-                self.logger.critical("Trop d'erreurs consécutives, arrêt de la collecte")
-                self.stop_collection()
-            return None
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Erreur de parsing JSON: {e}")
-            return None
-        except Exception as e:
-            self.logger.error(f"Erreur inattendue: {e}")
+            return self._queue.get_nowait()
+        except Empty:
             return None
 
     def _handle_error(self, message: str) -> None:
@@ -164,9 +182,11 @@ class WifiCollector:
             self.stop_collection()
 
     def stop_collection(self) -> List[WifiSample]:
-        """Arrête la collecte et retourne les échantillons collectés"""
+        """Arrête la collecte et retourne les échantillons collectés."""
         self.logger.info("Arrêt de la collecte WiFi")
         self.is_collecting = False
+        if self.collection_thread and self.collection_thread.is_alive():
+            self.collection_thread.join(timeout=2.0)
         return self.samples
 
     def get_latest_sample(self) -> Optional[WifiSample]:
