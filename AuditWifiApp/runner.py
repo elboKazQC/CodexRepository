@@ -52,9 +52,14 @@ class NetworkAnalyzerUI:
         self.create_interface()
 
     def setup_graphs(self) -> None:
-        """Deprecated compatibility method for tests."""
-        # The graph setup logic now lives in WifiView.
-        pass
+
+        """Initialize WiFi graphs via the WiFi view."""
+        if hasattr(self, "wifi_view") and hasattr(self.wifi_view, "_setup_graphs"):
+            try:
+                self.wifi_view._setup_graphs()
+            except Exception as exc:  # pragma: no cover - defensive
+                logging.error("Error setting up graphs: %s", exc)
+
 
     def create_interface(self):
         """Crée l'interface principale"""

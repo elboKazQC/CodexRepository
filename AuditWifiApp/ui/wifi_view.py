@@ -94,24 +94,18 @@ class WifiView:
         if MATPLOTLIB_AVAILABLE:
             self._setup_graphs()
 
-    def _place(self, widget: Any, **grid_kwargs) -> None:
-        """Place a Tkinter widget even when the test dummy lacks ``grid``."""
-        if hasattr(widget, "grid"):
-            widget.grid(**grid_kwargs)
-        else:  # Fallback used in the unit tests
-            widget.pack()
 
-    # Backward compatibility for tests
-    def update_data(self) -> None:  # pragma: no cover - simple wrapper
-        """Public wrapper calling the internal update routine."""
+    def update_data(self) -> None:
+        """Public wrapper to update graphs and labels."""
         self._update_data()
 
-    def update_status(self) -> None:  # pragma: no cover - simple wrapper
-        """Public wrapper calling the internal stats refresh."""
+    def update_status(self) -> None:
+        """Public wrapper to refresh status display."""
         self._update_stats()
 
-    def update_stats(self) -> None:  # pragma: no cover - compatibility alias
-        """Alias kept for older tests."""
+    def update_stats(self) -> None:
+        """Backward compatibility wrapper for old tests."""
+
         self._update_stats()
 
     def _setup_styles(self) -> None:
@@ -517,12 +511,15 @@ class WifiView:
                     foreground="green" if avg_quality > 50 else "red"
                 )
 
-            # Update throughput labels using last sample
-            last = self.samples[-1]
+
+            # Display TX/RX rates from the latest sample when available
+            last_sample = self.samples[-1]
             if hasattr(self, 'tx_label'):
-                self.tx_label.config(text=f"TX : {last.transmit_rate}")
+                self.tx_label.config(text=f"TX : {last_sample.transmit_rate}")
+
             if hasattr(self, 'rx_label'):
-                self.rx_label.config(text=f"RX : {last.receive_rate}")
+                self.rx_label.config(text=f"RX : {last_sample.receive_rate}")
+
 
         except Exception as e:
             logging.error(f"Error updating stats: {e}")
