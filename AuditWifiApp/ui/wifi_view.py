@@ -644,12 +644,18 @@ class WifiView:
             except Exception:
                 pass
 
-            self.analyzer.start_wifi_collection()
-            self.start_button.config(state=tk.DISABLED)
-            self.stop_button.config(state=tk.NORMAL)
-            self._log_event("Démarrage de la collecte WiFi")
-            self.samples.clear()  # Reset samples for new collection
-            self._update_data()  # Start data updates
+            started = self.analyzer.start_wifi_collection()
+            if started:
+                self.start_button.config(state=tk.DISABLED)
+                self.stop_button.config(state=tk.NORMAL)
+                self._log_event("Démarrage de la collecte WiFi")
+                self.samples.clear()  # Reset samples for new collection
+                self._update_data()  # Start data updates
+            else:
+                messagebox.showerror(
+                    "Erreur",
+                    "Impossible de démarrer la collecte WiFi."
+                )
         except Exception as e:
             logging.error(f"Error starting collection: {e}")
             messagebox.showerror("Erreur", f"Erreur au démarrage de la collecte : {e}")
