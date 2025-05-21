@@ -36,7 +36,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
         # Liste des thèmes disponibles
         self.available_themes = {
             "Light": ["cosmo", "flatly", "litera", "minty", "lumen", "sandstone"],
-            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero"]
+            "Dark": ["darkly", "cyborg", "vapor", "solar", "superhero", "noovelia"]
         }
 
         # Load theme from YAML config if not provided
@@ -46,6 +46,7 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
 
         # Accept custom themes even if not listed in ``available_themes``
         all_themes = [t for themes in self.available_themes.values() for t in themes]
+
 
         # Initialize Tkinter window with ttkbootstrap
         if master is None:
