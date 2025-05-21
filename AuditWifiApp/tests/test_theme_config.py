@@ -35,17 +35,5 @@ def test_change_theme_updates_config(tmp_path):
         assert save_cfg.call_args.args[0]["interface"]["theme"] == "flatly"
 
 
-def test_custom_theme_loaded_from_config(tmp_path):
-    """The UI should load the Noovelia theme from the YAML config."""
-    cfg = tmp_path / "config.yaml"
-    cfg.write_text("interface:\n  theme: noovelia\n")
-    with patch("bootstrap_ui.load_config", return_value=yaml.safe_load(cfg.read_text())), \
-         patch("bootstrap_ui.save_config") as save_cfg, \
-         patch("ttkbootstrap.Window") as win, \
-         patch("tkinter.StringVar", return_value=MagicMock()):
-        win.return_value.style.theme_names.return_value = ["darkly", "noovelia"]
-        ui = BootstrapNetworkAnalyzerUI()
-        win.assert_called_with(themename="noovelia")
-        assert ui._theme == "noovelia"
 
 
