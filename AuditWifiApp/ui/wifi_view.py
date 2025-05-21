@@ -95,16 +95,24 @@ class WifiView:
             self._setup_graphs()
 
 
-    def update_data(self) -> None:
-        """Public wrapper to update graphs and labels."""
+    def _place(self, widget: Any, **grid_kwargs) -> None:
+        """Place a Tkinter widget even when the test dummy lacks ``grid``."""
+        if hasattr(widget, "grid"):
+            widget.grid(**grid_kwargs)
+        else:  # Fallback used in the unit tests
+            widget.pack()
+
+    # Backward compatibility for tests
+    def update_data(self) -> None:  # pragma: no cover - simple wrapper
+        """Public wrapper calling the internal update routine."""
         self._update_data()
 
-    def update_status(self) -> None:
-        """Public wrapper to refresh status display."""
+    def update_status(self) -> None:  # pragma: no cover - simple wrapper
+        """Public wrapper calling the internal stats refresh."""
         self._update_stats()
 
-    def update_stats(self) -> None:
-        """Backward compatibility wrapper for old tests."""
+    def update_stats(self) -> None:  # pragma: no cover - compatibility alias
+        """Alias kept for older tests."""
 
         self._update_stats()
 
@@ -412,8 +420,8 @@ class WifiView:
             if hasattr(self.canvas, '_tkcanvas'):
                 self.canvas._tkcanvas.config(cursor="watch")
 
-            # Extract data points
-            signals = [-s.signal_strength for s in self.samples]
+            # Extract data points directly from samples
+            signals = [s.signal_strength for s in self.samples]
             qualities = [s.quality for s in self.samples]
             x_data = list(range(len(signals)))
 
@@ -486,7 +494,7 @@ class WifiView:
 
         try:
             # Calculate statistics
-            signals = [-s.signal_strength for s in self.samples[-10:]]
+            signals = [s.signal_strength for s in self.samples[-10:]]
             qualities = [s.quality for s in self.samples[-10:]]
 
             avg_signal = sum(signals) / len(signals)
@@ -494,8 +502,10 @@ class WifiView:
 
             # Color coding function for signal strength
             def col_sig(s):
-                if s > -50: return "green"
-                if s > -70: return "orange"
+                if s >= -50:
+                    return "green"
+                if s >= -70:
+                    return "orange"
                 return "red"
 
             # Update labels
@@ -512,13 +522,12 @@ class WifiView:
                 )
 
 
-            # Display TX/RX rates from the latest sample when available
-            last_sample = self.samples[-1]
+            # Update throughput labels using last sample
+            last = self.samples[-1]
             if hasattr(self, 'tx_label'):
-                self.tx_label.config(text=f"TX : {last_sample.transmit_rate}")
-
+                self.tx_label.config(text=f"TX : {last.transmit_rate}")
             if hasattr(self, 'rx_label'):
-                self.rx_label.config(text=f"RX : {last_sample.receive_rate}")
+                self.rx_label.config(text=f"RX : {last.receive_rate}")
 
 
         except Exception as e:
