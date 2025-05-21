@@ -45,10 +45,9 @@ class BootstrapNetworkAnalyzerUI(NetworkAnalyzerUI):
             theme = self._config.get("interface", {}).get("theme", "darkly")
 
 
-        # Validate theme and allow custom ones
+        # Accept custom themes even if not listed in ``available_themes``
         all_themes = [t for themes in self.available_themes.values() for t in themes]
-        if theme not in all_themes:
-            self.available_themes.setdefault("Custom", []).append(theme)
+
 
 
         # Initialize Tkinter window with ttkbootstrap

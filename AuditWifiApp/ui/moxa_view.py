@@ -157,6 +157,7 @@ class MoxaView:
             self.display_text_analysis(analysis)
 
     def display_structured_analysis(self, data: dict) -> None:
+        """Display structured analysis returned by OpenAI."""
         if "score_global" in data:
             score = data["score_global"]
             self.moxa_results.insert('end', f"Score Global: {score}/100\n", "title")
@@ -188,6 +189,7 @@ class MoxaView:
             self.moxa_results.insert('end', f"{data['conclusion']}\n", "normal")
 
     def display_text_analysis(self, text: str) -> None:
+        """Display plain text analysis from OpenAI."""
         sections = text.split('\n\n')
         for section in sections:
             if section.strip():
@@ -251,25 +253,34 @@ class MoxaView:
             pass
 
     def export_data(self) -> None:
-        """Placeholder for compatibility with previous UI."""
-        messagebox.showinfo("Export", "Fonction d'export non impl\u00e9ment\u00e9e pour l'analyse Moxa.")
 
-    def load_example_log(self) -> None:
-        """Insert the bundled example log into the input widget."""
-        try:
-            with open(self.example_log_path, "r", encoding="utf-8") as f:
-                sample = f.read()
-            self.moxa_input.delete("1.0", tk.END)
-            self.moxa_input.insert("1.0", sample)
-        except Exception as exc:  # pragma: no cover - any failure just warns
-            messagebox.showerror("Erreur", f"Impossible de charger l'exemple : {exc}")
-
-    def show_metrics_help(self) -> None:
-        """Display a short description of the metrics used for analysis."""
-        text = (
-            "Les principales métriques analysées sont :\n"
-            "- Handoff time (temps de bascule entre AP).\n"
-            "- Taux de déauthentifications.\n"
-            "- Niveau de SNR et de RSSI."
+        """Export current analysis results to a JSON or PDF file."""
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("Fichiers JSON", "*.json"), ("Fichiers PDF", "*.pdf")],
+            title="Exporter l'analyse",
         )
-        messagebox.showinfo("Aide", text)
+        if not filepath:
+            return
+
+        content = self.moxa_results.get("1.0", tk.END).strip()
+
+        try:
+            if filepath.lower().endswith(".pdf"):
+                from matplotlib.backends.backend_pdf import PdfPages
+                import matplotlib.pyplot as plt
+
+                fig = plt.figure(figsize=(8.27, 11.69))
+                plt.axis("off")
+                fig.text(0.05, 0.95, content, va="top", wrap=True)
+                with PdfPages(filepath) as pdf:
+                    pdf.savefig(fig, bbox_inches="tight")
+                plt.close(fig)
+            else:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    json.dump({"analysis": content}, f, indent=2, ensure_ascii=False)
+
+            messagebox.showinfo("Export r\u00e9ussi", f"Les r\u00e9sultats ont \u00e9t\u00e9 export\u00e9s vers :\n{filepath}")
+        except Exception as exc:  # pragma: no cover - best effort
+            messagebox.showerror("Erreur", f"Impossible d'exporter les donn\u00e9es : {exc}")
+
