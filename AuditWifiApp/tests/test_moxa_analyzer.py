@@ -146,3 +146,28 @@ def test_additional_params_sanitization(sample_moxa_logs):
     assert "abcdef" in captured["prompt"]
     assert "abc\n\tdef" not in captured["prompt"]
 
+
+def test_prompt_contains_bullet_list_and_json_instruction(sample_moxa_logs):
+    """Ensure the prompt lists config in bullets and requests JSON response."""
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, timeout=60):
+        captured["prompt"] = json["messages"][0]["content"]
+
+        class R:
+            status_code = 200
+
+            def json(self):
+                return {"choices": [{"message": {"content": "ok"}}]}
+
+        return R()
+
+    session = MagicMock()
+    session.post.side_effect = fake_post
+    test_config = {"min_rate": 6, "power": 20}
+    with patch('src.ai.simple_moxa_analyzer.create_retry_session', return_value=session):
+        analyze_moxa_logs(sample_moxa_logs, test_config)
+
+    assert "- min_rate : 6" in captured["prompt"]
+    assert "JSON structuré" in captured["prompt"]
+
