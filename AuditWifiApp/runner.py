@@ -24,6 +24,7 @@ from src.ai.simple_moxa_analyzer import analyze_moxa_logs
 from config_manager import ConfigurationManager
 from ui.wifi_view import WifiView
 from ui.moxa_view import MoxaView
+from ui.amr_view import AmrMonitorView
 
 class NetworkAnalyzerUI:
     def __init__(self, master: tk.Tk):
@@ -85,6 +86,14 @@ class NetworkAnalyzerUI:
         self.moxa_view = MoxaView(moxa_frame, self.config_dir, self.default_config)
         self.moxa_view.frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         self.notebook.add(moxa_frame, text="Analyse Moxa")
+
+        # === Onglet Monitoring AMR ===
+        amr_frame = ttk.Frame(self.notebook)
+        amr_frame.columnconfigure(0, weight=1)
+        amr_frame.rowconfigure(0, weight=1)
+        self.amr_view = AmrMonitorView(amr_frame)
+        self.amr_view.frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.notebook.add(amr_frame, text="Monitoring AMR")
 
 
 def main():
