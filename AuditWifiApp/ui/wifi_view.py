@@ -549,24 +549,16 @@ class WifiView:
                 logging.warning("No WiFi collector available")
                 return
 
-            # Log collector state
             is_collecting = getattr(collector, 'is_collecting', False)
-            logging.info(f"Collector state - is_collecting: {is_collecting}")
 
             sample = None
             if is_collecting:
-                logging.debug("Collecting new sample...")
                 sample = collector.collect_sample()
-                if sample:
-                    logging.info(f"New sample collected: Signal={sample.signal_strength}dBm, Quality={sample.quality}%")
-                else:
-                    logging.warning("Failed to collect new sample")
 
             if sample is not None:
                 self.samples.append(sample)
                 if len(self.samples) > self.max_samples:
                     self.samples.pop(0)
-                logging.info(f"Total samples in buffer: {len(self.samples)}")
 
             # Update display
             self._update_stats()
