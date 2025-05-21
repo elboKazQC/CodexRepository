@@ -59,8 +59,13 @@ class WifiView:
         self.stop_button: ttk.Button
         self.scan_button: ttk.Button
         self.export_scan_button: ttk.Button
-        self.fullscreen_button: ttk.Button
-        self.stats_text: tk.Text
+
+        self.signal_label: ttk.Label
+        self.quality_label: ttk.Label
+        self.tx_label: ttk.Label
+        self.rx_label: ttk.Label
+        self.stats_panel: ttk.LabelFrame
+
         self.wifi_alert_text: tk.Text
         self.scan_tree: ttk.Treeview
         self.viz_frame: ttk.Frame
@@ -121,17 +126,6 @@ class WifiView:
         self.export_scan_button = ttk.Button(self.control_frame, text="\U0001F4C3 Exporter le scan", command=self.export_scan_results, state=tk.DISABLED)
         self.export_scan_button.pack(fill=tk.X, pady=5)
 
-        self.fullscreen_button = ttk.Button(
-            self.control_frame,
-            text="\U0001F5D6 Plein \u00e9cran",
-            command=self.open_fullscreen
-        )
-        self.fullscreen_button.pack(fill=tk.X, pady=5)
-
-        stats_frame = ttk.LabelFrame(self.control_frame, text="Statistiques", padding=5)
-        stats_frame.pack(fill=tk.X, pady=10)
-        self.stats_text = tk.Text(stats_frame, height=6, width=30)
-        self.stats_text.pack(fill=tk.X, pady=5)
 
         self.viz_frame = ttk.Frame(self.frame)
         self.viz_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
@@ -139,6 +133,18 @@ class WifiView:
 
         self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
         self.scan_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+
+        # Panel dedicated to live statistics
+        self.stats_panel = ttk.LabelFrame(self.viz_frame, text="Statistiques", padding=5)
+        self.stats_panel.pack(fill=tk.X, padx=5, pady=5)
+        self.signal_label = ttk.Label(self.stats_panel, text="Signal : N/A", style="Stats.TLabel")
+        self.signal_label.pack(side=tk.LEFT, padx=5)
+        self.quality_label = ttk.Label(self.stats_panel, text="Qualité : N/A", style="Stats.TLabel")
+        self.quality_label.pack(side=tk.LEFT, padx=5)
+        self.tx_label = ttk.Label(self.stats_panel, text="TX : N/A", style="Stats.TLabel")
+        self.tx_label.pack(side=tk.LEFT, padx=5)
+        self.rx_label = ttk.Label(self.stats_panel, text="RX : N/A", style="Stats.TLabel")
+        self.rx_label.pack(side=tk.LEFT, padx=5)
 
         columns = ("ssid", "signal", "channel", "band")
         self.scan_tree = ttk.Treeview(self.scan_frame, columns=columns, show="headings", height=8)
@@ -306,29 +312,37 @@ class WifiView:
             self.canvas.draw()
 
     def update_stats(self) -> None:
-        """Display current statistics in the text area."""
+        """Update statistics labels with averaged values and colours."""
         if not self.samples:
             return
+
         current_sample = self.samples[-1]
         signal_values = [s.signal_strength for s in self.samples[-20:]]
         quality_values = [s.quality for s in self.samples[-20:]]
-        stats_text = "=== \u00c9tat Actuel ===\n"
-        stats_text += f"Signal : {current_sample.signal_strength} dBm\n"
-        stats_text += f"Qualit\u00e9: {current_sample.quality}%\n"
+
         avg_signal = sum(signal_values) / len(signal_values)
         avg_quality = sum(quality_values) / len(quality_values)
-        stats_text += "\n=== Moyenne (20 \u00e9ch.) ===\n"
-        stats_text += f"Signal : {avg_signal:.1f} dBm\n"
-        stats_text += f"Qualit\u00e9: {avg_quality:.1f}%\n"
+
+        def col_sig(val: float) -> str:
+            return "green" if val > -60 else ("orange" if val > -70 else "red")
+
+        def col_qual(val: float) -> str:
+            return "green" if val > 70 else ("orange" if val > 40 else "red")
+
+        def col_rate(val: int) -> str:
+            return "green" if val >= 50 else ("orange" if val >= 24 else "red")
+
+        self.signal_label.config(text=f"Signal : {avg_signal:.1f} dBm", foreground=col_sig(avg_signal))
+        self.quality_label.config(text=f"Qualit\u00e9 : {avg_quality:.1f}%", foreground=col_qual(avg_quality))
         try:
             tx_rate = int(current_sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
             rx_rate = int(current_sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])
-            stats_text += "\n=== D\u00e9bits ===\n"
-            stats_text += f"TX: {tx_rate} Mbps\nRX: {rx_rate} Mbps"
+            rate_col = col_rate(min(tx_rate, rx_rate))
+            self.tx_label.config(text=f"TX : {tx_rate} Mbps", foreground=rate_col)
+            self.rx_label.config(text=f"RX : {rx_rate} Mbps", foreground=rate_col)
         except (ValueError, IndexError, KeyError):
-            pass
-        self.stats_text.delete('1.0', tk.END)
-        self.stats_text.insert('1.0', stats_text)
+            self.tx_label.config(text="TX : N/A", foreground="red")
+            self.rx_label.config(text="RX : N/A", foreground="red")
 
     def export_data(self) -> None:
         """Export full network analysis report to disk."""
