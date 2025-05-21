@@ -119,7 +119,7 @@ class MoxaView:
         ttk.Label(
             params_frame,
             text=(
-                "Indiquez ici tout contexte suppl\u00e9mentaire (ex. roaming=snr). "
+                "Indiquez ici tout contexte suppl\u00e9mentaire. "
                 "Le contenu sera ajout\u00e9 au prompt OpenAI."
             ),
 
@@ -157,7 +157,7 @@ class MoxaView:
         message = (
             "Collez vos journaux Moxa ici pour obtenir une analyse et des "
             "recommandations. Le contenu de \u201cParam\u00e8tres suppl\u00e9mentaires\u201d "
-            "sera ajout\u00e9 au prompt OpenAI (ex. roaming=snr)."
+            "sera ajout\u00e9 au prompt OpenAI."
         )
         messagebox.showinfo("Aide", message)
 
