@@ -184,7 +184,14 @@ class MoxaView:
         self.update_config_from_vars()
         self.current_config = self.config_manager.get_config()
         params_text = self.moxa_params_text.get('1.0', tk.END).strip()
-        analysis = analyze_moxa_logs(logs, self.current_config, params_text or None)
+        try:
+            # Attempt analysis; show error dialog if it fails
+            analysis = analyze_moxa_logs(logs, self.current_config, params_text or None)
+        except Exception as exc:  # pylint: disable=broad-except
+            messagebox.showerror("Erreur d'analyse", str(exc))
+            self.analyze_button.config(state=tk.NORMAL)
+            return
+
         if analysis:
             self.moxa_results.delete('1.0', tk.END)
             self.moxa_results.insert('end', "Analyse OpenAI des Logs Moxa\n\n", "title")
@@ -194,6 +201,7 @@ class MoxaView:
             self.save_last_config()
         else:
             self.moxa_results.insert('1.0', "\u274C Aucun r\u00e9sultat d'analyse\n")
+
         self.analyze_button.config(state=tk.NORMAL)
 
     def format_and_display_ai_analysis(self, analysis: str) -> None:
