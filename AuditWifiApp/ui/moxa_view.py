@@ -336,3 +336,23 @@ class MoxaView:
         except Exception as exc:  # pragma: no cover - best effort
             messagebox.showerror("Erreur", f"Impossible d'exporter les donn\u00e9es : {exc}")
 
+
+    def load_example_log(self) -> None:
+        """Insert the bundled example log into the input widget."""
+        try:
+            with open(self.example_log_path, "r", encoding="utf-8") as f:
+                sample = f.read()
+            self.moxa_input.delete("1.0", tk.END)
+            self.moxa_input.insert("1.0", sample)
+        except Exception as exc:  # pragma: no cover - any failure just warns
+            messagebox.showerror("Erreur", f"Impossible de charger l'exemple : {exc}")
+
+    def show_metrics_help(self) -> None:
+        """Display a short description of the metrics used for analysis."""
+        text = (
+            "Les principales métriques analysées sont :\n"
+            "- Handoff time (temps de bascule entre AP).\n"
+            "- Taux de déauthentifications.\n"
+            "- Niveau de SNR et de RSSI."
+        )
+        messagebox.showinfo("Aide", text)
