@@ -304,16 +304,25 @@ class NetworkAnalyzerUI:
                     "Analyse impossible",
                     "Veuillez coller des logs Moxa à analyser"
                 )
-                return
-
-            # Vérifier la clé API OpenAI dans l'environnement
+                return            # Vérifier la clé API OpenAI dans l'environnement
             api_key = os.getenv("OPENAI_API_KEY")
+            print(f"Valeur de OPENAI_API_KEY: {api_key[:10]}..." if api_key else "Clé API non trouvée")
+            
             if not api_key:
-                messagebox.showerror(
-                    "Clé API manquante",
-                    "La variable d'environnement OPENAI_API_KEY doit être définie pour utiliser l'analyse OpenAI."
-                )
-                return
+                # Recharger explicitement le fichier .env
+                from dotenv import load_dotenv
+                env_file = os.path.join(os.path.dirname(__file__), '.env')
+                if os.path.exists(env_file):
+                    load_dotenv(env_file)
+                    api_key = os.getenv("OPENAI_API_KEY")
+                    print(f"Après rechargement: {api_key[:10]}..." if api_key else "Toujours pas de clé")
+                
+                if not api_key:
+                    messagebox.showerror(
+                        "Clé API manquante",
+                        "La variable d'environnement OPENAI_API_KEY doit être définie pour utiliser l'analyse OpenAI."
+                    )
+                    return
 
             # Mise à jour de l'interface
             self.moxa_results.delete('1.0', tk.END)

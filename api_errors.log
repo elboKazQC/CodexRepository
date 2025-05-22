@@ -30,3 +30,5 @@
 2025-05-18 12:01:09,354 - DEBUG - Logger configured
 2025-05-18 12:01:13,124 - INFO - Collection démarrée - Zone: Non spécifiée, Tag: 
 2025-05-18 12:01:38,175 - INFO - Collection arrêtée
+2025-05-22 09:26:42 - SIMPLE_MOXA_ANALYZER - Erreur API OpenAI (401): Incorrect API key provided: sk-proj-********************************************************************************************************************************************************yAwA. You can find your API key at https://platform.openai.com/account/api-keys.
+2025-05-22 09:26:42 - SIMPLE_MOXA_ANALYZER - Erreur inattendue lors de l'analyse: Erreur API OpenAI (401): Incorrect API key provided: sk-proj-********************************************************************************************************************************************************yAwA. You can find your API key at https://platform.openai.com/account/api-keys.

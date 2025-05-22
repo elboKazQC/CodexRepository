@@ -17,7 +17,22 @@ Merci de suivre ces instructions à chaque modification du code.
 # AuditWifiApp
 
 ## Objectif
-Application destinée à réaliser des audits WiFi dans des usines où l’on souhaite implanter des AMR (robots mobiles autonomes). L’outil collecte et analyse des données réseau (RSSI, SNR, ping, position GPS, logs Moxa, etc.) pour identifier les zones à risque et améliorer le roaming WiFi.
+Application destinée à réaliser des audits WiFi dans des usines où l'on souhaite implanter des AMR (robots mobiles autonomes). L'outil collecte et analyse des données réseau (RSSI, SNR, ping, position GPS, logs Moxa, etc.) pour identifier les zones à risque et améliorer le roaming WiFi.
+
+## Configuration
+
+### Variables d'environnement
+L'application utilise des variables d'environnement pour stocker les configurations sensibles. Pour configurer l'application :
+
+1. Copiez le fichier `.env.example` en `.env` :
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+2. Modifiez le fichier `.env` avec vos propres valeurs :
+   - `OPENAI_API_KEY` : Votre clé API OpenAI pour l'analyse des logs
+
+Le fichier `.env` est ignoré par Git pour protéger vos informations sensibles. Ne commettez jamais ce fichier dans le dépôt.
 
 ## Fonctionnalités principales
 - Collecte semi-automatique lors des déplacements sur le site (buggy équipé d’un portable, Moxa).
