@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 from dotenv import load_dotenv
 
@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from network_analyzer import NetworkAnalyzer
+from amr_monitor import AMRMonitor
 from wifi.wifi_collector import WifiSample
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
 from config_manager import ConfigurationManager
@@ -30,6 +31,8 @@ class NetworkAnalyzerUI:
         # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
         self.samples: List[WifiSample] = []
+        self.amr_ips: List[str] = []
+        self.amr_monitor: Optional[AMRMonitor] = None
 
         # Configuration par défaut pour l'analyse des logs Moxa
         self.default_config = {
@@ -198,6 +201,34 @@ class NetworkAnalyzerUI:
             state=tk.DISABLED
         )
         self.export_button.pack(pady=5)
+
+        # === Onglet Monitoring AMR ===
+        self.amr_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.amr_frame, text="Monitoring AMR")
+
+        amr_control = ttk.LabelFrame(self.amr_frame, text="Adresses IP", padding=10)
+        amr_control.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+
+        self.amr_ip_var = tk.StringVar()
+        ttk.Entry(amr_control, textvariable=self.amr_ip_var).pack(fill=tk.X, pady=2)
+        ttk.Button(amr_control, text="Ajouter", command=self.add_amr_ip).pack(fill=tk.X, pady=2)
+
+        self.amr_listbox = tk.Listbox(amr_control, height=6)
+        self.amr_listbox.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        self.amr_start_button = ttk.Button(amr_control, text="▶ Démarrer", command=self.start_amr_monitoring)
+        self.amr_start_button.pack(fill=tk.X, pady=2)
+        self.amr_stop_button = ttk.Button(amr_control, text="⏹ Arrêter", command=self.stop_amr_monitoring, state=tk.DISABLED)
+        self.amr_stop_button.pack(fill=tk.X, pady=2)
+
+        status_frame = ttk.LabelFrame(self.amr_frame, text="Statut", padding=10)
+        status_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.amr_status_text = tk.Text(status_frame, height=10, wrap=tk.WORD)
+        status_scroll = ttk.Scrollbar(status_frame, command=self.amr_status_text.yview)
+        self.amr_status_text.configure(yscrollcommand=status_scroll.set)
+        self.amr_status_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        status_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def setup_graphs(self):
         """Configure les graphiques"""
@@ -576,6 +607,41 @@ class NetworkAnalyzerUI:
         """Affiche une erreur"""
         messagebox.showerror("Erreur", message)
         self.update_status(f"ERREUR: {message}")
+
+    # ===== Fonctions Monitoring AMR =====
+    def add_amr_ip(self) -> None:
+        ip = self.amr_ip_var.get().strip()
+        if ip and ip not in self.amr_ips:
+            self.amr_ips.append(ip)
+            self.amr_listbox.insert(tk.END, ip)
+        self.amr_ip_var.set("")
+
+    def start_amr_monitoring(self) -> None:
+        if not self.amr_ips:
+            messagebox.showwarning("Monitoring AMR", "Ajoutez au moins une adresse IP")
+            return
+        self.amr_monitor = AMRMonitor(self.amr_ips, interval=3)
+        self.amr_monitor.start(lambda res: self.master.after(0, self._update_amr_status, res))
+        self.amr_start_button.config(state=tk.DISABLED)
+        self.amr_stop_button.config(state=tk.NORMAL)
+
+    def stop_amr_monitoring(self) -> None:
+        if self.amr_monitor:
+            self.amr_monitor.stop()
+            self.amr_monitor = None
+        self.amr_start_button.config(state=tk.NORMAL)
+        self.amr_stop_button.config(state=tk.DISABLED)
+
+    def _update_amr_status(self, results: Dict[str, Dict[str, Optional[int]]]) -> None:
+        lines = []
+        for ip, data in results.items():
+            if data["reachable"]:
+                latency = data["latency"] if data["latency"] is not None else "n/a"
+                lines.append(f"{ip} : ✅ {latency} ms")
+            else:
+                lines.append(f"{ip} : ❌")
+        self.amr_status_text.delete("1.0", tk.END)
+        self.amr_status_text.insert("1.0", "\n".join(lines))
 
 
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
