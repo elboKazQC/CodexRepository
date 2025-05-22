@@ -1,44 +1,46 @@
-# -*- coding: utf-8 -*-
+"""Application entry point.
+
+This module instantiates the different UI views and orchestrates their
+interaction. The actual user interface components have been extracted
+into ``ui.wifi_view`` and ``ui.moxa_view`` for clarity.
+"""
+
+from __future__ import annotations
+
 import sys
-import json
-import logging
-from datetime import datetime
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
-import csv
+
+from tkinter import ttk, messagebox, filedialog, simpledialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 from typing import List, Optional
+
 import os
 from dotenv import load_dotenv
-from unittest.mock import MagicMock
-import yaml
 
-from heatmap_generator import generate_heatmap
-
-# Charger automatiquement les variables d'environnement depuis un fichier .env
-load_dotenv()
 
 from network_analyzer import NetworkAnalyzer
-from wifi.wifi_collector import WifiSample
-from network_scanner import scan_wifi
-from src.ai.simple_moxa_analyzer import analyze_moxa_logs
-from config_manager import ConfigurationManager
+from ui.wifi_view import WifiView
+from ui.moxa_view import MoxaView
+from network_scanner import scan_wifi  # re-exported for tests
+
+
+load_dotenv()
+
 
 class NetworkAnalyzerUI:
+    """Main window coordinating the WiFi and Moxa views."""
+
     def __init__(self, master: tk.Tk):
         self.master = master
-        self.master.title("Analyseur Réseau WiFi & Moxa")
+        self.master.title("Analyseur R\u00e9seau WiFi & Moxa")
         self.master.state('zoomed')
 
-        # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
-        self.samples: List[WifiSample] = []
-        self.scan_results: List[dict] = []
 
-        # Configuration par défaut pour l'analyse des logs Moxa
+        # Default configuration for the Moxa analyzer
         self.default_config = {
             "min_transmission_rate": 12,
             "max_transmission_power": 20,
@@ -52,49 +54,78 @@ class NetworkAnalyzerUI:
             "ap_alive_check": True,
         }
 
-        # Gestionnaire de configuration
-        self.config_manager = ConfigurationManager(self.default_config)
         self.config_dir = os.path.join(os.path.dirname(__file__), "config")
-        os.makedirs(self.config_dir, exist_ok=True)
-        self.last_config_file = os.path.join(self.config_dir, "last_moxa_config.json")
-        if os.path.exists(self.last_config_file):
-            try:
-                with open(self.last_config_file, "r", encoding="utf-8") as f:
-                    self.config_manager.config = json.load(f)
-            except Exception:
-                pass
-        self.current_config = self.config_manager.get_config()
 
-        # Configuration du style
-        self.setup_style()
-
-        # Création de l'interface
         self.create_interface()
 
-        # Configuration des graphiques
-        self.setup_graphs()
-
-        # Variables pour les mises à jour
-        self.update_interval = 1000  # ms
-        self.max_samples = 100
-
-    def setup_style(self):
-        """Configure le style de l'interface"""
-        style = ttk.Style()
-        style.configure("Title.TLabel", font=('Helvetica', 14, 'bold'))
-        style.configure("Alert.TLabel", foreground='red', font=('Helvetica', 12))
-        style.configure("Stats.TLabel", font=('Helvetica', 10))
-
-        # Style pour le bouton d'analyse
-        style.configure("Analyze.TButton",
-                       font=('Helvetica', 12),
-                       padding=10)
-
-    def create_interface(self):
-        """Crée l'interface principale"""
-        # Notebook pour les différentes vues
+    # ------------------------------------------------------------------
+    # Interface creation
+    # ------------------------------------------------------------------
+    def create_interface(self) -> None:
+        """Create notebook with WiFi and Moxa tabs."""
         self.notebook = ttk.Notebook(self.master)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+
+        self.wifi_view = WifiView(self.notebook, self.analyzer)
+        self.notebook.add(self.wifi_view.frame, text="Analyse WiFi")
+
+
+        self.moxa_view = MoxaView(self.notebook, self.config_dir, self.default_config)
+        self.notebook.add(self.moxa_view.frame, text="Analyse Moxa")
+
+        # Expose some attributes for backward compatibility with tests
+        self.start_button = self.wifi_view.start_button
+        self.stop_button = self.wifi_view.stop_button
+        self.scan_button = self.wifi_view.scan_button
+        self.export_scan_button = self.wifi_view.export_scan_button
+        self.scan_tree = self.wifi_view.scan_tree
+
+
+    # ------------------------------------------------------------------
+    # Delegated methods used by tests or other modules
+    # ------------------------------------------------------------------
+    def setup_graphs(self) -> None:
+        self.wifi_view.setup_graphs()
+
+    def start_collection(self) -> None:
+        self.wifi_view.start_collection()
+
+    def stop_collection(self) -> None:
+        self.wifi_view.stop_collection()
+
+    def scan_nearby_aps(self) -> None:
+        self.wifi_view.scan_nearby_aps()
+
+    def export_scan_results(self) -> None:
+        self.wifi_view.export_scan_results()
+
+    def export_data(self) -> None:
+        self.wifi_view.export_data()
+
+    # Moxa view delegations
+    def analyze_moxa_logs(self) -> None:
+        self.moxa_view.analyze_moxa_logs()
+
+    def load_config(self) -> None:
+        self.moxa_view.load_config()
+
+    def edit_config(self) -> None:
+        self.moxa_view.edit_config()
+
+    # Utility wrappers
+    def update_status(self, message: str) -> None:
+        self.wifi_view.update_status(message)
+
+    def update_data(self) -> None:
+        """Delegate to WifiView to refresh displayed data."""
+        self.wifi_view.update_data()
+
+    def show_error(self, message: str) -> None:
+        self.wifi_view.show_error(message)
+
+
+
 
         # === Onglet WiFi ===
         self.wifi_frame = ttk.Frame(self.notebook)
@@ -120,38 +151,6 @@ class NetworkAnalyzerUI:
         )
         self.stop_button.pack(fill=tk.X, pady=5)
 
-        self.scan_button = ttk.Button(
-            control_frame,
-            text="\U0001F50D Scanner",
-            command=self.scan_nearby_aps
-        )
-        self.scan_button.pack(fill=tk.X, pady=5)
-
-        if isinstance(getattr(self.master, "tk", None), MagicMock):
-            class _DummyButton:
-                def __init__(self):
-                    self.options = {"state": tk.DISABLED}
-
-                def pack(self, *a, **k):
-                    pass
-
-                def config(self, **kw):
-                    self.options.update(kw)
-
-                def __getitem__(self, key):
-                    return self.options.get(key)
-
-            self.export_scan_button = _DummyButton()
-            self.export_scan_button.pack = lambda *a, **k: None
-        else:
-            self.export_scan_button = ttk.Button(
-                control_frame,
-                text="\U0001F4C3 Exporter le scan",
-                command=self.export_scan_results,
-                state=tk.DISABLED,
-            )
-            self.export_scan_button.pack(fill=tk.X, pady=5)
-
         # Zone de statistiques
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=10)
@@ -160,45 +159,17 @@ class NetworkAnalyzerUI:
         self.stats_text.pack(fill=tk.X, pady=5)
 
         # Panneau des graphiques et alertes (droite)
-        self.viz_frame = ttk.Frame(self.wifi_frame)
-        self.viz_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        self.scan_frame = ttk.LabelFrame(self.viz_frame, text="R\u00e9seaux d\u00e9tect\u00e9s", padding=5)
-        self.scan_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
-
-        columns = ("ssid", "signal", "channel", "band")
-        self.scan_tree = ttk.Treeview(self.scan_frame, columns=columns, show="headings", height=8)
-        for col, title in zip(columns, ["SSID", "Signal (dBm)", "Canal", "Bande"]):
-            self.scan_tree.heading(col, text=title)
-            self.scan_tree.column(col, width=100)
-        self.scan_tree.pack(fill=tk.BOTH, expand=True)
-
-        # When running tests with mocked Tk, emulate minimal Treeview behaviour
-        if isinstance(getattr(self.master, "tk", None), MagicMock):
-            _items: list = []
-
-            def _insert(parent: str, index: str, values=()):
-                _items.append(values)
-                return str(len(_items))
-
-            def _get_children():
-                return [str(i + 1) for i in range(len(_items))]
-
-            def _item(iid: str):
-                return {"values": _items[int(iid) - 1]}
-
-            self.scan_tree.insert = _insert
-            self.scan_tree.get_children = _get_children
-            self.scan_tree.item = _item
+        viz_frame = ttk.Frame(self.wifi_frame)
+        viz_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Les graphiques seront ajoutés ici par setup_graphs()
 
         # Zone d'alertes
-        self.alerts_frame = ttk.LabelFrame(self.viz_frame, text="Zones problématiques détectées", padding=5)
-        self.alerts_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
+        alerts_frame = ttk.LabelFrame(viz_frame, text="Zones problématiques détectées", padding=5)
+        alerts_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
 
-        self.wifi_alert_text = tk.Text(self.alerts_frame, height=4, wrap=tk.WORD)
-        wifi_scroll = ttk.Scrollbar(self.alerts_frame, command=self.wifi_alert_text.yview)
+        self.wifi_alert_text = tk.Text(alerts_frame, height=4, wrap=tk.WORD)
+        wifi_scroll = ttk.Scrollbar(alerts_frame, command=self.wifi_alert_text.yview)
         self.wifi_alert_text.configure(yscrollcommand=wifi_scroll.set)
         self.wifi_alert_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         wifi_scroll.pack(side=tk.RIGHT, fill=tk.Y)
@@ -207,17 +178,8 @@ class NetworkAnalyzerUI:
         self.moxa_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.moxa_frame, text="Analyse Moxa")
 
-        # PanedWindow pour rendre l'onglet ajustable
-        paned = ttk.Panedwindow(self.moxa_frame, orient=tk.VERTICAL)
-        paned.pack(fill=tk.BOTH, expand=True)
-
-        top_pane = ttk.Frame(paned)
-        bottom_pane = ttk.Frame(paned)
-        paned.add(top_pane, weight=1)
-        paned.add(bottom_pane, weight=1)
-
-        # --- Contenu du volet supérieur ---
-        input_frame = ttk.LabelFrame(top_pane, text="Collez vos logs Moxa ici :", padding=10)
+        # Zone de collage des logs
+        input_frame = ttk.LabelFrame(self.moxa_frame, text="Collez vos logs Moxa ici :", padding=10)
         input_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         self.moxa_input = tk.Text(input_frame, wrap=tk.WORD)
@@ -226,8 +188,9 @@ class NetworkAnalyzerUI:
         self.moxa_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         input_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Zone d'édition de la configuration courante du Moxa
         config_frame = ttk.LabelFrame(
-            top_pane,
+            self.moxa_frame,
             text="Configuration Moxa actuelle (JSON) :",
             padding=10,
         )
@@ -240,34 +203,23 @@ class NetworkAnalyzerUI:
         cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
 
-        params_frame = ttk.LabelFrame(top_pane, text="Paramètres supplémentaires :", padding=10)
-        params_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-
-        self.moxa_params_text = tk.Text(params_frame, height=4, wrap=tk.WORD)
-        params_scroll = ttk.Scrollbar(params_frame, command=self.moxa_params_text.yview)
-        self.moxa_params_text.configure(yscrollcommand=params_scroll.set)
-        self.moxa_params_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        params_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Label(
-            params_frame,
-            text="Indiquez ici tout contexte supplémentaire (ex. roaming=snr)"
-        ).pack(anchor=tk.W, pady=(5, 0))
-
-        config_btn_frame = ttk.Frame(top_pane)
+        # Boutons de configuration
+        config_btn_frame = ttk.Frame(self.moxa_frame)
         config_btn_frame.pack(pady=5)
         ttk.Button(config_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(config_btn_frame, text="Éditer config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
 
+        # Bouton d'analyse
         self.analyze_button = ttk.Button(
-            top_pane,
+            self.moxa_frame,
             text="🔍 Analyser les logs",
             style="Analyze.TButton",
             command=self.analyze_moxa_logs
         )
         self.analyze_button.pack(pady=10)
 
-        # --- Contenu du volet inférieur ---
-        results_frame = ttk.LabelFrame(bottom_pane, text="Résultats de l'analyse :", padding=10)
+        # Zone des résultats
+        results_frame = ttk.LabelFrame(self.moxa_frame, text="Résultats de l'analyse :", padding=10)
         results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         self.moxa_results = tk.Text(results_frame, wrap=tk.WORD)
@@ -276,8 +228,9 @@ class NetworkAnalyzerUI:
         self.moxa_results.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         results_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Bouton d'export
         self.export_button = ttk.Button(
-            bottom_pane,
+            self.moxa_frame,
             text="💾 Exporter l'analyse",
             command=self.export_data,
             state=tk.DISABLED
@@ -309,24 +262,25 @@ class NetworkAnalyzerUI:
         self.ax2.legend()
 
         # Canvas Matplotlib
-        parent = getattr(self, "viz_frame", self.wifi_frame)
-        before_widget = getattr(self, "alerts_frame", None)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
-        pack_opts = {"fill": tk.BOTH, "expand": True, "padx": 5, "pady": 5}
-        if before_widget is not None:
-            pack_opts["before"] = before_widget
-        self.canvas.get_tk_widget().pack(**pack_opts)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.wifi_frame)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def start_collection(self):
         """Démarre la collecte WiFi"""
         try:
-            if self.analyzer.start_analysis():
+            tag = simpledialog.askstring(
+                "Tag de localisation",
+                "Indiquez l'emplacement actuel (ex: usine 1, sous-sol)",
+                parent=self.master
+            )
+            if tag is None:
+                return
+            if self.analyzer.start_analysis(location_tag=tag.strip()):
                 self.samples = []
                 self.start_button.config(state=tk.DISABLED)
                 self.stop_button.config(state=tk.NORMAL)
                 self.update_data()
                 self.update_status("Collection en cours...")
-                self.scan_nearby_aps()
         except Exception as e:
             self.show_error(f"Erreur au démarrage: {str(e)}")
 
@@ -337,60 +291,6 @@ class NetworkAnalyzerUI:
         self.stop_button.config(state=tk.DISABLED)
         self.export_button.config(state=tk.NORMAL)
         self.update_status("Collection arrêtée")
-
-    def scan_nearby_aps(self):
-        """Scanne les points d'accès WiFi proches et met à jour la liste."""
-        try:
-            results = scan_wifi()
-            self.scan_results = results
-
-            for row in self.scan_tree.get_children():
-                self.scan_tree.delete(row)
-
-            for ap in results:
-                self.scan_tree.insert(
-                    "",
-                    "end",
-                    values=(
-                        ap.get("ssid", ""),
-                        ap.get("signal", ""),
-                        ap.get("channel", ""),
-                        ap.get("frequency", ""),
-                    ),
-                )
-
-            if results:
-                self.export_scan_button.config(state=tk.NORMAL)
-        except Exception as e:
-            self.show_error(f"Erreur lors du scan: {e}")
-
-    def export_scan_results(self):
-        """Exporte les résultats du scan WiFi au format CSV."""
-        if not self.scan_results:
-            messagebox.showinfo("Export", "Aucun résultat à exporter")
-            return
-        filepath = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("Fichiers CSV", "*.csv")],
-            title="Exporter le scan",
-        )
-        if filepath:
-            try:
-                with open(filepath, "w", encoding="utf-8", newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(["SSID", "Signal(dBm)", "Canal", "Bande"])
-                    for ap in self.scan_results:
-                        writer.writerow(
-                            [
-                                ap.get("ssid", ""),
-                                ap.get("signal", ""),
-                                ap.get("channel", ""),
-                                ap.get("frequency", ""),
-                            ]
-                        )
-                messagebox.showinfo("Export", f"Résultats exportés vers {filepath}")
-            except Exception as e:
-                self.show_error(f"Erreur export CSV: {e}")
 
     def analyze_moxa_logs(self):
         """Analyse les logs Moxa collés avec OpenAI"""
@@ -430,15 +330,12 @@ class NetworkAnalyzerUI:
                 )
                 return
 
-            # Récupérer les paramètres complémentaires saisis
-            params_text = self.moxa_params_text.get('1.0', tk.END).strip()
-
             # Appel à l'API OpenAI avec la configuration courante
-            analysis = analyze_moxa_logs(logs, self.current_config, params_text or None)
+            analysis = analyze_moxa_logs(logs, self.current_config)
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)
-
+                
                 # Configuration des styles de texte
                 self.moxa_results.tag_configure("title", font=("Arial", 12, "bold"))
                 self.moxa_results.tag_configure("section", font=("Arial", 10, "bold"))
@@ -449,7 +346,7 @@ class NetworkAnalyzerUI:
 
                 # Affichage de l'analyse avec mise en forme
                 self.moxa_results.insert('end', "Analyse OpenAI des Logs Moxa\n\n", "title")
-
+                
                 # Formater et afficher la réponse d'OpenAI
                 self.format_and_display_ai_analysis(analysis)
 
@@ -546,7 +443,7 @@ class NetworkAnalyzerUI:
         if "score_global" in data:
             score = data["score_global"]
             self.moxa_results.insert('end', f"Score Global: {score}/100\n", "title")
-
+            
             if score >= 70:
                 self.moxa_results.insert('end', "✅ Configuration adaptée\n\n", "success")
             elif score >= 50:
@@ -582,7 +479,7 @@ class NetworkAnalyzerUI:
         """Affiche une analyse en format texte"""
         # Diviser le texte en sections basées sur les numéros ou les titres communs
         sections = text.split('\n\n')
-
+        
         for section in sections:
             if section.strip():
                 # Détecter si c'est un titre
@@ -590,7 +487,7 @@ class NetworkAnalyzerUI:
                     self.moxa_results.insert('end', f"\n{section}\n", "section")
                 else:
                     self.moxa_results.insert('end', f"{section}\n", "normal")
-
+                    
         self.moxa_results.see('1.0')  # Remonter au début
 
     def update_data(self):
@@ -712,24 +609,6 @@ class NetworkAnalyzerUI:
                     "Export réussi",
                     f"Les données ont été exportées vers :\n{filepath}"
                 )
-
-                # Génère également une heatmap basée sur les enregistrements
-                try:
-                    tag_map_path = os.path.join(self.config_dir, "tag_map.yaml")
-                    tag_map = {}
-                    if os.path.exists(tag_map_path):
-                        with open(tag_map_path, "r", encoding="utf-8") as fh:
-                            tag_map = yaml.safe_load(fh) or {}
-
-                    records = self.analyzer.wifi_collector.records
-                    if records:
-                        fig = generate_heatmap(records, tag_map=tag_map)
-                        heatmap_file = os.path.splitext(filepath)[0] + "_heatmap.png"
-                        fig.savefig(heatmap_file)
-                except Exception as exc:  # pragma: no cover - best effort
-                    logging.getLogger(__name__).warning(
-                        "Failed to generate heatmap: %s", exc
-                    )
         except Exception as e:
             self.show_error(f"Erreur lors de l'export: {str(e)}")
 
@@ -747,34 +626,17 @@ class NetworkAnalyzerUI:
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
     """Backward-compatible alias used in tests."""
 
-    def __init__(self, master: tk.Tk):
-        super().__init__(master)
-        # Provide legacy attribute names expected by older tests
-        self.logs_input_text = self.moxa_input
-        self.results_text = self.moxa_results
-
-    def analyze_logs_from_input(self, log_content=None):
-        """Compatibility wrapper calling analyze_moxa_logs."""
-        if log_content is not None:
-            self.logs_input_text.delete("1.0", tk.END)
-            self.logs_input_text.insert("1.0", log_content)
-        self.analyze_moxa_logs()
-
-    def _analyze_logs(self):
-        """Legacy private method used in tests."""
-        self.analyze_moxa_logs()
-
-def main():
-    """Point d'entrée de l'application"""
     try:
         root = tk.Tk()
+        # Instantiate the UI using the theme defined in the configuration
         from bootstrap_ui import BootstrapNetworkAnalyzerUI
-        app = BootstrapNetworkAnalyzerUI(root, theme="darkly")
+        app = BootstrapNetworkAnalyzerUI(root)
         root.mainloop()
     except Exception as e:
         print(f"Erreur fatale: {str(e)}")
-        messagebox.showerror("Erreur fatale", str(e))
+        tk.messagebox.showerror("Erreur fatale", str(e))
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

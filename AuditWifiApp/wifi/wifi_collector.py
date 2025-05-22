@@ -19,9 +19,10 @@ class WifiSample:
     transmit_rate: str
     receive_rate: str
     raw_data: Dict
+    location_tag: str = ""
 
     @classmethod
-    def from_powershell_data(cls, data: Dict) -> 'WifiSample':
+    def from_powershell_data(cls, data: Dict, location_tag: str = "") -> 'WifiSample':
         """Crée un échantillon à partir des données PowerShell"""
         # Convertit le pourcentage en valeur numérique
         signal_str = data.get('SignalStrength', '0%').replace('%', '')
@@ -38,7 +39,8 @@ class WifiSample:
             status=data.get('Status', 'Disconnected'),
             transmit_rate=data.get('TransmitRate', '0 Mbps'),
             receive_rate=data.get('ReceiveRate', '0 Mbps'),
-            raw_data=data
+            raw_data=data,
+            location_tag=location_tag
         )
 
 class WifiCollector:
@@ -46,6 +48,7 @@ class WifiCollector:
         self.script_path = script_path or os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wifi_monitor.ps1')
         self.is_collecting = False
         self.samples: List[WifiSample] = []
+        self.current_location_tag: str = ""
         self.error_count = 0
         self.max_errors = 5
         self.logger = self._setup_logging()
@@ -86,13 +89,14 @@ class WifiCollector:
 
         return logger
 
-    def start_collection(self) -> bool:
+    def start_collection(self, location_tag: str = "") -> bool:
         """Démarre la collecte WiFi"""
         try:
             if not os.path.exists(self.script_path):
                 raise FileNotFoundError(f"Script PowerShell introuvable: {self.script_path}")
 
             self.logger.info("Démarrage de la collecte WiFi")
+            self.current_location_tag = location_tag
             self.error_count = 0
             self.is_collecting = True
             self.samples = []
@@ -101,6 +105,10 @@ class WifiCollector:
         except Exception as e:
             self.logger.error(f"Erreur lors du démarrage de la collecte: {str(e)}")
             return False
+
+    def set_location_tag(self, tag: str) -> None:
+        """Met à jour le tag de localisation utilisé pour les prochains échantillons."""
+        self.current_location_tag = tag
 
     def collect_sample(self) -> Optional[WifiSample]:
         """Collecte un échantillon de données WiFi via PowerShell"""
@@ -121,7 +129,7 @@ class WifiCollector:
 
             # Si nous sommes connectés, créer l'échantillon
             if data.get('Status') == 'Connected':
-                sample = WifiSample.from_powershell_data(data)
+                sample = WifiSample.from_powershell_data(data, self.current_location_tag)
                 self.samples.append(sample)
                 self.error_count = 0  # Réinitialise le compteur d'erreurs
                 self.logger.debug(f"Échantillon collecté: {sample.ssid} - {sample.signal_strength}dBm")
