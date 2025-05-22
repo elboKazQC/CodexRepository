@@ -55,7 +55,7 @@ export default class MoxaAnalyzer {
      * @param currentConfig - Configuration actuelle du Moxa
      * @returns Résultats de l'analyse
      */
-    public async analyzeLog(logContent: string, currentConfig: any): Promise<any> {
+    public async analyzeLog(logContent: string, currentConfig: any, customInstructions: string = ''): Promise<any> {
         if (!this.apiKey) {
             // Si pas de clé API, demander à l'utilisateur
             const apiKey = await vscode.window.showInputBox({
@@ -82,7 +82,7 @@ export default class MoxaAnalyzer {
         }
         
         // Créer le prompt pour l'IA
-        const prompt = this._createAnalysisPrompt(truncatedLog, currentConfig);
+        const prompt = this._createAnalysisPrompt(truncatedLog, currentConfig, customInstructions);
         
         // Appeler l'API IA
         const aiResponse = await this._callAiApi(prompt);
@@ -101,12 +101,13 @@ export default class MoxaAnalyzer {
      * @param currentConfig - Configuration actuelle du Moxa
      * @returns Prompt pour l'API IA
      */
-    private _createAnalysisPrompt(logContent: string, currentConfig: any): string {
+    private _createAnalysisPrompt(logContent: string, currentConfig: any, customInstructions: string): string {
         // Convertir la configuration actuelle en texte formaté
         const configText = JSON.stringify(currentConfig, null, 2);
         
         // Créer le prompt avec instructions spécifiques pour l'IA
-        return `En tant qu'expert en réseaux sans fil et particulièrement en configuration d'appareils Moxa, analysez le log suivant et la configuration actuelle pour fournir des recommandations d'optimisation du roaming.
+        const extra = customInstructions && customInstructions.trim() ? `\n\nInstructions supplémentaires :\n${customInstructions}` : '';
+        return `En tant qu'expert en réseaux sans fil et particulièrement en configuration d'appareils Moxa, analysez le log suivant et la configuration actuelle pour fournir des recommandations d'optimisation du roaming.${extra}
 
 ## Configuration actuelle du Moxa:
 \`\`\`json
