@@ -177,6 +177,20 @@ class NetworkAnalyzerUI:
         ttk.Button(config_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(config_btn_frame, text="Éditer config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
 
+        # Zone d'instructions personnalisées
+        instr_frame = ttk.LabelFrame(
+            self.moxa_frame,
+            text="Instructions personnalisées (optionnel) :",
+            padding=10,
+        )
+        instr_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        self.custom_instr_text = tk.Text(instr_frame, height=4, wrap=tk.WORD)
+        instr_scroll = ttk.Scrollbar(instr_frame, command=self.custom_instr_text.yview)
+        self.custom_instr_text.configure(yscrollcommand=instr_scroll.set)
+        self.custom_instr_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        instr_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
         # Bouton d'analyse
         self.analyze_button = ttk.Button(
             self.moxa_frame,
@@ -319,8 +333,11 @@ class NetworkAnalyzerUI:
                 )
                 return
 
-            # Appel à l'API OpenAI avec la configuration courante
-            analysis = analyze_moxa_logs(logs, self.current_config)
+            # Récupérer les instructions personnalisées
+            custom_instr = self.custom_instr_text.get('1.0', tk.END).strip()
+
+            # Appel à l'API OpenAI avec la configuration courante et instructions optionnelles
+            analysis = analyze_moxa_logs(logs, self.current_config, custom_instr)
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)

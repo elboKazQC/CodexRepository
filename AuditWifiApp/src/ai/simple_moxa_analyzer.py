@@ -58,7 +58,7 @@ def get_api_key():
         )
     return api_key
 
-def analyze_moxa_logs(logs, current_config):
+def analyze_moxa_logs(logs, current_config, custom_instructions: str | None = None):
     """
     Envoie les logs Moxa et la configuration à OpenAI pour analyse.
     
@@ -72,13 +72,16 @@ def analyze_moxa_logs(logs, current_config):
     if not logs or not logs.strip():  # Vérifier si les logs sont vides
         raise ValueError("Les logs sont vides")
         
+
     api_key = get_api_key()
 
     # Tronquer les logs si nécessaire
     truncated_logs = truncate_logs(logs)
 
-    prompt = f"""Analysez ces logs Moxa et la configuration actuelle. 
-Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.
+    extra = f"\n\nInstructions supplémentaires :\n{custom_instructions}" if custom_instructions else ""
+
+    prompt = f"""Analysez ces logs Moxa et la configuration actuelle.
+Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.{extra}
 
 Configuration actuelle:
 {json.dumps(current_config, indent=2)}
