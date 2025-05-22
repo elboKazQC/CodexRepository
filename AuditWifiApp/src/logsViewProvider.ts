@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 export class LogsViewProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private _results?: any;
+    private _customInstructions: string = '';
 
     constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -40,7 +41,7 @@ export class LogsViewProvider implements vscode.WebviewViewProvider {
         webviewView.webview.onDidReceiveMessage(data => {
             switch (data.command) {
                 case 'openLog':
-                    this._openLogFile();
+                    this._openLogFile(data.customInstructions || '');
                     break;
                 case 'saveReport':
                     this._saveReport();
@@ -63,10 +64,11 @@ export class LogsViewProvider implements vscode.WebviewViewProvider {
     /**
      * Ouvre un fichier log pour analyse
      */
-    private async _openLogFile() {
+    private async _openLogFile(instructions: string) {
+        this._customInstructions = instructions;
         try {
-            // Lancer la commande d'analyse
-            vscode.commands.executeCommand('moxa-wifi-analyzer.analyze');
+            // Lancer la commande d'analyse en passant les instructions personnalisées
+            vscode.commands.executeCommand('moxa-wifi-analyzer.analyze', instructions);
         } catch (error: any) {
             vscode.window.showErrorMessage(`Erreur lors de l'ouverture du log: ${error.message}`);
         }
@@ -254,10 +256,10 @@ export class LogsViewProvider implements vscode.WebviewViewProvider {
         </head>
         <body>
             <h2>Analyse des Logs Moxa</h2>
-            
+
             ${hasResults ? `
             ${scoreHtml}
-            
+
             <div class="section">
                 <div class="section-title">Métriques de Roaming</div>
                 ${metricsHtml}
@@ -269,7 +271,12 @@ export class LogsViewProvider implements vscode.WebviewViewProvider {
                 <p>Utilisez le bouton ci-dessous pour analyser un fichier log</p>
             </div>
             `}
-            
+
+            <div class="section">
+                <div class="section-title">Instructions personnalisées</div>
+                <textarea id="customInstructions" rows="3" style="width:100%;" placeholder="Ajouter des instructions...">${this._customInstructions}</textarea>
+            </div>
+
             <div class="buttons">
                 <button id="btn-open-log">Ouvrir un log pour analyse</button>
                 ${hasResults ? `<button id="btn-save-report">Sauvegarder le rapport</button>` : ''}
@@ -279,8 +286,11 @@ export class LogsViewProvider implements vscode.WebviewViewProvider {
                 (function() {
                     document.getElementById('btn-open-log').addEventListener('click', () => {
                         const vscode = acquireVsCodeApi();
+                        const instructionsElem = document.getElementById('customInstructions');
+                        const customInstructions = instructionsElem ? instructionsElem.value : '';
                         vscode.postMessage({
-                            command: 'openLog'
+                            command: 'openLog',
+                            customInstructions: customInstructions
                         });
                     });
                     

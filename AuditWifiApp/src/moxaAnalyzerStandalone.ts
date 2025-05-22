@@ -37,7 +37,7 @@ class MoxaAnalyzerStandalone {
         };
     }
 
-    public async analyzeLog(logContent: string, currentConfig: any): Promise<any> {
+    public async analyzeLog(logContent: string, currentConfig: any, customInstructions: string = ''): Promise<any> {
         console.log("Analyse du log avec l'IA en cours...");
         
         const max_log_length = 15000;
@@ -47,7 +47,7 @@ class MoxaAnalyzerStandalone {
             console.log(`Log tronqué de ${logContent.length} à ${max_log_length} caractères pour l'analyse IA.`);
         }
         
-        const prompt = this._createAnalysisPrompt(truncatedLog, currentConfig);
+        const prompt = this._createAnalysisPrompt(truncatedLog, currentConfig, customInstructions);
         const aiResponse = await this._callAiApi(prompt);
         
         if (!aiResponse) {
@@ -57,9 +57,10 @@ class MoxaAnalyzerStandalone {
         return this._processAiResponse(aiResponse, currentConfig);
     }
 
-    private _createAnalysisPrompt(logContent: string, currentConfig: any): string {
+    private _createAnalysisPrompt(logContent: string, currentConfig: any, customInstructions: string): string {
         const configText = JSON.stringify(currentConfig, null, 2);
-        return `En tant qu'expert en réseaux sans fil et particulièrement en configuration d'appareils Moxa, analysez le log suivant et la configuration actuelle pour fournir des recommandations d'optimisation du roaming.
+        const extra = customInstructions && customInstructions.trim() ? `\n\nInstructions supplémentaires :\n${customInstructions}` : '';
+        return `En tant qu'expert en réseaux sans fil et particulièrement en configuration d'appareils Moxa, analysez le log suivant et la configuration actuelle pour fournir des recommandations d'optimisation du roaming.${extra}
 
 ## Configuration actuelle du Moxa:
 \`\`\`json
