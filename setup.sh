@@ -1,22 +1,13 @@
 #!/usr/bin/env bash
+# Simple setup script to install dependencies into a virtual environment
 set -e
-
-echo "🚀 Création ou activation de l'environnement virtuel..."
-
-VENV=".venv"
-
+VENV=.venv
 if [ ! -d "$VENV" ]; then
-    python3 -m venv "$VENV"
-    echo "✅ Environnement virtuel créé."
-else
-    echo "🔁 Environnement virtuel déjà présent."
+    python -m venv $VENV
 fi
-
-source "$VENV/bin/activate"
-echo "🧠 Environnement activé : $(which python)"
-
-echo "📦 Installation des dépendances en ligne depuis PyPI..."
-pip install --upgrade pip
-pip install -r requirements.txt
-
-echo "🎉 Setup terminé avec succès!"
+source $VENV/bin/activate
+if [ -d packages ]; then
+    pip install --no-index --find-links packages -r requirements.txt
+else
+    pip install -r requirements.txt
+fi

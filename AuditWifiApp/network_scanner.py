@@ -560,8 +560,5 @@ def scan_wifi():
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Erreur lors de l'exécution de netsh: {e}")
-    except FileNotFoundError:
-        # netsh not available on this system
-        return []
     except Exception as e:
         raise RuntimeError(f"Erreur inattendue: {str(e)}")

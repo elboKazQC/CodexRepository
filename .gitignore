@@ -1,2 +1,7 @@
+AuditWifiApp/config/api_config.json
+.env
 
+*.pyc
+*.pyc
+/AuditWifiApp/__pycache__
 

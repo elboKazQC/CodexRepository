@@ -217,7 +217,6 @@ Pour exécuter les tests, utilisez la commande suivante :
 
 ```bash
 pytest -v
-npm test
 ```
 
 Pour générer un rapport de couverture des tests :

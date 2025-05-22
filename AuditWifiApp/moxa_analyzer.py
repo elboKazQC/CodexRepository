@@ -4,9 +4,6 @@ import os
 import json
 import requests
 
-from config_manager import ConfigurationManager
-from app_config import CONFIG_PATH
-
 class MoxaLogAnalyzer:
     """
     Analyse les logs Moxa via l'API OpenAI pour fournir des recommandations 
@@ -14,12 +11,8 @@ class MoxaLogAnalyzer:
     les patterns dans les logs et générer des suggestions d'amélioration.
     """
 
-    def __init__(self, config_manager: ConfigurationManager | None = None):
-        """Initialise l'analyseur avec la configuration fournie."""
-        self.config_manager = config_manager or ConfigurationManager(path=CONFIG_PATH)
-        cfg = self.config_manager.get_config().get("moxa_analyzer", {})
+    def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.max_tokens = cfg.get("max_tokens", 2000)
 
     def analyze_logs(self, log_content, current_config):
         """
@@ -161,7 +154,7 @@ class MoxaLogAnalyzer:
                     "model": "gpt-4",
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.2,
-                    "max_tokens": self.max_tokens
+                    "max_tokens": 2000
                 }
             )
 

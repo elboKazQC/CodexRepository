@@ -63,39 +63,11 @@ class PowerShellWiFiCollector:
                     return None
 
                 # Normaliser les noms des champs
-                signal_raw = wifi_data.get("SignalStrength", wifi_data.get("Signal", 0))
-                signal_percent = int(str(signal_raw).replace("%", ""))
-                signal_dbm = wifi_data.get("SignalStrengthDBM")
-                if signal_dbm is None:
-                    signal_dbm = -100 + signal_percent * 0.5
-                else:
-                    try:
-                        signal_dbm = int(signal_dbm)
-                    except ValueError:
-                        signal_dbm = -100 + signal_percent * 0.5
-
-                noise_floor = wifi_data.get("NoiseFloor")
-                if noise_floor is not None:
-                    try:
-                        noise_floor = int(noise_floor)
-                    except ValueError:
-                        noise_floor = None
-
-                snr_val = wifi_data.get("SNR")
-                if snr_val is not None:
-                    try:
-                        snr_val = int(snr_val)
-                    except ValueError:
-                        snr_val = None
-
-                if snr_val is None and noise_floor is not None:
-                    snr_val = int(signal_dbm - noise_floor)
-
                 normalized_data = {
                     "SSID": wifi_data.get("SSID", "N/A"),
                     "BSSID": wifi_data.get("BSSID", "00:00:00:00:00:00"),
-                    "SignalStrength": f"{signal_percent}%",
-                    "SignalStrengthDBM": signal_dbm,
+                    "SignalStrength": str(wifi_data.get("Signal", 0)) + "%",
+                    "SignalStrengthDBM": -100 + int(wifi_data.get("Signal", 0)) * 0.5,
                     "Channel": wifi_data.get("Channel", "N/A"),
                     "Band": wifi_data.get("Band", "2.4 GHz"),
                     "Status": wifi_data.get("Status", "Déconnecté"),
@@ -103,9 +75,7 @@ class PowerShellWiFiCollector:
                     "ReceiveRate": wifi_data.get("ReceiveRate", "0 Mbps"),
                     "Authentication": wifi_data.get("Authentication", "N/A"),
                     "PingLatency": wifi_data.get("PingLatency", -1),
-                    "Gateway": wifi_data.get("Gateway", "N/A"),
-                    "NoiseFloor": noise_floor,
-                    "SNR": snr_val,
+                    "Gateway": wifi_data.get("Gateway", "N/A")
                 }
                 return normalized_data
 

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict
 from datetime import datetime
 from dataclasses import dataclass
 from .wifi_collector import WifiSample
@@ -31,12 +31,6 @@ class WifiAnalyzer:
             },
             "ping_ms": 50,
             "packet_loss_percent": 2,
-            "snr_db": {
-                "excellent": 25,
-                "good": 15,
-                "fair": 10,
-                "poor": 0,
-            },
         }
 
     def analyze_samples(self, samples: List[WifiSample]) -> WifiAnalysis:
@@ -209,7 +203,6 @@ class WifiAnalyzer:
         """Analyse les métriques WiFi principales."""
         return {
             "signal_quality": self._evaluate_signal_quality(wifi_data.get("rssi", 0)),
-            "snr_quality": self._evaluate_snr(wifi_data.get("snr")),
             "connection_stability": self._evaluate_connection_stability(
                 wifi_data.get("packet_loss", 0),
                 wifi_data.get("ping", 0),
@@ -220,19 +213,6 @@ class WifiAnalyzer:
                 "packet_loss": wifi_data.get("packet_loss", 0),
             },
         }
-
-    def _evaluate_snr(self, snr: Optional[int]) -> str:
-        """Évalue la qualité du SNR."""
-        if snr is None:
-            return "Inconnu"
-        if snr >= self.thresholds["snr_db"]["excellent"]:
-            return "Excellent"
-        elif snr >= self.thresholds["snr_db"]["good"]:
-            return "Bon"
-        elif snr >= self.thresholds["snr_db"]["fair"]:
-            return "Moyen"
-        else:
-            return "Faible"
 
     def _evaluate_signal_quality(self, rssi: float) -> str:
         """Évalue la qualité du signal basée sur le RSSI."""
