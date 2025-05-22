@@ -31,13 +31,21 @@ venv.bak/
 
 # Logs et données
 *.log
+api_errors.log
+network_analysis.log
+wifi_collector.log
 *.csv
 logs/
 logs_moxa/
 *.db
 *.sqlite3
 
-# Fichiers de configuration spécifiques
+# Fichiers de configuration
+*.yaml
+config.yaml
+/config/
+AuditWifiApp/config/*
+!AuditWifiApp/config/default_config.yaml
 AuditWifiApp/config/api_config.json
 
 # IDE et éditeurs
@@ -46,6 +54,18 @@ AuditWifiApp/config/api_config.json
 *.swp
 *.swo
 *~
+
+# Scripts avec potentielles informations sensibles
+*_secrets.ps1
+*_credentials.ps1
+*_private.ps1
+private_*.ps1
+secrets_*.ps1
+
+# Fichiers temporaires PowerShell
+*.ps1.tmp
+*.psm1.tmp
+*.psd1.tmp
 
 # OS
 .DS_Store
