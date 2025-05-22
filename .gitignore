@@ -34,9 +34,12 @@ venv.bak/
 api_errors.log
 network_analysis.log
 wifi_collector.log
+application.log
 *.csv
 logs/
 logs_moxa/
+**/logs/
+**/logs_moxa/
 *.db
 *.sqlite3
 
@@ -47,6 +50,32 @@ config.yaml
 AuditWifiApp/config/*
 !AuditWifiApp/config/default_config.yaml
 AuditWifiApp/config/api_config.json
+
+# Fichiers spécifiques au projet AuditWifiApp
+AuditWifiApp/api_errors.log
+AuditWifiApp/network_analysis.log
+AuditWifiApp/__pycache__/
+AuditWifiApp/**/__pycache__/
+AuditWifiApp/archive/application.log
+AuditWifiApp/archive/*.bat
+AuditWifiApp/verify_structure.ps1
+AuditWifiApp/wifi_monitor.ps1
+
+# Dossiers de développement
+models/
+network_scanner/
+src/
+tests/
+themes/
+ui/__pycache__/
+wifi/__pycache__/
+
+# Fichiers temporaires et de backup
+*.bak
+*.tmp
+*.temp
+*~
+.*.swp
 
 # IDE et éditeurs
 .idea/
