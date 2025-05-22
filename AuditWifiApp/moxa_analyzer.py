@@ -14,7 +14,7 @@ class MoxaLogAnalyzer:
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
 
-    def analyze_logs(self, log_content, current_config):
+    def analyze_logs(self, log_content, current_config, custom_instructions: str | None = None):
         """
         Analyse les logs Moxa via l'API OpenAI pour identifier les problèmes
         et générer des recommandations d'optimisation.
@@ -22,6 +22,7 @@ class MoxaLogAnalyzer:
         Args:
             log_content (str): Contenu des logs à analyser
             current_config (dict): Configuration Moxa actuelle
+            custom_instructions (str | None): Instructions additionnelles pour personnaliser l'analyse
             
         Returns:
             dict: Résultat de l'analyse contenant les problèmes détectés
@@ -41,6 +42,7 @@ class MoxaLogAnalyzer:
         clean_logs = log_content.replace("\r\n", "\n").strip()
 
         # Créer le prompt pour l'analyse
+        extra = f"\nInstructions supplémentaires :\n{custom_instructions}" if custom_instructions else ""
         prompt = (
             "En tant qu'expert Wi-Fi industriel, analyser ces logs en détail en recherchant spécifiquement:\n"
             "1. Effet 'ping-pong' : roaming rapide et répété entre les mêmes points d'accès\n"
@@ -139,7 +141,7 @@ class MoxaLogAnalyzer:
             "    ]\n"
             "  }\n"
             "}\n\n"
-            f"LOGS À ANALYSER:\n{clean_logs}"
+            f"LOGS À ANALYSER:\n{clean_logs}" + extra
         )
 
         try:

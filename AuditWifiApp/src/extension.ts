@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     // Commande pour analyser les logs
-    const analyzeCommand = vscode.commands.registerCommand('moxa-wifi-analyzer.analyze', async () => {
+    const analyzeCommand = vscode.commands.registerCommand('moxa-wifi-analyzer.analyze', async (customInstructions?: string) => {
         try {
             // Demander à l'utilisateur de sélectionner un fichier log
             const logFiles = await vscode.window.showOpenDialog({
@@ -70,7 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
                 try {
                     progress.report({ increment: 30, message: "Traitement des logs..." });
                     
-                    analysisResults = await moxaAnalyzer.analyzeLog(logContent, config);
+                    analysisResults = await moxaAnalyzer.analyzeLog(logContent, config, customInstructions || '');
                     
                     progress.report({ increment: 70, message: "Génération des recommandations..." });
 
