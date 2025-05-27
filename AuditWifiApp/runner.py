@@ -47,6 +47,7 @@ class NetworkAnalyzerUI:
         self.is_real_time = True  # Mode temps réel vs navigation
         self.alert_markers = []  # Marqueurs d'alertes sur les graphiques
         self.fullscreen_window = None  # Fenêtre plein écran
+        self.slider_update_in_progress = False  # Évite la récursion avec le slider
 
         # Configuration par défaut pour l'analyse des logs Moxa
         self.default_config = {
@@ -973,6 +974,9 @@ class NetworkAnalyzerUI:
 
     def on_slider_change(self, value):
         """Gère le changement de position du slider"""
+        if self.slider_update_in_progress:
+            return
+
         if not self.is_real_time and self.samples:
             total_samples = len(self.samples)
             position = int(float(value) * total_samples / 100)
@@ -1101,14 +1105,22 @@ class NetworkAnalyzerUI:
                 self.position_label.config(text=f"Position: {start}-{end}/{total} échantillons")
 
                 slider_pos = (self.current_view_start / total) * 100 if total > 0 else 0
-                self.time_slider.set(slider_pos)
-                if hasattr(self, 'time_slider_fs'):
-                    self.time_slider_fs.set(slider_pos)
+                self.slider_update_in_progress = True
+                try:
+                    self.time_slider.set(slider_pos)
+                    if hasattr(self, 'time_slider_fs'):
+                        self.time_slider_fs.set(slider_pos)
+                finally:
+                    self.slider_update_in_progress = False
             else:
                 self.position_label.config(text="Position: 0/0 échantillons")
-                self.time_slider.set(0)
-                if hasattr(self, 'time_slider_fs'):
-                    self.time_slider_fs.set(0)
+                self.slider_update_in_progress = True
+                try:
+                    self.time_slider.set(0)
+                    if hasattr(self, 'time_slider_fs'):
+                        self.time_slider_fs.set(0)
+                finally:
+                    self.slider_update_in_progress = False
         except Exception as e:
             logging.error(f"Erreur dans update_position_info: {str(e)}")
 
