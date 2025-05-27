@@ -416,11 +416,13 @@ class NetworkAnalyzerUI:
         self.toolbar.update()
 
         # Raccourcis clavier pour la navigation
-        self.master.bind('<Left>', lambda e: self.go_previous())
-        self.master.bind('<Right>', lambda e: self.go_next())
-        self.master.bind('<Home>', lambda e: self.go_to_start())
-        self.master.bind('<End>', lambda e: self.go_to_end())
-        self.master.bind('<space>', lambda e: self.pause_navigation())
+
+        self.master.bind('<Left>', self.on_left_key)
+        self.master.bind('<Right>', self.on_right_key)
+        self.master.bind('<Home>', self.on_home_key)
+        self.master.bind('<End>', self.on_end_key)
+        self.master.bind('<space>', self.on_space_key)
+
 
     def start_collection(self):
         """Démarre la collecte WiFi"""
@@ -1025,8 +1027,6 @@ class NetworkAnalyzerUI:
         except Exception as e:
             logging.error(f"Erreur dans go_previous: {str(e)}")
             # Éviter le crash en cas d'erreur
-            logging.error(f"Erreur dans go_previous: {str(e)}")
-            # Éviter le crash en cas d'erreur
 
     def go_next(self):
         """Avance dans le temps"""
@@ -1051,6 +1051,29 @@ class NetworkAnalyzerUI:
         except Exception as e:
             logging.error(f"Erreur dans pause_navigation: {str(e)}")
             # Éviter le crash en cas d'erreur
+
+
+    # Handlers pour les raccourcis clavier
+    def on_left_key(self, event=None):
+        """Déclenche le déplacement vers la gauche"""
+        self.go_previous()
+
+    def on_right_key(self, event=None):
+        """Déclenche le déplacement vers la droite"""
+        self.go_next()
+
+    def on_home_key(self, event=None):
+        """Va au début des données"""
+        self.go_to_start()
+
+    def on_end_key(self, event=None):
+        """Va à la fin des données"""
+        self.go_to_end()
+
+    def on_space_key(self, event=None):
+        """Met en pause ou reprend la navigation"""
+        self.pause_navigation()
+
 
     def toggle_pan_mode(self):
         """Active ou désactive le mode déplacement sur les graphiques"""
@@ -1101,11 +1124,13 @@ class NetworkAnalyzerUI:
         self.fullscreen_window.state('zoomed')
 
         # Raccourcis clavier identiques en plein écran
-        self.fullscreen_window.bind('<Left>', lambda e: self.go_previous())
-        self.fullscreen_window.bind('<Right>', lambda e: self.go_next())
-        self.fullscreen_window.bind('<Home>', lambda e: self.go_to_start())
-        self.fullscreen_window.bind('<End>', lambda e: self.go_to_end())
-        self.fullscreen_window.bind('<space>', lambda e: self.pause_navigation())
+
+        self.fullscreen_window.bind('<Left>', self.on_left_key)
+        self.fullscreen_window.bind('<Right>', self.on_right_key)
+        self.fullscreen_window.bind('<Home>', self.on_home_key)
+        self.fullscreen_window.bind('<End>', self.on_end_key)
+        self.fullscreen_window.bind('<space>', self.on_space_key)
+
 
         # Créer les graphiques pour la fenêtre plein écran
         self.setup_fullscreen_graphs()
@@ -1210,6 +1235,14 @@ class NetworkAnalyzerUI:
     def close_fullscreen_graphs(self):
         """Ferme la fenêtre plein écran"""
         if self.fullscreen_window and self.fullscreen_window.winfo_exists():
+            try:
+                self.fullscreen_window.unbind('<Left>')
+                self.fullscreen_window.unbind('<Right>')
+                self.fullscreen_window.unbind('<Home>')
+                self.fullscreen_window.unbind('<End>')
+                self.fullscreen_window.unbind('<space>')
+            except Exception:
+                pass
             self.fullscreen_window.destroy()
         self.fullscreen_window = None
 
@@ -1658,11 +1691,19 @@ def main():
 
         # Créer l'interface utilisateur
         app = NetworkAnalyzerUI(root)
-          # Configuration de la fermeture propre
+        # Configuration de la fermeture propre
         def on_closing():
             logging.info("Fermeture de l'application")
             if app.amr_monitor:
                 app.amr_monitor.stop()
+            try:
+                root.unbind('<Left>')
+                root.unbind('<Right>')
+                root.unbind('<Home>')
+                root.unbind('<End>')
+                root.unbind('<space>')
+            except Exception:
+                pass
             root.destroy()
 
         root.protocol("WM_DELETE_WINDOW", on_closing)
