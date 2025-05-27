@@ -416,11 +416,13 @@ class NetworkAnalyzerUI:
         self.toolbar.update()
 
         # Raccourcis clavier pour la navigation
+
         self.master.bind('<Left>', self.on_left_key)
         self.master.bind('<Right>', self.on_right_key)
         self.master.bind('<Home>', self.on_home_key)
         self.master.bind('<End>', self.on_end_key)
         self.master.bind('<space>', self.on_space_key)
+
 
     def start_collection(self):
         """Démarre la collecte WiFi"""
@@ -1050,6 +1052,7 @@ class NetworkAnalyzerUI:
             logging.error(f"Erreur dans pause_navigation: {str(e)}")
             # Éviter le crash en cas d'erreur
 
+
     # Handlers pour les raccourcis clavier
     def on_left_key(self, event=None):
         """Déclenche le déplacement vers la gauche"""
@@ -1070,6 +1073,7 @@ class NetworkAnalyzerUI:
     def on_space_key(self, event=None):
         """Met en pause ou reprend la navigation"""
         self.pause_navigation()
+
 
     def toggle_pan_mode(self):
         """Active ou désactive le mode déplacement sur les graphiques"""
@@ -1120,11 +1124,13 @@ class NetworkAnalyzerUI:
         self.fullscreen_window.state('zoomed')
 
         # Raccourcis clavier identiques en plein écran
+
         self.fullscreen_window.bind('<Left>', self.on_left_key)
         self.fullscreen_window.bind('<Right>', self.on_right_key)
         self.fullscreen_window.bind('<Home>', self.on_home_key)
         self.fullscreen_window.bind('<End>', self.on_end_key)
         self.fullscreen_window.bind('<space>', self.on_space_key)
+
 
         # Créer les graphiques pour la fenêtre plein écran
         self.setup_fullscreen_graphs()
