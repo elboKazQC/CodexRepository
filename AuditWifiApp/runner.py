@@ -157,9 +157,7 @@ class NetworkAnalyzerUI:
         wifi_history_scroll = ttk.Scrollbar(history_tab, command=self.wifi_history_text.yview)
         self.wifi_history_text.configure(yscrollcommand=wifi_history_scroll.set)
         self.wifi_history_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        wifi_history_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # === Onglet Statistiques Avancées ===
+        wifi_history_scroll.pack(side=tk.RIGHT, fill=tk.Y)        # === Onglet Statistiques Avancées ===
         advanced_stats_tab = ttk.Frame(self.wifi_analysis_notebook)
         self.wifi_analysis_notebook.add(advanced_stats_tab, text="📊 Stats Avancées")
 
@@ -167,7 +165,17 @@ class NetworkAnalyzerUI:
         wifi_advanced_scroll = ttk.Scrollbar(advanced_stats_tab, command=self.wifi_advanced_stats_text.yview)
         self.wifi_advanced_stats_text.configure(yscrollcommand=wifi_advanced_scroll.set)
         self.wifi_advanced_stats_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        wifi_advanced_scroll.pack(side=tk.RIGHT, fill=tk.Y)# === Onglet Moxa ===
+        wifi_advanced_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # === Onglet Rapport Final ===
+        final_report_tab = ttk.Frame(self.wifi_analysis_notebook)
+        self.wifi_analysis_notebook.add(final_report_tab, text="📋 Rapport Final")
+
+        self.wifi_final_report_text = tk.Text(final_report_tab, wrap=tk.WORD)
+        wifi_final_scroll = ttk.Scrollbar(final_report_tab, command=self.wifi_final_report_text.yview)
+        self.wifi_final_report_text.configure(yscrollcommand=wifi_final_scroll.set)
+        self.wifi_final_report_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        wifi_final_scroll.pack(side=tk.RIGHT, fill=tk.Y)# === Onglet Moxa ===
         self.moxa_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.moxa_frame, text="Analyse Moxa")
 
@@ -313,6 +321,9 @@ class NetworkAnalyzerUI:
         self.stop_button.config(state=tk.DISABLED)
         self.export_button.config(state=tk.NORMAL)
         self.update_status("Collection arrêtée")
+
+        # Générer le rapport final
+        self.generate_final_network_report()
 
     def analyze_moxa_logs(self):
         """Analyse les logs Moxa collés avec OpenAI"""
@@ -821,6 +832,254 @@ class NetworkAnalyzerUI:
             stats += f"📊 Pourcentage avec alertes: {percentage:.1f}%\n"
 
         self.wifi_advanced_stats_text.insert('1.0', stats)
+
+    def generate_final_network_report(self):
+        """Génère un rapport final complet de la qualité du réseau"""
+        if not self.samples:
+            self.wifi_final_report_text.delete('1.0', tk.END)
+            self.wifi_final_report_text.insert('1.0', "⚠️ Aucune donnée collectée pour générer un rapport.\n")
+            return
+
+        # Effacer le contenu existant
+        self.wifi_final_report_text.delete('1.0', tk.END)
+
+        # Configurer les styles de texte
+        self.wifi_final_report_text.tag_configure("title", font=("Arial", 16, "bold"), foreground="blue")
+        self.wifi_final_report_text.tag_configure("section", font=("Arial", 12, "bold"), foreground="darkgreen")
+        self.wifi_final_report_text.tag_configure("subsection", font=("Arial", 11, "bold"))
+        self.wifi_final_report_text.tag_configure("normal", font=("Arial", 10))
+        self.wifi_final_report_text.tag_configure("good", foreground="green", font=("Arial", 10, "bold"))
+        self.wifi_final_report_text.tag_configure("warning", foreground="orange", font=("Arial", 10, "bold"))
+        self.wifi_final_report_text.tag_configure("critical", foreground="red", font=("Arial", 10, "bold"))
+        self.wifi_final_report_text.tag_configure("score", font=("Arial", 14, "bold"))
+
+        # Calculer les statistiques
+        signal_values = [s.signal_strength for s in self.samples]
+        quality_values = [s.quality for s in self.samples]
+        duration_minutes = len(self.samples) / 60
+
+        # Calculer le score global
+        score = self.calculate_network_score(signal_values, quality_values)
+
+        # Titre du rapport
+        self.wifi_final_report_text.insert('end', "🏆 RAPPORT FINAL - QUALITÉ RÉSEAU WIFI\n", "title")
+        self.wifi_final_report_text.insert('end', "=" * 60 + "\n\n", "normal")
+
+        # Score global
+        score_color = "good" if score >= 80 else "warning" if score >= 60 else "critical"
+        self.wifi_final_report_text.insert('end', f"📊 SCORE GLOBAL : {score:.0f}/100\n", "score")
+
+        if score >= 80:
+            self.wifi_final_report_text.insert('end', "✅ EXCELLENT - Réseau de très bonne qualité\n\n", "good")
+        elif score >= 60:
+            self.wifi_final_report_text.insert('end', "⚠️ MOYEN - Améliorations possibles\n\n", "warning")
+        else:
+            self.wifi_final_report_text.insert('end', "❌ CRITIQUE - Optimisation nécessaire\n\n", "critical")
+
+        # Informations générales
+        self.wifi_final_report_text.insert('end', "📋 INFORMATIONS GÉNÉRALES\n", "section")
+        self.wifi_final_report_text.insert('end', f"• Durée d'analyse : {duration_minutes:.1f} minutes\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Échantillons collectés : {len(self.samples)}\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Intervalle d'échantillonnage : {self.update_interval/1000:.1f} secondes\n\n", "normal")
+
+        # Analyse du signal
+        self.generate_signal_analysis(signal_values)
+
+        # Analyse de la qualité
+        self.generate_quality_analysis(quality_values)
+
+        # Analyse des alertes
+        self.generate_alerts_analysis()
+
+        # Recommandations
+        self.generate_recommendations(signal_values, quality_values, score)
+
+        # Conclusion
+        self.generate_conclusion(score)        # Switcher vers l'onglet du rapport final
+        self.wifi_analysis_notebook.select(3)  # Index de l'onglet "Rapport Final"
+
+    def calculate_std_dev(self, values):
+        """Calcule l'écart-type d'une liste de valeurs"""
+        if len(values) < 2:
+            return 0
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        return variance ** 0.5
+
+    def calculate_network_score(self, signal_values, quality_values):
+        """Calcule un score global de qualité du réseau"""
+        if not signal_values or not quality_values:
+            return 0
+
+        # Score basé sur la force moyenne du signal (30% du score)
+        avg_signal = sum(signal_values) / len(signal_values)
+        if avg_signal >= -50:
+            signal_score = 100
+        elif avg_signal >= -60:
+            signal_score = 80
+        elif avg_signal >= -70:
+            signal_score = 60
+        elif avg_signal >= -80:
+            signal_score = 40
+        else:
+            signal_score = 20
+
+        # Score basé sur la qualité moyenne (40% du score)
+        avg_quality = sum(quality_values) / len(quality_values)
+        quality_score = min(100, avg_quality)        # Score basé sur la stabilité (30% du score)
+        signal_std = self.calculate_std_dev(signal_values) if len(signal_values) > 1 else 0
+        quality_std = self.calculate_std_dev(quality_values) if len(quality_values) > 1 else 0
+
+        # Plus la variation est faible, meilleur est le score de stabilité
+        stability_score = max(0, 100 - (signal_std * 5) - (quality_std * 2))
+
+        # Score global pondéré
+        global_score = (signal_score * 0.3) + (quality_score * 0.4) + (stability_score * 0.3)
+        return max(0, min(100, global_score))
+
+    def generate_signal_analysis(self, signal_values):
+        """Génère l'analyse détaillée du signal"""
+        self.wifi_final_report_text.insert('end', "📶 ANALYSE DU SIGNAL WIFI\n", "section")
+
+        avg_signal = sum(signal_values) / len(signal_values)
+        min_signal = min(signal_values)
+        max_signal = max(signal_values)
+
+        self.wifi_final_report_text.insert('end', f"• Signal moyen : {avg_signal:.1f} dBm\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Signal minimum : {min_signal} dBm\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Signal maximum : {max_signal} dBm\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Variation : {max_signal - min_signal} dBm\n", "normal")
+
+        # Évaluation de la force du signal
+        if avg_signal >= -50:
+            self.wifi_final_report_text.insert('end', "✅ Signal excellent (> -50 dBm)\n", "good")
+        elif avg_signal >= -60:
+            self.wifi_final_report_text.insert('end', "✅ Signal très bon (-50 à -60 dBm)\n", "good")
+        elif avg_signal >= -70:
+            self.wifi_final_report_text.insert('end', "⚠️ Signal acceptable (-60 à -70 dBm)\n", "warning")
+        elif avg_signal >= -80:
+            self.wifi_final_report_text.insert('end', "⚠️ Signal faible (-70 à -80 dBm)\n", "warning")
+        else:
+            self.wifi_final_report_text.insert('end', "❌ Signal très faible (< -80 dBm)\n", "critical")
+
+        self.wifi_final_report_text.insert('end', "\n", "normal")
+
+    def generate_quality_analysis(self, quality_values):
+        """Génère l'analyse détaillée de la qualité"""
+        self.wifi_final_report_text.insert('end', "🎯 ANALYSE DE LA QUALITÉ\n", "section")
+
+        avg_quality = sum(quality_values) / len(quality_values)
+        min_quality = min(quality_values)
+        max_quality = max(quality_values)
+
+        self.wifi_final_report_text.insert('end', f"• Qualité moyenne : {avg_quality:.1f}%\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Qualité minimum : {min_quality}%\n", "normal")
+        self.wifi_final_report_text.insert('end', f"• Qualité maximum : {max_quality}%\n", "normal")
+
+        # Pourcentage de temps avec bonne qualité
+        good_quality_samples = len([q for q in quality_values if q >= 70])
+        good_quality_percentage = (good_quality_samples / len(quality_values)) * 100
+
+        self.wifi_final_report_text.insert('end', f"• Temps avec qualité > 70% : {good_quality_percentage:.1f}%\n", "normal")
+
+        # Évaluation de la qualité
+        if avg_quality >= 80:
+            self.wifi_final_report_text.insert('end', "✅ Qualité excellente (> 80%)\n", "good")
+        elif avg_quality >= 60:
+            self.wifi_final_report_text.insert('end', "✅ Qualité bonne (60-80%)\n", "good")
+        elif avg_quality >= 40:
+            self.wifi_final_report_text.insert('end', "⚠️ Qualité moyenne (40-60%)\n", "warning")
+        else:
+            self.wifi_final_report_text.insert('end', "❌ Qualité faible (< 40%)\n", "critical")
+
+        self.wifi_final_report_text.insert('end', "\n", "normal")
+
+    def generate_alerts_analysis(self):
+        """Génère l'analyse des alertes"""
+        self.wifi_final_report_text.insert('end', "🚨 ANALYSE DES ALERTES\n", "section")
+
+        total_alerts = sum(len(entry['alerts']) for entry in self.wifi_history_entries)
+        total_entries = len(self.wifi_history_entries)
+
+        if total_entries > 0:
+            alert_percentage = (total_alerts / total_entries) * 100
+            self.wifi_final_report_text.insert('end', f"• Total d'alertes : {total_alerts}\n", "normal")
+            self.wifi_final_report_text.insert('end', f"• Pourcentage d'alertes : {alert_percentage:.1f}%\n", "normal")
+
+            if alert_percentage < 10:
+                self.wifi_final_report_text.insert('end', "✅ Très peu d'alertes - réseau stable\n", "good")
+            elif alert_percentage < 25:
+                self.wifi_final_report_text.insert('end', "⚠️ Quelques alertes - surveillance recommandée\n", "warning")
+            else:
+                self.wifi_final_report_text.insert('end', "❌ Beaucoup d'alertes - intervention nécessaire\n", "critical")
+        else:
+            self.wifi_final_report_text.insert('end', "• Aucune donnée d'alerte disponible\n", "normal")
+
+        self.wifi_final_report_text.insert('end', "\n", "normal")
+
+    def generate_recommendations(self, signal_values, quality_values, score):
+        """Génère les recommandations d'amélioration"""
+        self.wifi_final_report_text.insert('end', "💡 RECOMMANDATIONS\n", "section")
+
+        avg_signal = sum(signal_values) / len(signal_values)
+        avg_quality = sum(quality_values) / len(quality_values)
+
+        recommendations = []
+
+        if avg_signal < -70:
+            recommendations.append("📡 Améliorer la force du signal :")
+            recommendations.append("   • Rapprocher les équipements du point d'accès")
+            recommendations.append("   • Vérifier les obstacles (murs, équipements métalliques)")
+            recommendations.append("   • Considérer l'ajout de répéteurs WiFi")
+
+        if avg_quality < 60:
+            recommendations.append("🎯 Améliorer la qualité de connexion :")
+            recommendations.append("   • Changer de canal WiFi pour éviter les interférences")
+            recommendations.append("   • Vérifier la charge du réseau")
+            recommendations.append("   • Mettre à jour les pilotes des équipements")
+
+        if score < 70:
+            recommendations.append("⚙️ Optimisations générales :")
+            recommendations.append("   • Effectuer un scan des réseaux environnants")
+            recommendations.append("   • Vérifier la configuration QoS")
+            recommendations.append("   • Planifier des analyses régulières")
+
+        if not recommendations:
+            recommendations.append("✅ Réseau en excellent état - Aucune action requise")
+            recommendations.append("   • Continuer la surveillance périodique")
+            recommendations.append("   • Documenter cette configuration pour référence")
+
+        for rec in recommendations:
+            self.wifi_final_report_text.insert('end', f"{rec}\n", "normal")
+
+        self.wifi_final_report_text.insert('end', "\n", "normal")
+
+    def generate_conclusion(self, score):
+        """Génère la conclusion du rapport"""
+        self.wifi_final_report_text.insert('end', "📝 CONCLUSION\n", "section")
+
+        if score >= 80:
+            conclusion = ("Votre réseau WiFi présente une excellente qualité avec des "
+                        "performances stables et fiables. La configuration actuelle "
+                        "est optimale pour vos besoins.")
+            color = "good"
+        elif score >= 60:
+            conclusion = ("Votre réseau WiFi offre des performances correctes mais "
+                        "pourrait bénéficier de quelques améliorations pour optimiser "
+                        "la stabilité et les performances.")
+            color = "warning"
+        else:
+            conclusion = ("Votre réseau WiFi présente des problèmes significatifs "
+                        "qui nécessitent une intervention rapide pour améliorer "
+                        "les performances et la fiabilité.")
+            color = "critical"
+
+        self.wifi_final_report_text.insert('end', f"{conclusion}\n\n", color)
+
+        # Horodatage
+        timestamp = datetime.now().strftime('%d/%m/%Y à %H:%M:%S')
+        self.wifi_final_report_text.insert('end', f"📅 Rapport généré le {timestamp}\n", "normal")
+        self.wifi_final_report_text.insert('end', "=" * 60 + "\n", "normal")
 
 
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
