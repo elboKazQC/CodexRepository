@@ -337,6 +337,11 @@ class NetworkAnalyzerUI:
         nav_controls = ttk.Frame(nav_buttons_frame)
         nav_controls.pack(side=tk.RIGHT)
 
+        # Bouton pour activer/désactiver le mode déplacement (pan) sur les graphiques
+        self.is_pan_mode = False
+        self.pan_button = ttk.Button(nav_controls, text="🖱️", command=self.toggle_pan_mode, width=3)
+        self.pan_button.pack(side=tk.LEFT, padx=1)
+
         ttk.Button(nav_controls, text="⏮️", command=self.go_to_start, width=3).pack(side=tk.LEFT, padx=1)
         ttk.Button(nav_controls, text="⏪", command=self.go_previous, width=3).pack(side=tk.LEFT, padx=1)
         ttk.Button(nav_controls, text="⏸️", command=self.pause_navigation, width=3).pack(side=tk.LEFT, padx=1)
@@ -409,6 +414,13 @@ class NetworkAnalyzerUI:
         toolbar_frame.pack(fill=tk.X)
         self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
         self.toolbar.update()
+
+        # Raccourcis clavier pour la navigation
+        self.master.bind('<Left>', self.on_left_key)
+        self.master.bind('<Right>', self.on_right_key)
+        self.master.bind('<Home>', self.on_home_key)
+        self.master.bind('<End>', self.on_end_key)
+        self.master.bind('<space>', self.on_space_key)
 
     def start_collection(self):
         """Démarre la collecte WiFi"""
@@ -1013,8 +1025,6 @@ class NetworkAnalyzerUI:
         except Exception as e:
             logging.error(f"Erreur dans go_previous: {str(e)}")
             # Éviter le crash en cas d'erreur
-            logging.error(f"Erreur dans go_previous: {str(e)}")
-            # Éviter le crash en cas d'erreur
 
     def go_next(self):
         """Avance dans le temps"""
@@ -1040,6 +1050,43 @@ class NetworkAnalyzerUI:
             logging.error(f"Erreur dans pause_navigation: {str(e)}")
             # Éviter le crash en cas d'erreur
 
+    # Handlers pour les raccourcis clavier
+    def on_left_key(self, event=None):
+        """Déclenche le déplacement vers la gauche"""
+        self.go_previous()
+
+    def on_right_key(self, event=None):
+        """Déclenche le déplacement vers la droite"""
+        self.go_next()
+
+    def on_home_key(self, event=None):
+        """Va au début des données"""
+        self.go_to_start()
+
+    def on_end_key(self, event=None):
+        """Va à la fin des données"""
+        self.go_to_end()
+
+    def on_space_key(self, event=None):
+        """Met en pause ou reprend la navigation"""
+        self.pause_navigation()
+
+    def toggle_pan_mode(self):
+        """Active ou désactive le mode déplacement sur les graphiques"""
+        try:
+            self.is_pan_mode = not self.is_pan_mode
+            # Activer/désactiver sur les toolbars
+            if hasattr(self, 'toolbar'):
+                self.toolbar.pan()
+            if hasattr(self, 'toolbar_fs'):
+                self.toolbar_fs.pan()
+            # Mettre à jour l'état visuel des boutons
+            self.pan_button.config(relief=tk.SUNKEN if self.is_pan_mode else tk.RAISED)
+            if hasattr(self, 'pan_button_fs'):
+                self.pan_button_fs.config(relief=tk.SUNKEN if self.is_pan_mode else tk.RAISED)
+        except Exception as e:
+            logging.error(f"Erreur dans toggle_pan_mode: {str(e)}")
+
     def update_position_info(self):
         """Met à jour l'info de position"""
         try:
@@ -1048,16 +1095,18 @@ class NetworkAnalyzerUI:
                 start = self.current_view_start + 1
                 end = min(total, self.current_view_start + self.current_view_window)
                 self.position_label.config(text=f"Position: {start}-{end}/{total} échantillons")
+
+                slider_pos = (self.current_view_start / total) * 100 if total > 0 else 0
+                self.time_slider.set(slider_pos)
+                if hasattr(self, 'time_slider_fs'):
+                    self.time_slider_fs.set(slider_pos)
+            else:
+                self.position_label.config(text="Position: 0/0 échantillons")
+                self.time_slider.set(0)
+                if hasattr(self, 'time_slider_fs'):
+                    self.time_slider_fs.set(0)
         except Exception as e:
             logging.error(f"Erreur dans update_position_info: {str(e)}")
-            # Éviter le crash en cas d'erreur
-
-            # Mettre à jour le slider
-            if total > 0:
-                slider_pos = (self.current_view_start / total) * 100
-                self.time_slider.set(slider_pos)
-        else:
-            self.position_label.config(text="Position: 0/0 échantillons")
 
     def open_fullscreen_graphs(self):
         """Ouvre les graphiques en mode plein écran"""
@@ -1069,6 +1118,13 @@ class NetworkAnalyzerUI:
         self.fullscreen_window = tk.Toplevel(self.master)
         self.fullscreen_window.title("Graphiques WiFi - Mode Plein Écran")
         self.fullscreen_window.state('zoomed')
+
+        # Raccourcis clavier identiques en plein écran
+        self.fullscreen_window.bind('<Left>', self.on_left_key)
+        self.fullscreen_window.bind('<Right>', self.on_right_key)
+        self.fullscreen_window.bind('<Home>', self.on_home_key)
+        self.fullscreen_window.bind('<End>', self.on_end_key)
+        self.fullscreen_window.bind('<space>', self.on_space_key)
 
         # Créer les graphiques pour la fenêtre plein écran
         self.setup_fullscreen_graphs()
@@ -1109,6 +1165,10 @@ class NetworkAnalyzerUI:
 
         nav_controls_fs = ttk.Frame(nav_buttons_fs)
         nav_controls_fs.pack(side=tk.RIGHT)
+
+        # Bouton pan en plein écran
+        self.pan_button_fs = ttk.Button(nav_controls_fs, text="🖱️", command=self.toggle_pan_mode, width=3)
+        self.pan_button_fs.pack(side=tk.LEFT, padx=1)
 
         for text, command in [("⏮️", self.go_to_start), ("⏪", self.go_previous),
                              ("⏸️", self.pause_navigation), ("⏩", self.go_next), ("⏭️", self.go_to_end)]:
@@ -1169,6 +1229,14 @@ class NetworkAnalyzerUI:
     def close_fullscreen_graphs(self):
         """Ferme la fenêtre plein écran"""
         if self.fullscreen_window and self.fullscreen_window.winfo_exists():
+            try:
+                self.fullscreen_window.unbind('<Left>')
+                self.fullscreen_window.unbind('<Right>')
+                self.fullscreen_window.unbind('<Home>')
+                self.fullscreen_window.unbind('<End>')
+                self.fullscreen_window.unbind('<space>')
+            except Exception:
+                pass
             self.fullscreen_window.destroy()
         self.fullscreen_window = None
 
@@ -1617,11 +1685,19 @@ def main():
 
         # Créer l'interface utilisateur
         app = NetworkAnalyzerUI(root)
-          # Configuration de la fermeture propre
+        # Configuration de la fermeture propre
         def on_closing():
             logging.info("Fermeture de l'application")
             if app.amr_monitor:
                 app.amr_monitor.stop()
+            try:
+                root.unbind('<Left>')
+                root.unbind('<Right>')
+                root.unbind('<Home>')
+                root.unbind('<End>')
+                root.unbind('<space>')
+            except Exception:
+                pass
             root.destroy()
 
         root.protocol("WM_DELETE_WINDOW", on_closing)
