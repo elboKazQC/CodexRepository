@@ -40,7 +40,7 @@ class AMRMonitor:
                 self.callback(results)
             time.sleep(self.interval)
 
-    def _ping(self, ip: str) -> (bool, Optional[int]):
+    def _ping(self, ip: str) -> tuple[bool, Optional[int]]:
         param = "-n" if platform.system().lower() == "windows" else "-c"
         try:
             output = subprocess.check_output(

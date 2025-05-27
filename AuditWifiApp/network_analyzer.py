@@ -188,12 +188,10 @@ class NetworkAnalyzer:
                 recommendations.append(
                     "La stabilité du signal est faible. "
                     "Envisagez d'ajuster les paramètres de roaming ou la position des AP."
-                )
-
-        # Ajouter les recommandations de Moxa
-        if self.current_moxa_analysis and hasattr(self.moxa_analyzer, 'results'):
-            if 'recommendations' in self.moxa_analyzer.results:
-                recommendations.extend(self.moxa_analyzer.results['recommendations'])
+                )        # Ajouter les recommandations de Moxa
+        if self.current_moxa_analysis and isinstance(self.current_moxa_analysis, dict):
+            if 'recommendations' in self.current_moxa_analysis:
+                recommendations.extend(self.current_moxa_analysis['recommendations'])
 
         return recommendations
 

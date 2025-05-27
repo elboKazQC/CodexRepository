@@ -67,12 +67,13 @@ class MoxaLogAnalyzer:
         avec les résultats de l'analyse et des recommandations.
         """
         if not log_content:
-            raise ValueError("Le contenu des logs est vide")        # Mettre à jour la configuration actuelle
-        self.set_current_config(current_config)
+            raise ValueError("Le contenu des logs est vide")
 
-        # Si pas de clé API ou clé de test, utiliser l'analyse locale
-        if not self.api_key or self.api_key == 'test-key':
-            return self._local_fallback_analysis(log_content, current_config)
+        if not self.api_key:
+            raise ValueError("Clé API OpenAI non configurée. Veuillez définir OPENAI_API_KEY.")
+
+        # Mettre à jour la configuration actuelle
+        self.set_current_config(current_config)
 
         # Nettoyer et préparer les logs
         clean_logs = log_content.replace("\r\n", "\n").strip()
@@ -240,17 +241,20 @@ class MoxaLogAnalyzer:
                         "error": f"Erreur de parsing JSON: {e}",
                         "raw_content": content
                     }
-            else:                return {
+            else:
+                return {
                     "error": f"Erreur API OpenAI: {response.status_code}",
                     "message": response.text
                 }
 
         except requests.exceptions.RequestException as e:
-            # Fall back to local analysis when API is unreachable
-            return self._local_fallback_analysis(log_content, current_config)
+            return {
+                "error": f"Erreur de connexion: {e}"
+            }
         except Exception as e:
-            # Fall back to local analysis for any other API errors
-            return self._local_fallback_analysis(log_content, current_config)
+            return {
+                "error": f"Erreur inattendue: {e}"
+            }
 
     def calculate_performance_score(self):
         """
@@ -484,106 +488,4 @@ class MoxaLogAnalyzer:
                 ]
             },
             "config_changes": config_changes
-        }
-
-    def _local_fallback_analysis(self, log_content, current_config):
-        """
-        Fallback local analysis when OpenAI API is unavailable.
-        Used primarily for testing.
-        """
-        # Reset metrics
-        self.metrics = {
-            "total_roaming_events": 0,
-            "successful_roaming": 0,
-            "failed_roaming": 0,
-            "handoff_times": [],
-            "ping_pong_events": 0,
-            "authentication_failures": 0,
-            "snr_drops": [],
-            "ap_changes": [],            "deauth_requests": {"total": 0, "par_ap": {}},
-            "duration_minutes": 1,
-        }
-          # Parse logs for specific patterns
-        lines = log_content.split('\n')
-
-        for line in lines:
-            # Detection des deauth requests
-            if "deauth" in line.lower() or "deauthentication" in line.lower():
-                self.metrics["deauth_requests"]["total"] += 1
-                # Extract AP MAC for deauth
-                ap_match = re.search(r'([0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})', line)
-                if ap_match:
-                    ap_mac = ap_match.group(1).lower()
-                    if ap_mac not in self.metrics["deauth_requests"]["par_ap"]:
-                        self.metrics["deauth_requests"]["par_ap"][ap_mac] = 0
-                    self.metrics["deauth_requests"]["par_ap"][ap_mac] += 1
-
-            # Detection des événements de roaming
-            if "roaming" in line.lower() or "associated with" in line.lower() or "connected to ap" in line.lower():
-                self.metrics["total_roaming_events"] += 1
-
-            # Detection des temps de handoff
-            handoff_match = re.search(r'handoff time:\s*(\d+)\s*ms', line.lower())
-            if handoff_match:
-                handoff_time = int(handoff_match.group(1))
-                self.metrics["handoff_times"].append(handoff_time)
-
-            # Detection des problèmes d'authentification
-            if "authentication timeout" in line.lower() or "auth failed" in line.lower() or "authentication failed" in line.lower():
-                self.metrics["authentication_failures"] += 1
-
-            # Detection des chutes de SNR
-            if "snr" in line.lower() and ("0" in line or "drop" in line.lower()):
-                self.metrics["snr_drops"].append(line.strip())
-          # No need to simulate handoff times as they are parsed from logs
-          # Generate config changes based on detected issues
-        config_changes = []
-
-        # Check for authentication failures - recommend increasing transmission power
-        if self.metrics["authentication_failures"] > 0:
-            config_changes.append({
-                "param": "max_transmission_power",
-                "current": current_config.get("max_transmission_power", 10),
-                "suggested": 20,
-                "reason": "Authentication failures detected"
-            })
-
-        # Check for high handoff times - recommend RTS threshold adjustment
-        if self.metrics["handoff_times"] and max(self.metrics["handoff_times"]) > 150:
-            config_changes.append({
-                "param": "rts_threshold",
-                "current": current_config.get("rts_threshold", 2346),
-                "suggested": 1500,
-                "reason": "High handoff times detected"
-            })
-
-        # Check for frequent roaming - recommend fragmentation threshold
-        if self.metrics["total_roaming_events"] > 3:
-            config_changes.append({
-                "param": "fragmentation_threshold",
-                "current": current_config.get("fragmentation_threshold", 2346),
-                "suggested": 1500,
-                "reason": "Frequent roaming events detected"
-            })
-
-        # Return format compatible with tests
-        return {
-            "adapte_flotte_AMR": self.calculate_performance_score() > 70,
-            "score_global": self.calculate_performance_score(),
-            "analyse_detaillee": {
-                "ping_pong": {
-                    "detecte": self.metrics["ping_pong_events"] > 0,
-                    "occurrences": [],
-                    "gravite": self.metrics["ping_pong_events"],
-                    "details": {"temps_min_entre_roaming": "30 sec", "paires_ap_affectees": []}
-                },
-                "deauth_requests": self.metrics["deauth_requests"],
-                "timeouts_auth": {
-                    "nombre": self.metrics["authentication_failures"],
-                    "temps_moyen_ms": 0,
-                    "details": {"causes_principales": ["timeout"], "aps_concernes": []}
-                }
-            },
-            "config_changes": config_changes,
-            "recommandations": []
         }

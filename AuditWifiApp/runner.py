@@ -68,11 +68,13 @@ class NetworkAnalyzerUI:
         self.create_interface()
 
         # Configuration des graphiques
-        self.setup_graphs()
-
-        # Variables pour les mises à jour
+        self.setup_graphs()        # Variables pour les mises à jour
         self.update_interval = 1000  # ms
         self.max_samples = 100
+
+        # Historique pour l'onglet WiFi
+        self.wifi_history_entries = []
+        self.max_history_entries = 1000
 
     def setup_style(self):
         """Configure le style de l'interface"""
@@ -114,95 +116,112 @@ class NetworkAnalyzerUI:
             command=self.stop_collection,
             state=tk.DISABLED
         )
-        self.stop_button.pack(fill=tk.X, pady=5)
-
-        # Zone de statistiques
+        self.stop_button.pack(fill=tk.X, pady=5)        # Zone de statistiques - Compacte
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
-        stats_frame.pack(fill=tk.X, pady=10)
+        stats_frame.pack(fill=tk.X, pady=(5, 5))
 
-        # Agrandir l'affichage des statistiques pour eviter de devoir defiler
-        # afin de lire toutes les informations. Une hauteur plus grande permet
-        # de voir la plupart des lignes en un coup d'oeil.
-        self.stats_text = tk.Text(stats_frame, height=20, width=35)
-        self.stats_text.pack(fill=tk.X, pady=5)
+        # Zone de statistiques réduite pour optimiser l'espace
+        self.stats_text = tk.Text(stats_frame, height=10, width=35)
+        stats_scroll = ttk.Scrollbar(stats_frame, command=self.stats_text.yview)
+        self.stats_text.configure(yscrollcommand=stats_scroll.set)
+        self.stats_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        stats_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Panneau des graphiques et alertes (droite)
         viz_frame = ttk.Frame(self.wifi_frame)
         viz_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Les graphiques seront ajoutés ici par setup_graphs()
+        # Les graphiques seront ajoutés ici par setup_graphs()        # Zone d'analyse multi-onglets - Maximisée
+        analysis_frame = ttk.LabelFrame(viz_frame, text="Analyse détaillée", padding=5)
+        analysis_frame.pack(fill=tk.BOTH, expand=True, side=tk.BOTTOM, pady=(2, 5))
 
-        # Zone d'alertes
-        alerts_frame = ttk.LabelFrame(viz_frame, text="Zones problématiques détectées", padding=5)
-        alerts_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
+        # Notebook pour les différents affichages
+        self.wifi_analysis_notebook = ttk.Notebook(analysis_frame)
+        self.wifi_analysis_notebook.pack(fill=tk.BOTH, expand=True)
 
-        self.wifi_alert_text = tk.Text(alerts_frame, height=4, wrap=tk.WORD)
-        wifi_scroll = ttk.Scrollbar(alerts_frame, command=self.wifi_alert_text.yview)
-        self.wifi_alert_text.configure(yscrollcommand=wifi_scroll.set)
+        # === Onglet Alertes ===
+        alerts_tab = ttk.Frame(self.wifi_analysis_notebook)
+        self.wifi_analysis_notebook.add(alerts_tab, text="🚨 Alertes")
+
+        self.wifi_alert_text = tk.Text(alerts_tab, wrap=tk.WORD)
+        wifi_alert_scroll = ttk.Scrollbar(alerts_tab, command=self.wifi_alert_text.yview)
+        self.wifi_alert_text.configure(yscrollcommand=wifi_alert_scroll.set)
         self.wifi_alert_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        wifi_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        wifi_alert_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # === Onglet Moxa ===
+        # === Onglet Historique ===
+        history_tab = ttk.Frame(self.wifi_analysis_notebook)
+        self.wifi_analysis_notebook.add(history_tab, text="📋 Historique")
+
+        self.wifi_history_text = tk.Text(history_tab, wrap=tk.WORD)
+        wifi_history_scroll = ttk.Scrollbar(history_tab, command=self.wifi_history_text.yview)
+        self.wifi_history_text.configure(yscrollcommand=wifi_history_scroll.set)
+        self.wifi_history_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        wifi_history_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # === Onglet Statistiques Avancées ===
+        advanced_stats_tab = ttk.Frame(self.wifi_analysis_notebook)
+        self.wifi_analysis_notebook.add(advanced_stats_tab, text="📊 Stats Avancées")
+
+        self.wifi_advanced_stats_text = tk.Text(advanced_stats_tab, wrap=tk.WORD)
+        wifi_advanced_scroll = ttk.Scrollbar(advanced_stats_tab, command=self.wifi_advanced_stats_text.yview)
+        self.wifi_advanced_stats_text.configure(yscrollcommand=wifi_advanced_scroll.set)
+        self.wifi_advanced_stats_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        wifi_advanced_scroll.pack(side=tk.RIGHT, fill=tk.Y)# === Onglet Moxa ===
         self.moxa_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.moxa_frame, text="Analyse Moxa")
 
-        # Zone de collage des logs
+        # Zone de collage des logs - Réduite en hauteur
         input_frame = ttk.LabelFrame(self.moxa_frame, text="Collez vos logs Moxa ici :", padding=10)
-        input_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        input_frame.pack(fill=tk.X, expand=False, padx=10, pady=(5, 2))
 
-        self.moxa_input = tk.Text(input_frame, wrap=tk.WORD)
+        self.moxa_input = tk.Text(input_frame, wrap=tk.WORD, height=8)
         input_scroll = ttk.Scrollbar(input_frame, command=self.moxa_input.yview)
         self.moxa_input.configure(yscrollcommand=input_scroll.set)
         self.moxa_input.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        input_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Zone d'édition de la configuration courante du Moxa
+        input_scroll.pack(side=tk.RIGHT, fill=tk.Y)        # Zone d'édition de la configuration courante du Moxa - Réduite
         config_frame = ttk.LabelFrame(
             self.moxa_frame,
             text="Configuration Moxa actuelle (JSON) :",
             padding=10,
         )
-        config_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        config_frame.pack(fill=tk.X, expand=False, padx=10, pady=(2, 2))
 
-        self.moxa_config_text = tk.Text(config_frame, height=8, wrap=tk.WORD)
+        self.moxa_config_text = tk.Text(config_frame, height=6, wrap=tk.WORD)
         cfg_scroll = ttk.Scrollbar(config_frame, command=self.moxa_config_text.yview)
         self.moxa_config_text.configure(yscrollcommand=cfg_scroll.set)
         self.moxa_config_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         cfg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))
-
-        # Boutons de configuration
+        self.moxa_config_text.insert('1.0', json.dumps(self.current_config, indent=2))        # Boutons de configuration
         config_btn_frame = ttk.Frame(self.moxa_frame)
-        config_btn_frame.pack(pady=5)
+        config_btn_frame.pack(pady=(2, 5))
         ttk.Button(config_btn_frame, text="Charger config", command=self.load_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(config_btn_frame, text="Éditer config", command=self.edit_config).pack(side=tk.LEFT, padx=5)
 
-        # Zone d'instructions personnalisées
+        # Zone d'instructions personnalisées - Compacte
         instr_frame = ttk.LabelFrame(
             self.moxa_frame,
             text="Instructions personnalisées (optionnel) :",
             padding=10,
         )
-        instr_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        instr_frame.pack(fill=tk.X, expand=False, padx=10, pady=(2, 2))
 
-        self.custom_instr_text = tk.Text(instr_frame, height=4, wrap=tk.WORD)
+        self.custom_instr_text = tk.Text(instr_frame, height=3, wrap=tk.WORD)
         instr_scroll = ttk.Scrollbar(instr_frame, command=self.custom_instr_text.yview)
         self.custom_instr_text.configure(yscrollcommand=instr_scroll.set)
         self.custom_instr_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        instr_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Bouton d'analyse
+        instr_scroll.pack(side=tk.RIGHT, fill=tk.Y)        # Bouton d'analyse
         self.analyze_button = ttk.Button(
             self.moxa_frame,
             text="🔍 Analyser les logs",
             style="Analyze.TButton",
             command=self.analyze_moxa_logs
         )
-        self.analyze_button.pack(pady=10)
+        self.analyze_button.pack(pady=(5, 8))
 
-        # Zone des résultats
+        # Zone des résultats - Agrandie pour prendre tout l'espace restant
         results_frame = ttk.LabelFrame(self.moxa_frame, text="Résultats de l'analyse :", padding=10)
-        results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(2, 5))
 
         self.moxa_results = tk.Text(results_frame, wrap=tk.WORD)
         results_scroll = ttk.Scrollbar(results_frame, command=self.moxa_results.yview)
@@ -307,7 +326,7 @@ class NetworkAnalyzerUI:
                 return            # Vérifier la clé API OpenAI dans l'environnement
             api_key = os.getenv("OPENAI_API_KEY")
             print(f"Valeur de OPENAI_API_KEY: {api_key[:10]}..." if api_key else "Clé API non trouvée")
-            
+
             if not api_key:
                 # Recharger explicitement le fichier .env
                 from dotenv import load_dotenv
@@ -316,7 +335,7 @@ class NetworkAnalyzerUI:
                     load_dotenv(env_file)
                     api_key = os.getenv("OPENAI_API_KEY")
                     print(f"Après rechargement: {api_key[:10]}..." if api_key else "Toujours pas de clé")
-                
+
                 if not api_key:
                     messagebox.showerror(
                         "Clé API manquante",
@@ -350,7 +369,7 @@ class NetworkAnalyzerUI:
 
             if analysis:
                 self.moxa_results.delete('1.0', tk.END)
-                
+
                 # Configuration des styles de texte
                 self.moxa_results.tag_configure("title", font=("Arial", 12, "bold"))
                 self.moxa_results.tag_configure("section", font=("Arial", 10, "bold"))
@@ -361,7 +380,7 @@ class NetworkAnalyzerUI:
 
                 # Affichage de l'analyse avec mise en forme
                 self.moxa_results.insert('end', "Analyse OpenAI des Logs Moxa\n\n", "title")
-                
+
                 # Formater et afficher la réponse d'OpenAI
                 self.format_and_display_ai_analysis(analysis)
 
@@ -458,7 +477,7 @@ class NetworkAnalyzerUI:
         if "score_global" in data:
             score = data["score_global"]
             self.moxa_results.insert('end', f"Score Global: {score}/100\n", "title")
-            
+
             if score >= 70:
                 self.moxa_results.insert('end', "✅ Configuration adaptée\n\n", "success")
             elif score >= 50:
@@ -494,7 +513,7 @@ class NetworkAnalyzerUI:
         """Affiche une analyse en format texte"""
         # Diviser le texte en sections basées sur les numéros ou les titres communs
         sections = text.split('\n\n')
-        
+
         for section in sections:
             if section.strip():
                 # Détecter si c'est un titre
@@ -502,7 +521,7 @@ class NetworkAnalyzerUI:
                     self.moxa_results.insert('end', f"\n{section}\n", "section")
                 else:
                     self.moxa_results.insert('end', f"{section}\n", "normal")
-                    
+
         self.moxa_results.see('1.0')  # Remonter au début
 
     def update_data(self):
@@ -522,6 +541,7 @@ class NetworkAnalyzerUI:
     def check_wifi_issues(self, sample: WifiSample):
         """Vérifie et affiche les problèmes WiFi"""
         alerts = []
+        timestamp = datetime.now().strftime('%H:%M:%S')
 
         # Force du signal
         if sample.signal_strength < -80:
@@ -547,11 +567,18 @@ class NetworkAnalyzerUI:
         except (ValueError, IndexError, KeyError):
             pass
 
+        # Mise à jour onglet Alertes
         if alerts:
-            msg = f"Position au {datetime.now().strftime('%H:%M:%S')} :\n"
+            msg = f"Position au {timestamp} :\n"
             msg += "\n".join(alerts)
             self.wifi_alert_text.delete('1.0', tk.END)
             self.wifi_alert_text.insert('1.0', msg)
+
+        # Ajouter à l'historique (même si pas d'alertes)
+        self.add_to_wifi_history(sample, alerts, timestamp)
+
+        # Mettre à jour les stats avancées
+        self.update_advanced_wifi_stats()
 
     def update_display(self):
         """Met à jour les graphiques"""
@@ -604,9 +631,7 @@ class NetworkAnalyzerUI:
             stats_text += f"TX: {tx_rate} Mbps\n"
             stats_text += f"RX: {rx_rate} Mbps"
         except (ValueError, IndexError, KeyError):
-            pass
-
-        # Mise à jour du texte
+            pass        # Mise à jour du texte
         self.stats_text.delete('1.0', tk.END)
         self.stats_text.insert('1.0', stats_text)
 
@@ -630,12 +655,37 @@ class NetworkAnalyzerUI:
     def update_status(self, message: str):
         """Met à jour les infos de statut"""
         current_time = datetime.now().strftime("%H:%M:%S")
-        self.wifi_alert_text.insert('1.0', f"{current_time} - {message}\n")
 
-    def show_error(self, message: str):
+        # Mettre à jour l'onglet Alertes avec le message de statut
+        status_msg = f"{current_time} - {message}\n"
+        self.wifi_alert_text.insert('1.0', status_msg)
+
+        # Ajouter aussi à l'historique si c'est important
+        if any(keyword in message.lower() for keyword in ['démarr', 'arrêt', 'erreur', 'succès']):
+            entry = {
+                'timestamp': current_time,
+                'signal': 0,
+                'quality': 0,                'alerts': [f"📢 {message}"]
+            }
+            self.wifi_history_entries.append(entry)
+            self.update_wifi_history_display()
+
+    def show_error(self, error_message: str):
         """Affiche une erreur"""
-        messagebox.showerror("Erreur", message)
-        self.update_status(f"ERREUR: {message}")
+        messagebox.showerror("Erreur", error_message)
+        # Ajouter directement à l'historique sans appeler update_status pour éviter la récursion
+        current_time = datetime.now().strftime("%H:%M:%S")
+        self.wifi_alert_text.insert('1.0', f"{current_time} - ERREUR: {error_message}\n")
+
+        # Ajouter à l'historique
+        entry = {
+            'timestamp': current_time,
+            'signal': 0,
+            'quality': 0,
+            'alerts': [f"🔴 ERREUR: {error_message}"]
+        }
+        self.wifi_history_entries.append(entry)
+        self.update_wifi_history_display()
 
     # ===== Fonctions Monitoring AMR =====
     def add_amr_ip(self) -> None:
@@ -650,7 +700,9 @@ class NetworkAnalyzerUI:
             messagebox.showwarning("Monitoring AMR", "Ajoutez au moins une adresse IP")
             return
         self.amr_monitor = AMRMonitor(self.amr_ips, interval=3)
-        self.amr_monitor.start(lambda res: self.master.after(0, self._update_amr_status, res))
+        def amr_callback(res):
+            self.master.after(0, self._update_amr_status, res)
+        self.amr_monitor.start(amr_callback)
         self.amr_start_button.config(state=tk.DISABLED)
         self.amr_stop_button.config(state=tk.NORMAL)
 
@@ -671,6 +723,104 @@ class NetworkAnalyzerUI:
                 lines.append(f"{ip} : ❌")
         self.amr_status_text.delete("1.0", tk.END)
         self.amr_status_text.insert("1.0", "\n".join(lines))
+
+    def add_to_wifi_history(self, sample, alerts, timestamp):
+        """Ajoute une entrée à l'historique WiFi"""
+        entry = {
+            'timestamp': timestamp,
+            'signal': sample.signal_strength,
+            'quality': sample.quality,
+            'alerts': alerts
+        }
+
+        self.wifi_history_entries.append(entry)
+
+        # Limiter la taille de l'historique
+        if len(self.wifi_history_entries) > self.max_history_entries:
+            self.wifi_history_entries = self.wifi_history_entries[-self.max_history_entries:]
+
+        # Mettre à jour l'affichage de l'historique (les 50 dernières entrées)
+        self.update_wifi_history_display()
+
+    def update_wifi_history_display(self):
+        """Met à jour l'affichage de l'historique WiFi"""
+        self.wifi_history_text.delete('1.0', tk.END)
+
+        # Afficher les 50 dernières entrées
+        recent_entries = self.wifi_history_entries[-50:]
+
+        for entry in reversed(recent_entries):  # Plus récent en premier
+            status_icon = "🟢" if not entry['alerts'] else "🔴"
+            line = f"{status_icon} {entry['timestamp']} | Signal: {entry['signal']} dBm | Qualité: {entry['quality']}%"
+
+            if entry['alerts']:
+                line += f" | ⚠️ {len(entry['alerts'])} alerte(s)"
+
+            self.wifi_history_text.insert(tk.END, line + "\n")
+
+            # Ajouter les détails des alertes si présentes
+            for alert in entry['alerts']:
+                self.wifi_history_text.insert(tk.END, f"    → {alert}\n")
+
+            self.wifi_history_text.insert(tk.END, "\n")
+
+    def update_advanced_wifi_stats(self):
+        """Met à jour les statistiques avancées"""
+        if not self.samples:
+            return
+
+        self.wifi_advanced_stats_text.delete('1.0', tk.END)
+
+        # Calculs statistiques avancés
+        signal_values = [s.signal_strength for s in self.samples]
+        quality_values = [s.quality for s in self.samples]
+
+        # Statistiques globales
+        stats = f"=== STATISTIQUES GLOBALES ===\n\n"
+        stats += f"📊 Échantillons collectés: {len(self.samples)}\n"
+        stats += f"⏰ Durée d'analyse: {len(self.samples)} secondes\n\n"
+
+        # Statistiques du signal
+        stats += f"=== SIGNAL WIFI ===\n"
+        stats += f"📶 Signal actuel: {signal_values[-1]} dBm\n"
+        stats += f"📈 Signal max: {max(signal_values)} dBm\n"
+        stats += f"📉 Signal min: {min(signal_values)} dBm\n"
+        stats += f"📊 Signal moyen: {sum(signal_values)/len(signal_values):.1f} dBm\n\n"
+
+        # Statistiques de qualité
+        stats += f"=== QUALITÉ ===\n"
+        stats += f"🎯 Qualité actuelle: {quality_values[-1]}%\n"
+        stats += f"🏆 Qualité max: {max(quality_values)}%\n"
+        stats += f"⬇️ Qualité min: {min(quality_values)}%\n"
+        stats += f"📊 Qualité moyenne: {sum(quality_values)/len(quality_values):.1f}%\n\n"
+
+        # Analyse de tendances
+        if len(signal_values) >= 10:
+            recent_signal = signal_values[-10:]
+            older_signal = signal_values[-20:-10] if len(signal_values) >= 20 else signal_values[:-10]
+
+            recent_avg = sum(recent_signal) / len(recent_signal)
+            older_avg = sum(older_signal) / len(older_signal) if older_signal else recent_avg
+
+            stats += f"=== TENDANCES ===\n"
+            if recent_avg > older_avg + 2:
+                stats += "📈 Signal en amélioration\n"
+            elif recent_avg < older_avg - 2:
+                stats += "📉 Signal en dégradation\n"
+            else:
+                stats += "➡️ Signal stable\n"
+
+        # Compteur d'alertes
+        total_alerts = sum(len(entry['alerts']) for entry in self.wifi_history_entries)
+        stats += f"\n=== ALERTES ===\n"
+        stats += f"🚨 Total d'alertes: {total_alerts}\n"
+
+        if self.wifi_history_entries:
+            entries_with_alerts = len([e for e in self.wifi_history_entries if e['alerts']])
+            percentage = (entries_with_alerts / len(self.wifi_history_entries)) * 100
+            stats += f"📊 Pourcentage avec alertes: {percentage:.1f}%\n"
+
+        self.wifi_advanced_stats_text.insert('1.0', stats)
 
 
 class MoxaAnalyzerUI(NetworkAnalyzerUI):
