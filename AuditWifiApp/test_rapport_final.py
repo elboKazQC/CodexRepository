@@ -29,16 +29,19 @@ def test_rapport_final():
         {"signal": -46, "quality": 84},
         {"signal": -51, "quality": 79},
         {"signal": -53, "quality": 77},
-    ]
-
-    # Créer des échantillons WiFi simulés
+    ]    # Créer des échantillons WiFi simulés
     for i, data in enumerate(sample_data):
         sample = WifiSample(
-            timestamp=datetime.now(),
+            timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),
             signal_strength=data["signal"],
             quality=data["quality"],
             ssid="TestNetwork",
             bssid="00:11:22:33:44:55",
+            channel=6,
+            band="2.4 GHz",
+            status="Connected",
+            transmit_rate="54 Mbps",
+            receive_rate="48 Mbps",
             raw_data={
                 "TransmitRate": "54 Mbps",
                 "ReceiveRate": "48 Mbps"

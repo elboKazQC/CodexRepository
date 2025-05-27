@@ -548,31 +548,42 @@ class NetworkAnalyzerUI:
             self.check_wifi_issues(sample)
 
         self.master.after(self.update_interval, self.update_data)
-
-    def check_wifi_issues(self, sample: WifiSample):
+      def check_wifi_issues(self, sample: WifiSample):
         """Vérifie et affiche les problèmes WiFi"""
         alerts = []
         timestamp = datetime.now().strftime('%H:%M:%S')
 
-        # Force du signal
-        if sample.signal_strength < -80:
+        # Force du signal - Seuils réalistes alignés avec les standards WiFi
+        if sample.signal_strength < -85:
             alerts.append(f"🔴 Signal CRITIQUE : {sample.signal_strength} dBm")
-        elif sample.signal_strength < -70:
+        elif sample.signal_strength < -80:
             alerts.append(f"⚠️ Signal faible : {sample.signal_strength} dBm")
 
-        # Qualité
+        # Qualité - Seuils réalistes pour les environnements industriels
         if sample.quality < 20:
             alerts.append(f"🔴 Qualité CRITIQUE : {sample.quality}%")
         elif sample.quality < 40:
-            alerts.append(f"⚠️ Qualité faible : {sample.quality}%")
-
-        # Débits
+            alerts.append(f"⚠️ Qualité faible : {sample.quality}%")        # Débits - Seuils réalistes et intelligents
         try:
             tx_rate = int(sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
             rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])
-            if min(tx_rate, rx_rate) < 24:
+            
+            # Seuils adaptatifs et réalistes
+            min_tx_critical = 10  # TX critique si < 10 Mbps
+            min_rx_critical = 2   # RX critique si < 2 Mbps
+            min_tx_warning = 50   # TX warning si < 50 Mbps
+            min_rx_warning = 5    # RX warning si < 5 Mbps
+            
+            # Alerte critique seulement si les deux débits sont vraiment problématiques
+            if tx_rate < min_tx_critical and rx_rate < min_rx_critical:
                 alerts.append(
-                    f"⚠️ Débit insuffisant :\n"
+                    f"🔴 Débits CRITIQUES :\n"
+                    f"   TX: {tx_rate} Mbps, RX: {rx_rate} Mbps"
+                )
+            # Alerte warning si un seul débit est problématique
+            elif tx_rate < min_tx_warning and rx_rate < min_rx_warning:
+                alerts.append(
+                    f"⚠️ Débits faibles :\n"
                     f"   TX: {tx_rate} Mbps, RX: {rx_rate} Mbps"
                 )
         except (ValueError, IndexError, KeyError):
@@ -1003,12 +1014,11 @@ class NetworkAnalyzerUI:
 
         if total_entries > 0:
             alert_percentage = (total_alerts / total_entries) * 100
-            self.wifi_final_report_text.insert('end', f"• Total d'alertes : {total_alerts}\n", "normal")
-            self.wifi_final_report_text.insert('end', f"• Pourcentage d'alertes : {alert_percentage:.1f}%\n", "normal")
+            self.wifi_final_report_text.insert('end', f"• Total d'alertes : {total_alerts}\n", "normal")            self.wifi_final_report_text.insert('end', f"• Pourcentage d'alertes : {alert_percentage:.1f}%\n", "normal")
 
-            if alert_percentage < 10:
+            if alert_percentage < 5:
                 self.wifi_final_report_text.insert('end', "✅ Très peu d'alertes - réseau stable\n", "good")
-            elif alert_percentage < 25:
+            elif alert_percentage < 15:
                 self.wifi_final_report_text.insert('end', "⚠️ Quelques alertes - surveillance recommandée\n", "warning")
             else:
                 self.wifi_final_report_text.insert('end', "❌ Beaucoup d'alertes - intervention nécessaire\n", "critical")
