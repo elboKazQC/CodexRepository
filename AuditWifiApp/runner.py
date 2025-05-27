@@ -120,8 +120,8 @@ class NetworkAnalyzerUI:
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=(5, 5))
 
-        # Zone de statistiques réduite pour optimiser l'espace
-        self.stats_text = tk.Text(stats_frame, height=10, width=35)
+        # Zone de statistiques avec hauteur augmentée pour éviter le scroll
+        self.stats_text = tk.Text(stats_frame, height=15, width=35)
         stats_scroll = ttk.Scrollbar(stats_frame, command=self.stats_text.yview)
         self.stats_text.configure(yscrollcommand=stats_scroll.set)
         self.stats_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
