@@ -123,7 +123,7 @@ class NetworkAnalyzerUI:
         # Agrandir l'affichage des statistiques pour eviter de devoir defiler
         # afin de lire toutes les informations. Une hauteur plus grande permet
         # de voir la plupart des lignes en un coup d'oeil.
-        self.stats_text = tk.Text(stats_frame, height=10, width=40)
+        self.stats_text = tk.Text(stats_frame, height=20, width=35)
         self.stats_text.pack(fill=tk.X, pady=5)
 
         # Panneau des graphiques et alertes (droite)
