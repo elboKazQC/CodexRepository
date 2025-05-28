@@ -1,6 +1,15 @@
 """
 Module simplifié pour l'analyse Moxa via OpenAI.
 Envoie simplement les logs et la configuration à OpenAI et retourne la réponse brute.
+
+⚠️  ATTENTION DÉVELOPPEURS ⚠️
+Ce module contient la logique des instructions personnalisées OpenAI.
+TOUTE MODIFICATION du comportement, des prompts ou des paramètres OpenAI
+DOIT être accompagnée d'une mise à jour du fichier :
+OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md
+
+Les utilisateurs accèdent à ce guide via le bouton "Guide Instructions OpenAI"
+dans l'interface. Le guide doit toujours refléter le comportement réel du code.
 """
 
 import os
@@ -80,6 +89,12 @@ def analyze_moxa_logs(logs, current_config, custom_instructions: str | None = No
     """
     Envoie les logs Moxa et la configuration à OpenAI pour analyse avec support des instructions personnalisées.
 
+    ⚠️  IMPORTANT - MISE À JOUR DU GUIDE OBLIGATOIRE ⚠️
+    Si vous modifiez la logique des instructions personnalisées, le prompt ou les paramètres OpenAI,
+    vous DEVEZ mettre à jour le fichier OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md car les utilisateurs
+    y ont accès via le bouton "Guide Instructions OpenAI" dans l'interface.
+    Le guide doit refléter exactement le comportement actuel du code.
+
     Args:
         logs (str): Les logs Moxa à analyser
         current_config (dict): La configuration actuelle du Moxa
@@ -110,9 +125,8 @@ INSTRUCTIONS DE BASE:
 - Identifiez les problèmes de performance, stabilité, sécurité
 - Proposez des solutions concrètes d'ajustement de configuration
 - Donnez un score global /100 si pertinent
-- Soyez précis et actionnable"""
-
-    # Adapter le prompt selon les instructions personnalisées
+- Soyez précis et actionnable"""    # Adapter le prompt selon les instructions personnalisées
+    # ⚠️ RAPPEL: Toute modification ici doit être reflétée dans OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md
     if custom_instructions and custom_instructions.strip():
         # Nettoyer les instructions par défaut si présentes
         custom_clean = custom_instructions.replace("Exemple: Concentrez-vous sur les problèmes de latence et donnez des solutions prioritaires en format liste numérotée.", "").strip()
