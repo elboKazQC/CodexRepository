@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 
 # Configuration sécurisée de Matplotlib avant les imports
 import matplotlib
@@ -32,6 +32,7 @@ from amr_monitor import AMRMonitor
 from wifi.wifi_collector import WifiSample
 from src.ai.simple_moxa_analyzer import analyze_moxa_logs
 from config_manager import ConfigurationManager
+from mac_tag_manager import MacTagManager
 
 class NetworkAnalyzerUI:
     def __init__(self, master: tk.Tk):
@@ -83,6 +84,7 @@ class NetworkAnalyzerUI:
                 pass
         self.current_config = self.config_manager.get_config()
 
+
         # Fichier pour la persistance des IPs AMR
         self.amr_ips_file = os.path.join(self.config_dir, "amr_ips.json")
         if os.path.exists(self.amr_ips_file):
@@ -91,6 +93,10 @@ class NetworkAnalyzerUI:
                     self.amr_ips = json.load(f)
             except Exception:
                 self.amr_ips = []
+
+        # Manager for MAC address tags
+        self.mac_manager = MacTagManager()
+
 
         # Configuration du style
         self.setup_style()
@@ -237,7 +243,18 @@ class NetworkAnalyzerUI:
             command=self.stop_collection,
             state=tk.DISABLED
         )
-        self.stop_button.pack(fill=tk.X, pady=5)        # Zone de statistiques - Compacte
+        self.stop_button.pack(fill=tk.X, pady=5)
+
+        # Button to manage MAC address tags
+        self.mac_manage_button = ttk.Button(
+            control_frame,
+            text="🗂 Gérer les MAC",
+            command=self.open_mac_tag_manager
+        )
+        self.mac_manage_button.pack(fill=tk.X, pady=5)
+
+        # Zone de statistiques - Compacte
+        stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=(5, 5))
 
@@ -816,6 +833,9 @@ class NetworkAnalyzerUI:
         sample = self.analyzer.wifi_collector.collect_sample()
         if sample:
             self.samples.append(sample)
+            # Prompt for tag if new access point detected
+            if sample.bssid and not self.mac_manager.get_tag(sample.bssid):
+                self.prompt_for_tag(sample.bssid)
             self.update_display()
             self.update_stats()
             self.check_wifi_issues(sample)
@@ -911,7 +931,9 @@ class NetworkAnalyzerUI:
 
                 # Ajouter le BSSID si disponible
                 if entry.get('bssid') and entry['bssid'] != "Unknown":
-                    history_text += f", AP: {entry['bssid']}"
+                    tag = self.mac_manager.get_tag(entry['bssid'])
+                    tag_str = f" ({tag})" if tag else ""
+                    history_text += f", AP: {entry['bssid']}{tag_str}"
 
                 history_text += "\n"
 
@@ -1328,6 +1350,67 @@ class NetworkAnalyzerUI:
                 lines.append(f"{ip} : ❌")
         self.amr_status_text.delete("1.0", tk.END)
         self.amr_status_text.insert("1.0", "\n".join(lines))
+
+    def open_mac_tag_manager(self) -> None:
+        """Open a window to manage MAC address tags."""
+        window = tk.Toplevel(self.master)
+        window.title("Gestion des MAC")
+        window.geometry("400x300")
+
+        search_var = tk.StringVar()
+        ttk.Entry(window, textvariable=search_var).pack(fill=tk.X, padx=5, pady=5)
+
+        tree = ttk.Treeview(window, columns=("mac", "tag"), show="headings")
+        tree.heading("mac", text="MAC")
+        tree.heading("tag", text="Tag")
+        tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        def populate():
+            tree.delete(*tree.get_children())
+            query = search_var.get().lower()
+            for mac, tag in sorted(self.mac_manager.tags.items()):
+                if query in mac.lower() or query in tag.lower():
+                    tree.insert("", tk.END, values=(mac, tag))
+
+        populate()
+
+        def add_or_edit():
+            mac = simpledialog.askstring("Adresse MAC", "MAC:")
+            if not mac:
+                return
+            if not self.mac_manager.validate_mac(mac):
+                messagebox.showerror("MAC invalide", "Format MAC invalide")
+                return
+            tag = simpledialog.askstring("Tag", "Tag:") or ""
+            self.mac_manager.set_tag(mac, tag)
+            self.mac_manager.save_tags()
+            populate()
+
+        def delete_selected():
+            item = tree.selection()
+            if not item:
+                return
+            mac = tree.item(item[0], "values")[0]
+            self.mac_manager.delete_tag(mac)
+            self.mac_manager.save_tags()
+            populate()
+
+        btn_frame = ttk.Frame(window)
+        btn_frame.pack(fill=tk.X, pady=5)
+        ttk.Button(btn_frame, text="Ajouter/Éditer", command=add_or_edit).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Supprimer", command=delete_selected).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Fermer", command=window.destroy).pack(side=tk.RIGHT, padx=5)
+
+        search_var.trace_add("write", lambda *args: populate())
+
+    def prompt_for_tag(self, mac: str) -> None:
+        """Prompt user to tag a newly seen MAC address."""
+        if not self.mac_manager.validate_mac(mac):
+            return
+        tag = simpledialog.askstring("Nouveau point d'accès", f"Tag pour {mac} :")
+        if tag is not None:
+            self.mac_manager.set_tag(mac, tag)
+            self.mac_manager.save_tags()
 
     # === MÉTHODES DE NAVIGATION TEMPORELLE ===
 
@@ -1853,7 +1936,9 @@ class NetworkAnalyzerUI:
                     avg_quality = sum(info['qualities']) / len(info['qualities'])
                     alert_rate = (info['alerts'] / info['count'] * 100) if info['count'] > 0 else 0
 
-                    stats_text += f"\n  🔸 {bssid}\n"
+                    tag = self.mac_manager.get_tag(bssid)
+                    tag_str = f" ({tag})" if tag else ""
+                    stats_text += f"\n  🔸 {bssid}{tag_str}\n"
                     stats_text += f"    • Échantillons : {info['count']}\n"
                     stats_text += f"    • Signal moyen : {avg_signal:.1f} dBm\n"
                     stats_text += f"    • Qualité moyenne : {avg_quality:.1f}%\n"
