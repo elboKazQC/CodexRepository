@@ -1313,6 +1313,44 @@ class NetworkAnalyzerUI:
         except Exception as e:
             logging.error(f"Erreur lors de la sauvegarde des IPs AMR: {e}")
 
+    def start_amr_monitoring(self) -> None:
+        """Start background ping of all configured AMR IPs."""
+        if self.amr_monitor and getattr(self.amr_monitor, "_running", False):
+            return
+        if not self.amr_ips:
+            messagebox.showinfo("Monitoring AMR", "Ajoutez des IPs avant de démarrer")
+            return
+        self.amr_monitor = AMRMonitor(self.amr_ips)
+        self.amr_monitor.start(self.update_amr_status)
+        self.amr_start_button.config(state=tk.DISABLED)
+        self.amr_stop_button.config(state=tk.NORMAL)
+        self.update_status("Monitoring AMR démarré")
+
+    def stop_amr_monitoring(self) -> None:
+        """Stop AMR monitoring thread."""
+        if self.amr_monitor:
+            self.amr_monitor.stop()
+            self.amr_monitor = None
+        self.amr_start_button.config(state=tk.NORMAL)
+        self.amr_stop_button.config(state=tk.DISABLED)
+        self.update_status("Monitoring AMR arrêté")
+
+    def update_amr_status(self, results: Dict[str, Dict[str, Optional[int]]]) -> None:
+        """Update the AMR status text widget with ping results."""
+        try:
+            self.amr_status_text.delete("1.0", tk.END)
+            for ip, info in results.items():
+                if info["reachable"]:
+                    latency = info.get("latency")
+                    msg = f"{ip} : OK"
+                    if latency is not None:
+                        msg += f" ({latency} ms)"
+                else:
+                    msg = f"{ip} : ❌"
+                self.amr_status_text.insert(tk.END, msg + "\n")
+        except Exception as e:
+            logging.error(f"Erreur mise à jour statut AMR: {e}")
+
     def traceroute_selected_ip(self) -> None:
         selection = self.amr_listbox.curselection()
         if not selection:
@@ -2077,6 +2115,74 @@ class NetworkAnalyzerUI:
             else:
                 # Ligne vide
                 text_widget.insert('end', '\n')
+
+    def open_mac_tag_manager(self):
+        """Display a simple window to manage MAC address tags."""
+        if hasattr(self, '_mac_window') and self._mac_window.winfo_exists():
+            self._mac_window.lift()
+            return
+
+        self._mac_window = tk.Toplevel(self.master)
+        self._mac_window.title("Gestion des MAC")
+        self._mac_window.geometry("400x300")
+        self._mac_window.resizable(False, False)
+
+        frame = ttk.Frame(self._mac_window, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        self.mac_listbox = tk.Listbox(frame)
+        self.mac_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll = ttk.Scrollbar(frame, command=self.mac_listbox.yview)
+        self.mac_listbox.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        form = ttk.Frame(self._mac_window, padding=5)
+        form.pack(fill=tk.X)
+        mac_var = tk.StringVar()
+        tag_var = tk.StringVar()
+        ttk.Entry(form, textvariable=mac_var, width=17).grid(row=0, column=0, padx=5, pady=2)
+        ttk.Entry(form, textvariable=tag_var, width=15).grid(row=0, column=1, padx=5, pady=2)
+
+        def refresh():
+            self.mac_listbox.delete(0, tk.END)
+            for mac, tag in sorted(self.mac_manager.tags.items()):
+                self.mac_listbox.insert(tk.END, f"{mac} : {tag}")
+
+        def add_or_update():
+            mac = mac_var.get().strip()
+            tag = tag_var.get().strip()
+            if not self.mac_manager.add_tag(mac, tag):
+                messagebox.showerror("Erreur", "Adresse MAC invalide")
+                return
+            refresh()
+            mac_var.set("")
+            tag_var.set("")
+
+        def delete_selected():
+            sel = self.mac_listbox.curselection()
+            if sel:
+                mac = self.mac_listbox.get(sel[0]).split(':')[0].strip()
+                self.mac_manager.delete_tag(mac)
+                self.mac_manager.save_tags()
+                refresh()
+
+        def edit_selected(event=None):
+            sel = self.mac_listbox.curselection()
+            if not sel:
+                return
+            item = self.mac_listbox.get(sel[0])
+            mac, tag = item.split(':', 1)
+            new_tag = simpledialog.askstring("Modifier Tag", f"Tag pour {mac.strip()}", initialvalue=tag.strip(), parent=self._mac_window)
+            if new_tag:
+                self.mac_manager.set_tag(mac.strip(), new_tag)
+                self.mac_manager.save_tags()
+                refresh()
+
+        ttk.Button(form, text="Ajouter/MàJ", command=add_or_update).grid(row=1, column=0, padx=5, pady=5)
+        ttk.Button(form, text="Supprimer", command=delete_selected).grid(row=1, column=1, padx=5, pady=5)
+
+        self.mac_listbox.bind('<Double-1>', edit_selected)
+        refresh()
 
     # === MÉTHODES UTILITAIRES MANQUANTES ===
 

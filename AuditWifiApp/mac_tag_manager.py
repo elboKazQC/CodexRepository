@@ -57,6 +57,13 @@ class MacTagManager:
         self.tags[mac.upper()] = tag.strip()
         return True
 
+    def add_tag(self, mac: str, tag: str) -> bool:
+        """Convenience wrapper that sets a tag and immediately saves."""
+        if self.set_tag(mac, tag):
+            self.save_tags()
+            return True
+        return False
+
     def delete_tag(self, mac: str) -> None:
         """Remove tag for MAC address."""
         self.tags.pop(mac.upper(), None)
