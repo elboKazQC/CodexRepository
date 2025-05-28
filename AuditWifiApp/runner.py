@@ -847,13 +847,16 @@ class NetworkAnalyzerUI:
         except (ValueError, IndexError, KeyError):
             pass
 
-        # Mise à jour onglet Alertes
-        if alerts:
+        # Mise à jour onglet Alertes        if alerts:
             msg = f"Position au {timestamp} :\n"
             msg += "\n".join(alerts)
             self.wifi_alert_text.delete('1.0', tk.END)
-            self.wifi_alert_text.insert('1.0', msg)        # Ajouter à l'historique (même si pas d'alertes)
-        self.add_to_wifi_history(sample, alerts, timestamp)        # Mettre à jour les stats avancées
+            self.wifi_alert_text.insert('1.0', msg)
+
+        # Ajouter à l'historique (même si pas d'alertes)
+        self.add_to_wifi_history(sample, alerts, timestamp)
+
+        # Mettre à jour les stats avancées
         self.update_advanced_wifi_stats()
 
     def add_to_wifi_history(self, sample: WifiSample, alerts: list, timestamp: str):
@@ -862,6 +865,7 @@ class NetworkAnalyzerUI:
             'timestamp': timestamp,
             'signal': sample.signal_strength,
             'quality': sample.quality,
+            'bssid': sample.bssid if hasattr(sample, 'bssid') else "Unknown",
             'alerts': alerts.copy() if alerts else []
         }
 
@@ -879,8 +883,7 @@ class NetworkAnalyzerUI:
         if not hasattr(self, 'wifi_history_text'):
             return
 
-        try:
-            # Limiter l'affichage aux 50 dernières entrées pour les performances
+        try:            # Limiter l'affichage aux 50 dernières entrées pour les performances
             recent_entries = self.wifi_history_entries[-50:]
 
             history_text = "=== Historique WiFi (50 dernières entrées) ===\n\n"
@@ -888,7 +891,13 @@ class NetworkAnalyzerUI:
             for entry in reversed(recent_entries):  # Plus récent en premier
                 history_text += f"[{entry['timestamp']}] "
                 history_text += f"Signal: {entry['signal']} dBm, "
-                history_text += f"Qualité: {entry['quality']}%\n"
+                history_text += f"Qualité: {entry['quality']}%"
+
+                # Ajouter le BSSID si disponible
+                if entry.get('bssid') and entry['bssid'] != "Unknown":
+                    history_text += f", AP: {entry['bssid']}"
+
+                history_text += "\n"
 
                 if entry['alerts']:
                     for alert in entry['alerts']:
@@ -1684,9 +1693,7 @@ class NetworkAnalyzerUI:
 
             # Seuils critiques pour les débits
             min_tx_critical = 10  # TX critique si < 10 Mbps
-            min_rx_critical = 2   # RX critique si < 2 Mbps
-
-            # Alerte si les deux débits sont vraiment problématiques
+            min_rx_critical = 2   # RX critique si < 2 Mbps            # Alerte si les deux débits sont vraiment problématiques
             return tx_rate < min_tx_critical and rx_rate < min_rx_critical
 
         except (ValueError, IndexError, KeyError):
@@ -1696,6 +1703,10 @@ class NetworkAnalyzerUI:
         """Met à jour les statistiques WiFi avancées"""
         try:
             if not self.wifi_history_entries:
+                # Afficher un message si aucune donnée
+                if hasattr(self, 'wifi_advanced_stats_text'):
+                    self.wifi_advanced_stats_text.delete('1.0', tk.END)
+                    self.wifi_advanced_stats_text.insert('1.0', "=== Statistiques WiFi Avancées ===\n\nAucune donnée disponible.\nDémarrez la collecte pour voir les statistiques.")
                 return
 
             # Calculer les statistiques sur les dernières entrées
@@ -1710,11 +1721,120 @@ class NetworkAnalyzerUI:
             avg_signal = sum(entry['signal'] for entry in recent_entries) / len(recent_entries)
             avg_quality = sum(entry['quality'] for entry in recent_entries) / len(recent_entries)
 
-            # Mise à jour des stats dans l'interface si nécessaire
-            # Cette méthode est appelée régulièrement pour maintenir les stats à jour
+            # Calculer min/max
+            signals = [entry['signal'] for entry in recent_entries]
+            qualities = [entry['quality'] for entry in recent_entries]
+            min_signal, max_signal = min(signals), max(signals)
+            min_quality, max_quality = min(qualities), max(qualities)            # Compter les différents types d'alertes
+            alert_types = {}
+            for entry in recent_entries:
+                for alert in entry['alerts']:
+                    alert_type = alert.split(':')[0] if ':' in alert else alert[:20]
+                    alert_types[alert_type] = alert_types.get(alert_type, 0) + 1
+
+            # Analyser les BSSID (adresses MAC des points d'accès)
+            bssid_info = {}
+            for entry in recent_entries:
+                bssid = entry.get('bssid', 'Unknown')
+                if bssid and bssid != 'Unknown':
+                    if bssid not in bssid_info:
+                        bssid_info[bssid] = {
+                            'count': 0,
+                            'signals': [],
+                            'qualities': [],
+                            'alerts': 0
+                        }
+                    bssid_info[bssid]['count'] += 1
+                    bssid_info[bssid]['signals'].append(entry['signal'])
+                    bssid_info[bssid]['qualities'].append(entry['quality'])
+                    if entry['alerts']:
+                        bssid_info[bssid]['alerts'] += 1
+
+            # Évaluation de la stabilité
+            signal_stability = "Excellent" if max_signal - min_signal < 10 else "Bon" if max_signal - min_signal < 20 else "Variable"
+              # Formatage des statistiques pour l'affichage
+            stats_text = "=== STATISTIQUES WiFi AVANCÉES ===\n"
+            stats_text += f"Période d'analyse : {len(recent_entries)} échantillons\n\n"
+
+            stats_text += "📶 SIGNAL :\n"
+            stats_text += f"• Moyenne : {avg_signal:.1f} dBm\n"
+            stats_text += f"• Min/Max : {min_signal:.1f} / {max_signal:.1f} dBm\n"
+            stats_text += f"• Variation : {max_signal - min_signal:.1f} dB\n"
+            stats_text += f"• Stabilité : {signal_stability}\n\n"
+
+            stats_text += "📊 QUALITÉ :\n"
+            stats_text += f"• Moyenne : {avg_quality:.1f}%\n"
+            stats_text += f"• Min/Max : {min_quality:.1f} / {max_quality:.1f}%\n"
+            stats_text += f"• Variation : {max_quality - min_quality:.1f}%\n\n"
+
+            stats_text += "🚨 ALERTES :\n"
+            stats_text += f"• Pourcentage d'échantillons avec alertes : {alert_percentage:.1f}%\n"
+            stats_text += f"• Échantillons avec alertes : {samples_with_alerts}/{total_samples}\n"
+
+            if alert_types:
+                stats_text += "• Types d'alertes détectées :\n"
+                for alert_type, count in sorted(alert_types.items(), key=lambda x: x[1], reverse=True):
+                    stats_text += f"  - {alert_type} : {count} fois\n"
+            else:
+                stats_text += "• Aucune alerte détectée\n"
+
+            # Section BSSID/MAC des points d'accès
+            stats_text += "\n📡 POINTS D'ACCÈS (BSSID/MAC) :\n"
+            if bssid_info:
+                stats_text += f"• Nombre de points d'accès détectés : {len(bssid_info)}\n"
+
+                # Trier par nombre d'occurrences (le plus utilisé en premier)
+                sorted_bssids = sorted(bssid_info.items(), key=lambda x: x[1]['count'], reverse=True)
+
+                for bssid, info in sorted_bssids[:5]:  # Afficher les 5 premiers
+                    avg_signal = sum(info['signals']) / len(info['signals'])
+                    avg_quality = sum(info['qualities']) / len(info['qualities'])
+                    alert_rate = (info['alerts'] / info['count'] * 100) if info['count'] > 0 else 0
+
+                    stats_text += f"\n  🔸 {bssid}\n"
+                    stats_text += f"    • Échantillons : {info['count']}\n"
+                    stats_text += f"    • Signal moyen : {avg_signal:.1f} dBm\n"
+                    stats_text += f"    • Qualité moyenne : {avg_quality:.1f}%\n"
+                    stats_text += f"    • Taux d'alertes : {alert_rate:.1f}%\n"
+
+                if len(bssid_info) > 5:
+                    stats_text += f"\n  ... et {len(bssid_info) - 5} autres points d'accès\n"
+            else:
+                stats_text += "• Aucune adresse MAC disponible dans les données\n"
+
+            stats_text += "\n💡 ÉVALUATION GLOBALE :\n"
+
+            # Évaluation de la performance globale
+            if avg_signal > -60 and avg_quality > 80 and alert_percentage < 10:
+                evaluation = "🟢 EXCELLENT - Réseau optimal pour les AMR"
+            elif avg_signal > -70 and avg_quality > 60 and alert_percentage < 25:
+                evaluation = "🟡 BON - Réseau acceptable avec surveillance"
+            else:
+                evaluation = "🔴 ATTENTION - Réseau nécessitant des améliorations"
+
+            stats_text += f"• {evaluation}\n"
+
+            # Recommandations IT
+            stats_text += "\n🔧 INFORMATIONS IT :\n"
+            if avg_signal < -70:
+                stats_text += "• Signal faible : Vérifier couverture AP ou position antennes\n"
+            if max_signal - min_signal > 20:
+                stats_text += "• Signal instable : Contrôler interférences ou handover\n"
+            if alert_percentage > 20:
+                stats_text += "• Nombreuses alertes : Analyser logs réseau détaillés\n"
+            if avg_quality < 60:
+                stats_text += "• Qualité faible : Vérifier config QoS et bande passante\n"
+
+            # Mettre à jour l'interface
+            if hasattr(self, 'wifi_advanced_stats_text'):
+                self.wifi_advanced_stats_text.delete('1.0', tk.END)
+                self.wifi_advanced_stats_text.insert('1.0', stats_text)
 
         except Exception as e:
             logging.error(f"Erreur dans update_advanced_wifi_stats: {str(e)}")
+            if hasattr(self, 'wifi_advanced_stats_text'):
+                self.wifi_advanced_stats_text.delete('1.0', tk.END)
+                self.wifi_advanced_stats_text.insert('1.0', f"Erreur lors du calcul des statistiques :\n{str(e)}")
 
     # === FIN DES MÉTHODES UTILITAIRES ===
 
