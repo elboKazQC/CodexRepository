@@ -35,16 +35,21 @@ class NetworkAnalyzerUI:
     def __init__(self, master: tk.Tk):
         self.master = master
         self.master.title("Analyseur Réseau WiFi & Moxa")
-        self.master.state('zoomed')        # Initialisation des composants
+
+        # Optimiser la fenêtre selon la taille de l'écran
+        self.optimize_window_for_screen()
+
+        # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
         self.samples: List[WifiSample] = []
         self.amr_ips: List[str] = []
         self.amr_monitor: Optional[AMRMonitor] = None
-
+        
         # Variables pour la navigation temporelle
         self.current_view_start = 0
         self.current_view_window = 100  # Nombre d'échantillons à afficher
         self.is_real_time = True  # Mode temps réel vs navigation
+        self.realtime_var = tk.BooleanVar(value=True)  # Variable pour le checkbox temps réel
         self.alert_markers = []  # Marqueurs d'alertes sur les graphiques
         self.fullscreen_window = None  # Fenêtre plein écran
         self.slider_update_in_progress = False  # Évite la récursion avec le slider
@@ -81,27 +86,114 @@ class NetworkAnalyzerUI:
 
         # Création de l'interface
         self.create_interface()
-
+        
         # Configuration des graphiques
-        self.setup_graphs()        # Variables pour les mises à jour
+        self.setup_graphs()
+          # Variables pour les mises à jour
         self.update_interval = 1000  # ms
-        self.max_samples = 100
-
-        # Historique pour l'onglet WiFi
+        self.max_samples = 100        # Historique pour l'onglet WiFi
         self.wifi_history_entries = []
         self.max_history_entries = 1000
 
+    def is_portable_screen(self):
+        """Détermine si l'écran est un écran portable basé sur la taille physique et le DPI"""
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        
+        try:
+            # Calculer la taille physique de l'écran
+            dpi = self.master.winfo_fpixels('1i')
+            diagonal_pixels = (screen_width**2 + screen_height**2)**0.5
+            diagonal_inches = diagonal_pixels / dpi
+            
+            # Critères pour écran portable :
+            # - Écran physique <= 16.5 pouces (laptops 15-16")
+            # - OU résolution classique faible
+            # - OU DPI élevé (écrans haute densité, souvent portables)
+            is_portable = (
+                diagonal_inches <= 16.5 or  
+                screen_width < 1366 or screen_height < 768 or  
+                dpi > 110  
+            )
+            
+            return is_portable, diagonal_inches, dpi
+            
+        except Exception:
+            # Fallback si la détection DPI échoue
+            return screen_width < 1366 or screen_height < 768, None, None
+
     def setup_style(self):
-        """Configure le style de l'interface"""
+        """Configure le style de l'interface avec adaptation responsive"""
         style = ttk.Style()
-        style.configure("Title.TLabel", font=('Helvetica', 14, 'bold'))
-        style.configure("Alert.TLabel", foreground='red', font=('Helvetica', 12))
-        style.configure("Stats.TLabel", font=('Helvetica', 10))
+        
+        # Utiliser la détection centralisée
+        is_small_screen, diagonal_inches, dpi = self.is_portable_screen()
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        
+        # Adapter la taille des polices selon l'écran
+        if is_small_screen:
+            title_font = ('Helvetica', 12, 'bold')
+            alert_font = ('Helvetica', 10)
+            stats_font = ('Helvetica', 9)
+            button_font = ('Helvetica', 10)
+            button_padding = 6
+        else:
+            title_font = ('Helvetica', 14, 'bold')
+            alert_font = ('Helvetica', 12)
+            stats_font = ('Helvetica', 10)
+            button_font = ('Helvetica', 12)
+            button_padding = 10
+        
+        style.configure("Title.TLabel", font=title_font)
+        style.configure("Alert.TLabel", foreground='red', font=alert_font)
+        style.configure("Stats.TLabel", font=stats_font)
 
         # Style pour le bouton d'analyse
         style.configure("Analyze.TButton",
-                       font=('Helvetica', 12),
-                       padding=10)
+                       font=button_font,
+                       padding=button_padding)
+        
+        # Message d'adaptation pour l'utilisateur
+        if is_small_screen:
+            if diagonal_inches:
+                print(f"📱 Interface adaptée pour écran portable {diagonal_inches:.1f}″ ({screen_width}x{screen_height}, DPI:{dpi:.0f})")
+            else:
+                print(f"📱 Interface adaptée pour petit écran ({screen_width}x{screen_height})")
+        else:
+            print(f"🖥️ Interface standard pour grand écran ({screen_width}x{screen_height})")
+
+    def optimize_window_for_screen(self):
+        """Optimise la taille et position de la fenêtre selon l'écran"""
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        
+        # Utiliser la méthode centralisée de détection
+        is_small_screen, diagonal_inches, dpi = self.is_portable_screen()
+        
+        if is_small_screen:
+            # Pour les petits écrans (laptops), utiliser 95% de l'écran
+            window_width = int(screen_width * 0.95)
+            window_height = int(screen_height * 0.90)
+            x = (screen_width - window_width) // 2
+            y = (screen_height - window_height) // 2
+            
+            self.master.geometry(f"{window_width}x{window_height}+{x}+{y}")
+            if diagonal_inches:
+                print(f"📱 Fenêtre optimisée: {window_width}x{window_height} pour écran portable {diagonal_inches:.1f}″ (DPI:{dpi:.0f})")
+            else:
+                print(f"📱 Fenêtre optimisée: {window_width}x{window_height} pour écran portable")
+        else:
+            # Pour les grands écrans, maximiser
+            try:
+                self.master.state('zoomed')  # Windows
+            except tk.TclError:
+                try:
+                    self.master.attributes('-zoomed', True)  # Linux/Unix
+                except tk.TclError:
+                    # Fallback pour la compatibilité
+                    self.master.geometry("1200x800")
+            print(f"🖥️ Fenêtre maximisée pour grand écran")
 
     def create_interface(self):
         """Crée l'interface principale"""
@@ -296,9 +388,9 @@ class NetworkAnalyzerUI:
         status_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def setup_graphs(self):
-        """Configure les graphiques avec navigation temporelle et plein écran"""
+        """Configure les graphiques avec navigation simplifiée et intuitive"""
         # Variables de navigation
-        self.max_samples = 100  # Nb échantillons visibles
+        self.max_samples = 100
         self.current_view_start = 0
         self.current_view_window = 100
         self.is_real_time = True
@@ -306,81 +398,90 @@ class NetworkAnalyzerUI:
 
         # Frame principal pour les graphiques
         graph_main_frame = ttk.Frame(self.wifi_frame)
-        graph_main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # === CONTRÔLES DE NAVIGATION ===
-        nav_frame = ttk.LabelFrame(graph_main_frame, text="🎛️ Navigation Temporelle", padding=5)
+        graph_main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)        # === CONTRÔLES RESPONSIFS ===
+        nav_frame = ttk.LabelFrame(graph_main_frame, text="🎯 Navigation", padding=5)
         nav_frame.pack(fill=tk.X, pady=(0, 5))
 
-        # Première ligne : boutons principaux
-        nav_buttons_frame = ttk.Frame(nav_frame)
-        nav_buttons_frame.pack(fill=tk.X, pady=2)
+        # Utiliser la détection centralisée pour cohérence
+        is_small_screen, diagonal_inches, dpi = self.is_portable_screen()
+        
+        # Mode de vue et plein écran (toujours en haut)
+        view_frame = ttk.Frame(nav_frame)
+        view_frame.pack(fill=tk.X, pady=2)
+
+        self.view_mode = tk.StringVar(value="direct")
+        ttk.Radiobutton(view_frame, text="📡 Suivi Direct", variable=self.view_mode,
+                       value="direct", command=self.change_view_mode).pack(side=tk.LEFT, padx=8)
+        ttk.Radiobutton(view_frame, text="📊 Analyse", variable=self.view_mode,
+                       value="analysis", command=self.change_view_mode).pack(side=tk.LEFT, padx=8)
 
         # Bouton plein écran
         self.fullscreen_button = ttk.Button(
-            nav_buttons_frame,
+            view_frame,
             text="🖥️ Plein Écran",
             command=self.open_fullscreen_graphs
         )
-        self.fullscreen_button.pack(side=tk.LEFT, padx=2)
+        self.fullscreen_button.pack(side=tk.RIGHT, padx=8)
 
-        # Mode temps réel
-        self.realtime_var = tk.BooleanVar(value=True)
-        self.realtime_check = ttk.Checkbutton(
-            nav_buttons_frame,
-            text="⏱️ Temps réel",
-            variable=self.realtime_var,
-            command=self.toggle_realtime_mode
-        )
-        self.realtime_check.pack(side=tk.LEFT, padx=10)
+        if is_small_screen:
+            # MISE EN PAGE RESPONSIVE POUR PETITS ÉCRANS
+            # Ligne 1: Navigation par alertes
+            alert_frame = ttk.Frame(nav_frame)
+            alert_frame.pack(fill=tk.X, pady=2)
+            
+            ttk.Button(alert_frame, text="🚨 Prochaine alerte",
+                      command=self.go_to_next_alert).pack(side=tk.LEFT, padx=3)
+            ttk.Button(alert_frame, text="🚨 Alerte précédente",
+                      command=self.go_to_previous_alert).pack(side=tk.LEFT, padx=3)
+            
+            # Ligne 2: Navigation par qualité signal
+            signal_frame = ttk.Frame(nav_frame)
+            signal_frame.pack(fill=tk.X, pady=2)
+            
+            ttk.Button(signal_frame, text="📈 Meilleur signal",
+                      command=self.go_to_signal_peak).pack(side=tk.LEFT, padx=3)
+            ttk.Button(signal_frame, text="📉 Signal faible",
+                      command=self.go_to_signal_low).pack(side=tk.LEFT, padx=3)
+            
+            # Ligne 3: Contrôles de base 
+            basic_frame = ttk.Frame(nav_frame)
+            basic_frame.pack(fill=tk.X, pady=2)
+            
+            ttk.Button(basic_frame, text="⏮️ Début", command=self.go_to_start).pack(side=tk.LEFT, padx=3)
+            ttk.Button(basic_frame, text="⏭️ Fin/Live", command=self.go_live).pack(side=tk.LEFT, padx=3)
+            
+        else:
+            # MISE EN PAGE NORMALE POUR GRANDS ÉCRANS
+            # Navigation par événements
+            event_frame = ttk.Frame(nav_frame)
+            event_frame.pack(fill=tk.X, pady=5)
 
-        # Boutons de navigation
-        nav_controls = ttk.Frame(nav_buttons_frame)
-        nav_controls.pack(side=tk.RIGHT)
+            # Navigation par alertes
+            ttk.Button(event_frame, text="🚨 Prochaine alerte",
+                      command=self.go_to_next_alert).pack(side=tk.LEFT, padx=5)
+            ttk.Button(event_frame, text="🚨 Alerte précédente",
+                      command=self.go_to_previous_alert).pack(side=tk.LEFT, padx=5)
 
-        # Bouton pour activer/désactiver le mode déplacement (pan) sur les graphiques
-        self.is_pan_mode = False
-        self.pan_button = ttk.Button(nav_controls, text="🖱️", command=self.toggle_pan_mode, width=3)
-        self.pan_button.pack(side=tk.LEFT, padx=1)
+            # Séparateur visuel
+            ttk.Separator(event_frame, orient='vertical').pack(side=tk.LEFT, fill=tk.Y, padx=10)
 
-        ttk.Button(nav_controls, text="⏮️", command=self.go_to_start, width=3).pack(side=tk.LEFT, padx=1)
-        ttk.Button(nav_controls, text="⏪", command=self.go_previous, width=3).pack(side=tk.LEFT, padx=1)
-        ttk.Button(nav_controls, text="⏸️", command=self.pause_navigation, width=3).pack(side=tk.LEFT, padx=1)
-        ttk.Button(nav_controls, text="⏩", command=self.go_next, width=3).pack(side=tk.LEFT, padx=1)
-        ttk.Button(nav_controls, text="⏭️", command=self.go_to_end, width=3).pack(side=tk.LEFT, padx=1)
+            # Navigation par pics/creux
+            ttk.Button(event_frame, text="📈 Meilleur signal",
+                      command=self.go_to_signal_peak).pack(side=tk.LEFT, padx=5)
+            ttk.Button(event_frame, text="📉 Signal faible",
+                      command=self.go_to_signal_low).pack(side=tk.LEFT, padx=5)
 
-        # Deuxième ligne : slider temporel et zoom
-        slider_frame = ttk.Frame(nav_frame)
-        slider_frame.pack(fill=tk.X, pady=2)
+            # Contrôles de base
+            basic_frame = ttk.Frame(nav_frame)
+            basic_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Label(slider_frame, text="Position:").pack(side=tk.LEFT)
-        self.time_slider = ttk.Scale(
-            slider_frame,
-            from_=0, to=100,
-            orient=tk.HORIZONTAL,
-            command=self.on_slider_change
-        )
-        self.time_slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+            ttk.Button(basic_frame, text="⏮️ Début", command=self.go_to_start).pack(side=tk.LEFT, padx=2)
+            ttk.Button(basic_frame, text="⏭️ Fin/Live", command=self.go_live).pack(side=tk.LEFT, padx=2)
 
-        # Contrôles de zoom
-        zoom_frame = ttk.Frame(slider_frame)
-        zoom_frame.pack(side=tk.RIGHT)
-
-        ttk.Label(zoom_frame, text="Fenêtre:").pack(side=tk.LEFT)
-        self.window_var = tk.StringVar(value="100")
-        window_combo = ttk.Combobox(
-            zoom_frame,
-            textvariable=self.window_var,
-            values=["50", "100", "200", "500", "1000", "Tout"],
-            width=8,
-            state="readonly"
-        )
-        window_combo.pack(side=tk.LEFT, padx=2)
-        window_combo.bind('<<ComboboxSelected>>', self.on_window_change)
-
-        # Info de position
-        self.position_label = ttk.Label(nav_frame, text="Position: 0/0 échantillons")
-        self.position_label.pack()
+        # Info contextuelle (adaptée selon la taille)
+        context_text = "📡 Mode suivi direct - Navigation adaptée" if is_small_screen else "📡 Mode suivi direct - Utilisez la souris pour naviguer sur les graphiques"
+        self.context_label = ttk.Label(nav_frame, text=context_text)
+        self.context_label.pack(pady=3)
 
         # === GRAPHIQUES ===
         # Figure principale
@@ -400,7 +501,7 @@ class NetworkAnalyzerUI:
         self.ax2 = self.fig.add_subplot(212)
         self.ax2.set_title("Qualité de la connexion")
         self.ax2.set_ylabel("Qualité (%)")
-        self.ax2.set_xlabel("Échantillons")
+        self.ax2.set_xlabel("Temps (échantillons)")
         self.ax2.grid(True, alpha=0.3)
         self.quality_line, = self.ax2.plot([], [], 'g-', linewidth=2, label="Qualité")
         self.ax2.set_ylim(0, 100)
@@ -410,20 +511,18 @@ class NetworkAnalyzerUI:
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_main_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        # Toolbar de navigation matplotlib
+        # Toolbar de navigation matplotlib (pour zoom/pan à la souris)
         toolbar_frame = ttk.Frame(graph_main_frame)
         toolbar_frame.pack(fill=tk.X)
         self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
         self.toolbar.update()
 
-        # Raccourcis clavier pour la navigation
-
-        self.master.bind('<Left>', self.on_left_key)
-        self.master.bind('<Right>', self.on_right_key)
-        self.master.bind('<Home>', self.on_home_key)
-        self.master.bind('<End>', self.on_end_key)
-        self.master.bind('<space>', self.on_space_key)
-
+        # Raccourcis clavier simples
+        self.master.bind('<Left>', lambda e: self.go_to_previous_alert())
+        self.master.bind('<Right>', lambda e: self.go_to_next_alert())
+        self.master.bind('<Home>', lambda e: self.go_to_start())
+        self.master.bind('<End>', lambda e: self.go_live())
+        self.master.focus_set()
 
     def start_collection(self):
         """Démarre la collecte WiFi"""
@@ -722,6 +821,152 @@ class NetworkAnalyzerUI:
         self.add_to_wifi_history(sample, alerts, timestamp)        # Mettre à jour les stats avancées
         self.update_advanced_wifi_stats()
 
+    def add_to_wifi_history(self, sample: WifiSample, alerts: list, timestamp: str):
+        """Ajoute un échantillon à l'historique WiFi"""
+        entry = {
+            'timestamp': timestamp,
+            'signal': sample.signal_strength,
+            'quality': sample.quality,
+            'alerts': alerts.copy() if alerts else []
+        }
+
+        self.wifi_history_entries.append(entry)
+
+        # Limiter la taille de l'historique
+        if len(self.wifi_history_entries) > self.max_history_entries:
+            self.wifi_history_entries = self.wifi_history_entries[-self.max_history_entries:]
+
+        # Mettre à jour l'affichage de l'historique
+        self.update_wifi_history_display()
+
+    def update_wifi_history_display(self):
+        """Met à jour l'affichage de l'historique WiFi"""
+        if not hasattr(self, 'wifi_history_text'):
+            return
+
+        try:
+            # Limiter l'affichage aux 50 dernières entrées pour les performances
+            recent_entries = self.wifi_history_entries[-50:]
+
+            history_text = "=== Historique WiFi (50 dernières entrées) ===\n\n"
+
+            for entry in reversed(recent_entries):  # Plus récent en premier
+                history_text += f"[{entry['timestamp']}] "
+                history_text += f"Signal: {entry['signal']} dBm, "
+                history_text += f"Qualité: {entry['quality']}%\n"
+
+                if entry['alerts']:
+                    for alert in entry['alerts']:
+                        history_text += f"  → {alert}\n"
+
+                history_text += "\n"
+
+            self.wifi_history_text.delete('1.0', tk.END)
+            self.wifi_history_text.insert('1.0', history_text)
+
+        except Exception as e:
+            logging.error(f"Erreur dans update_wifi_history_display: {str(e)}")
+
+    def generate_final_network_report(self):
+        """Génère et affiche le rapport final d'analyse réseau"""
+        if not hasattr(self, 'wifi_final_report_text'):
+            return
+
+        try:
+            if not self.samples:
+                report = "❌ Aucune donnée disponible pour générer un rapport.\n"
+                report += "Veuillez d'abord effectuer une analyse WiFi."
+            else:
+                # Utiliser l'analyzer pour obtenir un rapport combiné
+                combined_report = self.analyzer.get_combined_report()
+
+                report = "📋 RAPPORT FINAL D'ANALYSE RÉSEAU\n"
+                report += "=" * 50 + "\n\n"
+                report += f"📅 Généré le : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                report += f"📊 Échantillons analysés : {len(self.samples)}\n\n"
+
+                # Section WiFi
+                if 'wifi_analysis' in combined_report and combined_report['wifi_analysis']:
+                    wifi = combined_report['wifi_analysis']
+                    report += "📶 ANALYSE WIFI\n"
+                    report += "-" * 20 + "\n"
+
+                    signal = wifi.get('signal_strength', {})
+                    if signal:
+                        report += f"Signal moyen : {signal.get('average', 0):.1f} dBm\n"
+                        report += f"Signal min/max : {signal.get('min', 0):.1f} / {signal.get('max', 0):.1f} dBm\n"
+
+                    quality = wifi.get('quality', {})
+                    if quality:
+                        report += f"Qualité connexion : {quality.get('connection', 0):.1f}%\n"
+                        report += f"Stabilité signal : {quality.get('stability', 0):.1f}%\n"
+
+                    dropouts = wifi.get('dropouts', 0)
+                    report += f"Déconnexions : {dropouts}\n\n"
+
+                # Section recommandations
+                if 'recommendations' in combined_report and combined_report['recommendations']:
+                    report += "💡 RECOMMANDATIONS\n"
+                    report += "-" * 20 + "\n"
+                    for i, rec in enumerate(combined_report['recommendations'], 1):
+                        report += f"{i}. {rec}\n"
+                    report += "\n"
+
+                # Score global calculé
+                if self.samples:
+                    avg_signal = sum(s.signal_strength for s in self.samples) / len(self.samples)
+                    avg_quality = sum(s.quality for s in self.samples) / len(self.samples)
+
+                    # Calcul du score global (0-100)
+                    signal_score = max(0, min(100, (avg_signal + 100) * 2))  # -100 dBm = 0%, -50 dBm = 100%
+                    quality_score = avg_quality
+                    global_score = (signal_score + quality_score) / 2
+
+                    report += "🎯 SCORE GLOBAL\n"
+                    report += "-" * 20 + "\n"
+                    report += f"Score final : {global_score:.1f}/100\n"
+
+                    if global_score >= 80:
+                        report += "✅ Excellent - Réseau parfaitement optimisé\n"
+                    elif global_score >= 60:
+                        report += "🟡 Bon - Quelques améliorations possibles\n"
+                    elif global_score >= 40:
+                        report += "🟠 Moyen - Optimisations recommandées\n"
+                    else:
+                        report += "🔴 Critique - Intervention urgente requise\n"
+
+            self.wifi_final_report_text.delete('1.0', tk.END)
+            self.wifi_final_report_text.insert('1.0', report)
+
+            # Basculer vers l'onglet du rapport
+            if hasattr(self, 'wifi_analysis_notebook'):
+                for i in range(self.wifi_analysis_notebook.index('end')):
+                    if 'rapport' in self.wifi_analysis_notebook.tab(i, 'text').lower():
+                        self.wifi_analysis_notebook.select(i)
+                        break
+
+            logging.info("Rapport final généré avec succès")
+
+        except Exception as e:
+            error_msg = f"Erreur lors de la génération du rapport: {str(e)}"
+            logging.error(error_msg)
+            if hasattr(self, 'wifi_final_report_text'):
+                self.wifi_final_report_text.delete('1.0', tk.END)
+                self.wifi_final_report_text.insert('1.0', f"❌ {error_msg}")
+
+    def go_to_end(self):
+        """Va à la fin des données (derniers échantillons)"""
+        try:
+            if self.samples:
+                self.is_real_time = False
+                self.realtime_var.set(False)
+                self.current_view_start = max(0, len(self.samples) - self.current_view_window)
+                self.update_display()
+                if hasattr(self, 'context_label'):
+                    self.context_label.config(text="📊 Fin de l'analyse - Dernières données collectées")
+        except Exception as e:
+            logging.error(f"Erreur dans go_to_end: {str(e)}")
+
     def update_display(self):
         """Met à jour les graphiques avec navigation temporelle"""
         if not self.samples:
@@ -740,7 +985,13 @@ class NetworkAnalyzerUI:
             else:
                 # Mode navigation : afficher la fenêtre sélectionnée
                 start_idx = self.current_view_start
+                # S'assurer qu'on ne dépasse pas la fin des données
                 end_idx = min(len(samples_snapshot), start_idx + self.current_view_window)
+
+                # Si on essaie d'afficher plus d'échantillons qu'il n'y en a,
+                # ajuster le début pour montrer les derniers échantillons disponibles
+                if end_idx - start_idx < self.current_view_window and end_idx == len(samples_snapshot):
+                    start_idx = max(0, end_idx - self.current_view_window)
 
             # Extraire les données à afficher
             display_samples = samples_snapshot[start_idx:end_idx]
@@ -782,11 +1033,27 @@ class NetworkAnalyzerUI:
                     logging.warning(f"Erreur lors de la mise à jour plein écran: {fs_error}")
 
             # Mettre à jour les infos de position
-            self.update_position_info()
+            self.update_status_info()
 
         except Exception as e:
             logging.error(f"Erreur générale dans update_display: {e}")
             # Continuer sans faire crasher l'application
+
+    def update_status_info(self):
+        """Met à jour l'information de statut simple"""
+        if not hasattr(self, 'context_label'):
+            return
+
+        if self.is_real_time:
+            self.context_label.config(text="📡 Mode suivi direct - Les données s'affichent en temps réel")
+        else:
+            total = len(self.samples) if self.samples else 0
+            if total > 0:
+                current_pos = self.current_view_start + (self.current_view_window // 2)
+                time_info = self._get_relative_time(current_pos)
+                self.context_label.config(text=f"📊 Mode analyse - Position: {time_info}")
+            else:
+                self.context_label.config(text="📊 Mode analyse - Aucune donnée")
 
     def mark_alerts_on_graphs(self):
         """Marque les points d'alerte sur les graphiques"""
@@ -972,311 +1239,209 @@ class NetworkAnalyzerUI:
             logging.error(f"Erreur dans toggle_realtime_mode: {str(e)}")
             # Éviter le crash en cas d'erreur
 
-    def on_slider_change(self, value):
-        """Gère le changement de position du slider"""
-        if self.slider_update_in_progress:
+    def go_live(self):
+        """Retourne au mode temps réel"""
+        self.is_real_time = True
+        self.view_mode.set("direct")
+        if self.samples:
+            self.current_view_start = max(0, len(self.samples) - self.current_view_window)
+        self.update_display()
+        self.context_label.config(text="📡 Mode direct actif - Suivi en temps réel")
+
+    def go_to_next_alert(self):
+        """Va à la prochaine alerte détectée"""
+        if not self.samples:
+            self.context_label.config(text="❌ Aucune donnée disponible")
             return
 
-        if not self.is_real_time and self.samples:
-            total_samples = len(self.samples)
-            position = int(float(value) * total_samples / 100)
-            self.current_view_start = max(0, position - self.current_view_window // 2)
-            self.update_display()
-            self.update_position_info()
+        current_pos = self.current_view_start if not self.is_real_time else len(self.samples)
 
-    def on_window_change(self, event=None):
-        """Gère le changement de taille de fenêtre"""
-        window_size = self.window_var.get()
-        if window_size == "Tout":
-            self.current_view_window = len(self.samples) if self.samples else 100
+        for i, sample in enumerate(self.samples[current_pos:], current_pos):
+            if self._has_alert(sample):
+                self.is_real_time = False
+                self.view_mode.set("analysis")
+                self.current_view_start = max(0, i - 30)  # Centrer sur l'alerte
+                self.current_view_window = 60  # 1 minute de contexte
+                self.update_display()
+                alert_time = self._get_relative_time(i)
+                self.context_label.config(text=f"🚨 Alerte trouvée {alert_time}")
+                return
+
+        self.context_label.config(text="✅ Aucune alerte trouvée après cette position")
+
+    def go_to_previous_alert(self):
+        """Va à l'alerte précédente"""
+        if not self.samples:
+            self.context_label.config(text="❌ Aucune donnée disponible")
+            return
+
+        current_pos = self.current_view_start if not self.is_real_time else len(self.samples)
+
+        # Chercher en arrière
+        for i in range(min(current_pos - 1, len(self.samples) - 1), -1, -1):
+            if self._has_alert(self.samples[i]):
+                self.is_real_time = False
+                self.view_mode.set("analysis")
+                self.current_view_start = max(0, i - 30)
+                self.current_view_window = 60
+                self.update_display()
+                alert_time = self._get_relative_time(i)
+                self.context_label.config(text=f"🚨 Alerte précédente {alert_time}")
+                return
+
+        self.context_label.config(text="✅ Aucune alerte trouvée avant cette position")
+
+    def go_to_signal_peak(self):
+        """Va au pic de signal le plus élevé"""
+        if not self.samples:
+            self.context_label.config(text="❌ Aucune donnée disponible")
+            return
+
+        signals = [s.signal_strength for s in self.samples]
+        peak_idx = signals.index(max(signals))
+
+        self.is_real_time = False
+        self.view_mode.set("analysis")
+        self.current_view_start = max(0, peak_idx - 30)
+        self.current_view_window = 60
+        self.update_display()
+        peak_time = self._get_relative_time(peak_idx)
+        self.context_label.config(text=f"📈 Meilleur signal: {max(signals)} dBm {peak_time}")
+
+    def go_to_signal_low(self):
+        """Va au signal le plus faible"""
+        if not self.samples:
+            self.context_label.config(text="❌ Aucune donnée disponible")
+            return
+
+        signals = [s.signal_strength for s in self.samples]
+        low_idx = signals.index(min(signals))
+
+        self.is_real_time = False
+        self.view_mode.set("analysis")
+        self.current_view_start = max(0, low_idx - 30)
+        self.current_view_window = 60
+        self.update_display()
+        low_time = self._get_relative_time(low_idx)
+        self.context_label.config(text=f"📉 Signal le plus faible: {min(signals)} dBm {low_time}")
+
+    def change_view_mode(self):
+        """Change le mode de visualisation"""
+        mode = self.view_mode.get()
+
+        if mode == "direct":
+            self.is_real_time = True
+            self.go_live()
+            self.context_label.config(text="📡 Mode suivi direct - Les données s'affichent en temps réel")
         else:
-            self.current_view_window = int(window_size)
-
-        if not self.is_real_time:
-            self.update_display()
-            self.update_position_info()
-
-    def go_to_start(self):
-        """Va au début des données"""
-        try:
             self.is_real_time = False
-            self.realtime_var.set(False)
-            self.current_view_start = 0
-            self.update_display()
-            self.update_position_info()
-        except Exception as e:
-            logging.error(f"Erreur dans go_to_start: {str(e)}")
-            # Éviter le crash en cas d'erreur
-
-    def go_to_end(self):
-        """Va à la fin des données"""
-        try:
-            if self.samples:
-                self.current_view_start = max(0, len(self.samples) - self.current_view_window)
-            self.update_display()
-            self.update_position_info()
-        except Exception as e:
-            logging.error(f"Erreur dans go_to_end: {str(e)}")
-            # Éviter le crash en cas d'erreur
-
-    def go_previous(self):
-        """Recule dans le temps"""
-        try:
-            self.is_real_time = False
-            self.realtime_var.set(False)
-            step = max(1, self.current_view_window // 4)
-            self.current_view_start = max(0, self.current_view_start - step)
-            self.update_display()
-            self.update_position_info()
-        except Exception as e:
-            logging.error(f"Erreur dans go_previous: {str(e)}")
-            # Éviter le crash en cas d'erreur
-
-    def go_next(self):
-        """Avance dans le temps"""
-        try:
-            self.is_real_time = False
-            self.realtime_var.set(False)
-            if self.samples:
-                step = max(1, self.current_view_window // 4)
-                max_start = max(0, len(self.samples) - self.current_view_window)
-                self.current_view_start = min(max_start, self.current_view_start + step)
-            self.update_display()
-            self.update_position_info()
-        except Exception as e:
-            logging.error(f"Erreur dans go_next: {str(e)}")
-            # Éviter le crash en cas d'erreur
-
-    def pause_navigation(self):
-        """Met en pause/reprend la navigation automatique"""
-        try:
-            self.is_real_time = not self.is_real_time
-            self.realtime_var.set(self.is_real_time)
-        except Exception as e:
-            logging.error(f"Erreur dans pause_navigation: {str(e)}")
-            # Éviter le crash en cas d'erreur
-
-
-    # Handlers pour les raccourcis clavier
-    def on_left_key(self, event=None):
-        """Déclenche le déplacement vers la gauche"""
-        self.go_previous()
-
-    def on_right_key(self, event=None):
-        """Déclenche le déplacement vers la droite"""
-        self.go_next()
-
-    def on_home_key(self, event=None):
-        """Va au début des données"""
-        self.go_to_start()
-
-    def on_end_key(self, event=None):
-        """Va à la fin des données"""
-        self.go_to_end()
-
-    def on_space_key(self, event=None):
-        """Met en pause ou reprend la navigation"""
-        self.pause_navigation()
-
-
-    def toggle_pan_mode(self):
-        """Active ou désactive le mode déplacement sur les graphiques"""
-        try:
-            self.is_pan_mode = not self.is_pan_mode
-            # Activer/désactiver sur les toolbars
-            if hasattr(self, 'toolbar'):
-                self.toolbar.pan()
-            if hasattr(self, 'toolbar_fs'):
-                self.toolbar_fs.pan()
-            # Mettre à jour l'état visuel des boutons
-            self.pan_button.config(relief=tk.SUNKEN if self.is_pan_mode else tk.RAISED)
-            if hasattr(self, 'pan_button_fs'):
-                self.pan_button_fs.config(relief=tk.SUNKEN if self.is_pan_mode else tk.RAISED)
-        except Exception as e:
-            logging.error(f"Erreur dans toggle_pan_mode: {str(e)}")
-
-    def update_position_info(self):
-        """Met à jour l'info de position"""
-        try:
-            if self.samples:
-                total = len(self.samples)
-                start = self.current_view_start + 1
-                end = min(total, self.current_view_start + self.current_view_window)
-                self.position_label.config(text=f"Position: {start}-{end}/{total} échantillons")
-
-                slider_pos = (self.current_view_start / total) * 100 if total > 0 else 0
-                self.slider_update_in_progress = True
-                try:
-                    self.time_slider.set(slider_pos)
-                    if hasattr(self, 'time_slider_fs'):
-                        self.time_slider_fs.set(slider_pos)
-                finally:
-                    self.slider_update_in_progress = False
-            else:
-                self.position_label.config(text="Position: 0/0 échantillons")
-                self.slider_update_in_progress = True
-                try:
-                    self.time_slider.set(0)
-                    if hasattr(self, 'time_slider_fs'):
-                        self.time_slider_fs.set(0)
-                finally:
-                    self.slider_update_in_progress = False
-        except Exception as e:
-            logging.error(f"Erreur dans update_position_info: {str(e)}")
+            self.context_label.config(text="📊 Mode analyse - Naviguez avec les boutons ou la souris sur les graphiques")
 
     def open_fullscreen_graphs(self):
-        """Ouvre les graphiques en mode plein écran"""
+        """Ouvre les graphiques en plein écran dans une nouvelle fenêtre"""
         if self.fullscreen_window and self.fullscreen_window.winfo_exists():
             self.fullscreen_window.lift()
             return
 
-        # Créer la fenêtre plein écran
         self.fullscreen_window = tk.Toplevel(self.master)
-        self.fullscreen_window.title("Graphiques WiFi - Mode Plein Écran")
-        self.fullscreen_window.state('zoomed')
+        self.fullscreen_window.title("Graphiques en plein écran")
 
-        # Raccourcis clavier identiques en plein écran
+        # Adapter la taille selon la résolution de l'écran
+        screen_width = self.fullscreen_window.winfo_screenwidth()
+        screen_height = self.fullscreen_window.winfo_screenheight()
 
-        self.fullscreen_window.bind('<Left>', self.on_left_key)
-        self.fullscreen_window.bind('<Right>', self.on_right_key)
-        self.fullscreen_window.bind('<Home>', self.on_home_key)
-        self.fullscreen_window.bind('<End>', self.on_end_key)
-        self.fullscreen_window.bind('<space>', self.on_space_key)
+        # Pour les petits écrans, utiliser une fenêtre maximisée mais pas plein écran
+        if screen_width < 1366 or screen_height < 768:
+            # Utiliser 90% de la taille d'écran pour laisser de la place
+            width = int(screen_width * 0.9)
+            height = int(screen_height * 0.85)
+            x = (screen_width - width) // 2
+            y = (screen_height - height) // 2
+            self.fullscreen_window.geometry(f"{width}x{height}+{x}+{y}")
+        else:
+            # Sur les grands écrans, utiliser le mode zoomé
+            try:
+                self.fullscreen_window.state('zoomed')
+            except tk.TclError:
+                # Fallback si zoomed ne fonctionne pas
+                self.fullscreen_window.geometry("1200x800")
 
+        # Créer une nouvelle figure pour le plein écran avec une taille adaptée
+        fig_width = max(10, min(16, screen_width / 100))
+        fig_height = max(6, min(10, screen_height / 120))
+        fs_fig = Figure(figsize=(fig_width, fig_height))
+        fs_fig.subplots_adjust(hspace=0.4, left=0.1, right=0.95, top=0.95, bottom=0.15)
 
-        # Créer les graphiques pour la fenêtre plein écran
-        self.setup_fullscreen_graphs()
+        # Signal subplot
+        self.fs_ax1 = fs_fig.add_subplot(211)
+        self.fs_ax1.set_title("Force du signal WiFi", fontsize=12)
+        self.fs_ax1.set_ylabel("Signal (dBm)")
+        self.fs_ax1.grid(True, alpha=0.3)
+        self.fs_signal_line, = self.fs_ax1.plot([], [], 'b-', linewidth=2, label="Signal")
+        # Ne pas fixer les limites ici, elles seront ajustées dynamiquement
+        self.fs_ax1.legend()
+
+        # Quality subplot
+        self.fs_ax2 = fs_fig.add_subplot(212)
+        self.fs_ax2.set_title("Qualité de la connexion", fontsize=12)
+        self.fs_ax2.set_ylabel("Qualité (%)")
+        self.fs_ax2.set_xlabel("Temps (échantillons)")
+        self.fs_ax2.grid(True, alpha=0.3)
+        self.fs_quality_line, = self.fs_ax2.plot([], [], 'g-', linewidth=2, label="Qualité")
+        # Garder les limites fixes pour la qualité (0-100%)
+        self.fs_ax2.set_ylim(0, 100)
+        self.fs_ax2.legend()
+
+        # Canvas avec gestion des barres de défilement pour petits écrans
+        canvas_frame = ttk.Frame(self.fullscreen_window)
+        canvas_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.fs_canvas = FigureCanvasTkAgg(fs_fig, master=canvas_frame)
+        self.fs_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        # Toolbar de navigation
+        fs_toolbar = NavigationToolbar2Tk(self.fs_canvas, canvas_frame)
+        fs_toolbar.update()
+
+        # Frame pour les boutons en bas
+        button_frame = ttk.Frame(self.fullscreen_window)
+        button_frame.pack(pady=5)
+
+        # Bouton pour synchroniser la vue
+        ttk.Button(button_frame, text="Synchroniser vue",
+                  command=self.sync_fullscreen_view).pack(side=tk.LEFT, padx=5)
 
         # Bouton pour fermer
-        close_frame = ttk.Frame(self.fullscreen_window)
-        close_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
-
-        ttk.Button(
-            close_frame,
-            text="❌ Fermer le plein écran",
-            command=self.close_fullscreen_graphs
-        ).pack(side=tk.RIGHT)
-
-        ttk.Label(
-            close_frame,
-            text="📊 Graphiques WiFi - Mode Présentation",
-            font=("Arial", 14, "bold")
-        ).pack(side=tk.LEFT)
-
-    def setup_fullscreen_graphs(self):
-        """Configure les graphiques en mode plein écran"""
-        # Contrôles de navigation en plein écran
-        nav_frame_fs = ttk.LabelFrame(self.fullscreen_window, text="🎛️ Navigation", padding=5)
-        nav_frame_fs.pack(fill=tk.X, padx=10, pady=5)
-
-        # Reproduction des contrôles principaux
-        nav_buttons_fs = ttk.Frame(nav_frame_fs)
-        nav_buttons_fs.pack(fill=tk.X)
-
-        self.realtime_check_fs = ttk.Checkbutton(
-            nav_buttons_fs,
-            text="⏱️ Temps réel",
-            variable=self.realtime_var,
-            command=self.toggle_realtime_mode
-        )
-        self.realtime_check_fs.pack(side=tk.LEFT, padx=10)
-
-        nav_controls_fs = ttk.Frame(nav_buttons_fs)
-        nav_controls_fs.pack(side=tk.RIGHT)
-
-        # Bouton pan en plein écran
-        self.pan_button_fs = ttk.Button(nav_controls_fs, text="🖱️", command=self.toggle_pan_mode, width=3)
-        self.pan_button_fs.pack(side=tk.LEFT, padx=1)
-
-        for text, command in [("⏮️", self.go_to_start), ("⏪", self.go_previous),
-                             ("⏸️", self.pause_navigation), ("⏩", self.go_next), ("⏭️", self.go_to_end)]:
-            ttk.Button(nav_controls_fs, text=text, command=command, width=3).pack(side=tk.LEFT, padx=1)
-
-        # Slider temporel en plein écran
-        slider_frame_fs = ttk.Frame(nav_frame_fs)
-        slider_frame_fs.pack(fill=tk.X, pady=5)
-
-        ttk.Label(slider_frame_fs, text="Position:").pack(side=tk.LEFT)
-        self.time_slider_fs = ttk.Scale(
-            slider_frame_fs,
-            from_=0, to=100,
-            orient=tk.HORIZONTAL,
-            command=self.on_slider_change
-        )
-        self.time_slider_fs.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-
-        # Info position en plein écran
-        self.position_label_fs = ttk.Label(nav_frame_fs, text="Position: 0/0 échantillons")
-        self.position_label_fs.pack()
-
-        # Graphiques en plein écran
-        self.fig_fs = Figure(figsize=(16, 10))
-        self.fig_fs.subplots_adjust(hspace=0.3)
-
-        # Signal en plein écran
-        self.ax1_fs = self.fig_fs.add_subplot(211)
-        self.ax1_fs.set_title("Force du signal WiFi", fontsize=16)
-        self.ax1_fs.set_ylabel("Signal (dBm)", fontsize=12)
-        self.ax1_fs.grid(True, alpha=0.3)
-        self.signal_line_fs, = self.ax1_fs.plot([], [], 'b-', linewidth=3, label="Signal")
-        self.ax1_fs.set_ylim(-90, -30)
-        self.ax1_fs.legend(fontsize=12)
-
-        # Graphique de la qualité en plein écran
-        self.ax2_fs = self.fig_fs.add_subplot(212)
-        self.ax2_fs.set_title("Qualité de la connexion", fontsize=16)
-        self.ax2_fs.set_ylabel("Qualité (%)", fontsize=12)
-        self.ax2_fs.set_xlabel("Échantillons", fontsize=12)
-        self.ax2_fs.grid(True, alpha=0.3)
-        self.quality_line_fs, = self.ax2_fs.plot([], [], 'g-', linewidth=3, label="Qualité")
-        self.ax2_fs.set_ylim(0, 100)
-        self.ax2_fs.legend(fontsize=12)
-
-        # Canvas plein écran
-        self.canvas_fs = FigureCanvasTkAgg(self.fig_fs, master=self.fullscreen_window)
-        self.canvas_fs.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-
-        # Toolbar plein écran
-        toolbar_frame_fs = ttk.Frame(self.fullscreen_window)
-        toolbar_frame_fs.pack(fill=tk.X, padx=10)
-        self.toolbar_fs = NavigationToolbar2Tk(self.canvas_fs, toolbar_frame_fs)
-        self.toolbar_fs.update()
-          # Mettre à jour les graphiques plein écran
+        ttk.Button(button_frame, text="Fermer",
+                  command=self.fullscreen_window.destroy).pack(side=tk.LEFT, padx=5)        # Mettre à jour les graphiques avec la vue actuelle
         self.update_fullscreen_display()
 
-    def close_fullscreen_graphs(self):
-        """Ferme la fenêtre plein écran"""
-        if self.fullscreen_window and self.fullscreen_window.winfo_exists():
-            try:
-                self.fullscreen_window.unbind('<Left>')
-                self.fullscreen_window.unbind('<Right>')
-                self.fullscreen_window.unbind('<Home>')
-                self.fullscreen_window.unbind('<End>')
-                self.fullscreen_window.unbind('<space>')
-            except Exception:
-                pass
-            self.fullscreen_window.destroy()
-        self.fullscreen_window = None
-
     def update_fullscreen_display(self):
-        """Met à jour l'affichage en mode plein écran"""
-        if not self.fullscreen_window or not self.fullscreen_window.winfo_exists():
+        """Met à jour les graphiques en plein écran avec la même vue que l'écran principal"""
+        if not hasattr(self, 'fullscreen_window') or not self.fullscreen_window or not self.fullscreen_window.winfo_exists():
             return
 
         if not self.samples:
             return
 
         try:
-            # Déterminer la plage d'affichage
+            # Utiliser exactement la même logique que la vue principale
+            samples_snapshot = list(self.samples)
+
+            # Déterminer la plage d'affichage selon le mode (même logique que update_display)
             if self.is_real_time:
-                start_idx = max(0, len(self.samples) - self.current_view_window)
-                end_idx = len(self.samples)
+                start_idx = max(0, len(samples_snapshot) - self.current_view_window)
+                end_idx = len(samples_snapshot)
             else:
                 start_idx = self.current_view_start
-                end_idx = min(len(self.samples), start_idx + self.current_view_window)
+                end_idx = min(len(samples_snapshot), start_idx + self.current_view_window)
 
-            # Extraire les données
-            display_samples = self.samples[start_idx:end_idx]
+                # S'assurer qu'on a assez d'échantillons à afficher
+                if end_idx - start_idx < self.current_view_window and end_idx == len(samples_snapshot):
+                    start_idx = max(0, end_idx - self.current_view_window)
+
+            # Extraire les données à afficher (même vue que l'écran principal)
+            display_samples = samples_snapshot[start_idx:end_idx]
             if not display_samples:
                 return
 
@@ -1284,451 +1449,149 @@ class NetworkAnalyzerUI:
             qualities = [s.quality for s in display_samples]
             x_data = range(len(signals))
 
-            # Vérifier que nous avons des données valides
-            if not signals or not qualities:
-                return
+            # Mettre à jour les données
+            if hasattr(self, 'fs_signal_line') and self.fs_signal_line is not None:
+                self.fs_signal_line.set_data(x_data, signals)
 
-            # Mettre à jour les lignes avec protection
-            try:
-                self.signal_line_fs.set_data(x_data, signals)
-                self.quality_line_fs.set_data(x_data, qualities)
+                # Ajuster automatiquement les axes Y pour le signal
+                if signals and hasattr(self, 'fs_ax1'):
+                    min_signal = min(signals)
+                    max_signal = max(signals)
+                    # Ajouter une marge de 5 dBm de chaque côté
+                    margin = 5
+                    self.fs_ax1.set_ylim(min_signal - margin, max_signal + margin)
+                    # Ajuster l'axe X
+                    if len(x_data) > 0:
+                        self.fs_ax1.set_xlim(0, max(x_data) if x_data else 1)
 
-                # Ajuster les axes avec valeurs valides
-                if len(signals) > 0:
-                    self.ax1_fs.set_xlim(0, max(1, len(signals)))
-                    self.ax2_fs.set_xlim(0, max(1, len(qualities)))
+            if hasattr(self, 'fs_quality_line') and self.fs_quality_line is not None:
+                self.fs_quality_line.set_data(x_data, qualities)
 
-                # Marquer les alertes
-                self.mark_alerts_on_fullscreen()
+                # Ajuster l'axe X pour la qualité aussi
+                if hasattr(self, 'fs_ax2') and len(x_data) > 0:
+                    self.fs_ax2.set_xlim(0, max(x_data) if x_data else 1)
 
-                # Rafraîchir avec gestion d'erreur
-                self.canvas_fs.draw_idle()  # Utiliser draw_idle() au lieu de draw()
-
-            except Exception as graph_error:
-                logging.warning(f"Erreur lors de la mise à jour des graphiques plein écran: {graph_error}")
-
-            # Mettre à jour les infos de position
-            if hasattr(self, 'position_label_fs'):
-                total = len(self.samples)
-                start = start_idx + 1
-                end = end_idx
-                self.position_label_fs.config(text=f"Position: {start}-{end}/{total} échantillons")
+            # Redessiner
+            if hasattr(self, 'fs_canvas') and self.fs_canvas is not None:
+                self.fs_canvas.draw_idle()
 
         except Exception as e:
-            logging.error(f"Erreur générale dans update_fullscreen_display: {e}")
-            # Continuer sans faire crasher l'application
+            logging.error(f"Erreur dans update_fullscreen_display: {str(e)}")
 
-    def mark_alerts_on_fullscreen(self):
-        """Marque les alertes sur les graphiques plein écran"""
-        # Effacer les anciens marqueurs
-        for marker in getattr(self, 'alert_markers_fs', []):
-            try:
-                marker.remove()
-            except:
-                pass
-        self.alert_markers_fs = []
+    def sync_fullscreen_view(self):
+        """Synchronise manuellement la vue plein écran avec la vue principale"""
+        self.update_fullscreen_display()
 
-        if not hasattr(self, 'samples') or not self.samples:
-            return
+    def go_to_start(self):
+        """Va au début des données"""
+        try:
+            self.is_real_time = False
+            self.view_mode.set("analysis")
+            self.current_view_start = 0
+            self.current_view_window = 60  # Vue d'une minute
+            self.update_display()
+            self.context_label.config(text="📊 Début de l'analyse - Premières données collectées")
+        except Exception as e:
+            logging.error(f"Erreur dans go_to_start: {str(e)}")
 
-        # Déterminer la plage d'affichage
-        if self.is_real_time:
-            start_idx = max(0, len(self.samples) - self.current_view_window)
-        else:
-            start_idx = self.current_view_start
-
-        # Marquer les points avec alertes
-        for i, sample in enumerate(self.samples[start_idx:start_idx + self.current_view_window]):
-            # Vérifier si ce sample avait des alertes
-            if (sample.signal_strength < -85 or sample.quality < 20 or
-                (hasattr(sample, 'raw_data') and self._check_rate_alerts(sample))):
-
-                # Marquer sur les deux graphiques
-                marker1 = self.ax1_fs.axvline(x=i, color='red', alpha=0.7, linewidth=2)
-                marker2 = self.ax2_fs.axvline(x=i, color='red', alpha=0.7, linewidth=2)
-
-                self.alert_markers_fs.extend([marker1, marker2])
+    def _has_alert(self, sample):
+        """Vérifie si un échantillon a des alertes"""
+        return (sample.signal_strength < -80 or
+                sample.quality < 40 or
+                self._check_rate_alerts(sample))
 
     def _check_rate_alerts(self, sample):
         """Vérifie les alertes de débit pour un échantillon"""
         try:
-            if not hasattr(sample, 'raw_data') or not sample.raw_data:
-                return False
-
             tx_rate = int(sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
             rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])
-
-            # Nouveaux seuils réalistes
-            return (tx_rate < 10 and rx_rate < 2) or (tx_rate < 50 and rx_rate < 5)
-        except:
+            return tx_rate < 10 and rx_rate < 2  # Seuils critiques
+        except (ValueError, IndexError, KeyError):
             return False
 
-    def add_to_wifi_history(self, sample, alerts, timestamp):
-        """Ajoute un événement à l'historique WiFi"""
-        if hasattr(self, 'wifi_history_text'):
-            # Créer l'entrée d'historique
-            entry_text = f"{timestamp} | Signal: {sample.signal_strength} dBm | Qualité: {sample.quality}%"
+    def _get_relative_time(self, index):
+        """Retourne le temps relatif d'un échantillon"""
+        if not self.samples:
+            return "maintenant"
 
-            if alerts:
-                entry_text += f" | ⚠️ {len(alerts)} alerte(s)\n"
-                for alert in alerts:
-                    entry_text += f"    → {alert}\n"
-            else:
-                entry_text += " | ✅ OK\n"
-
-            # Ajouter au début du texte
-            self.wifi_history_text.insert('1.0', entry_text + "\n")
+        seconds_ago = len(self.samples) - index
+        if seconds_ago < 5:
+            return "maintenant"
+        elif seconds_ago < 60:
+            return f"il y a {seconds_ago}s"
+        elif seconds_ago < 3600:
+            return f"il y a {seconds_ago//60}min"
+        else:
+            return f"il y a {seconds_ago//3600}h"
 
     def update_advanced_wifi_stats(self):
-        """Met à jour les statistiques avancées"""
-        if not hasattr(self, 'wifi_advanced_stats_text') or not self.samples:
+        """Met à jour les statistiques avancées WiFi"""
+        if not self.samples:
             return
-
-        # Calculer les statistiques avancées
-        signals = [s.signal_strength for s in self.samples]
-        qualities = [s.quality for s in self.samples]
-
-        # Statistiques de base
-        stats_text = "=== STATISTIQUES AVANCÉES ===\n\n"
-        stats_text += f"📊 Nombre total d'échantillons: {len(self.samples)}\n"
-        stats_text += f"⏱️ Durée d'analyse: {self._get_analysis_duration()}\n\n"
-
-        # Signal
-        stats_text += "📶 ANALYSE DU SIGNAL:\n"
-        stats_text += f"• Moyenne: {np.mean(signals):.1f} dBm\n"
-        stats_text += f"• Médiane: {np.median(signals):.1f} dBm\n"
-        stats_text += f"• Écart-type: {np.std(signals):.1f} dBm\n"
-        stats_text += f"• Min/Max: {min(signals):.1f} / {max(signals):.1f} dBm\n\n"
-
-        # Qualité
-        stats_text += "🎯 ANALYSE DE LA QUALITÉ:\n"
-        stats_text += f"• Moyenne: {np.mean(qualities):.1f}%\n"
-        stats_text += f"• Médiane: {np.median(qualities):.1f}%\n"
-        stats_text += f"• Écart-type: {np.std(qualities):.1f}%\n"
-        stats_text += f"• Min/Max: {min(qualities):.1f} / {max(qualities):.1f}%\n\n"
-
-        # Alertes
-        total_alerts = self._count_total_alerts()
-        alert_rate = (total_alerts / len(self.samples)) * 100 if self.samples else 0
-        stats_text += "🚨 ANALYSE DES ALERTES:\n"
-        stats_text += f"• Total d'alertes: {total_alerts}\n"
-        stats_text += f"• Taux d'alertes: {alert_rate:.1f}%\n"
-
-        # Mettre à jour le texte
-        self.wifi_advanced_stats_text.delete('1.0', tk.END)
-        self.wifi_advanced_stats_text.insert('1.0', stats_text)
-
-    def _get_analysis_duration(self):
-        """Calcule la durée d'analyse"""
-        if len(self.samples) < 2:
-            return "< 1 seconde"
-
-        first_time = self.samples[0].timestamp
-        last_time = self.samples[-1].timestamp
 
         try:
-            if isinstance(first_time, str):
-                first_dt = datetime.strptime(first_time, "%H:%M:%S")
-                last_dt = datetime.strptime(last_time, "%H:%M:%S")
-                duration = last_dt - first_dt
+            # Calculer les statistiques avancées
+            recent_samples = self.samples[-50:]  # 50 derniers échantillons
+
+            # Calculs statistiques
+            signals = [s.signal_strength for s in recent_samples]
+            qualities = [s.quality for s in recent_samples]
+
+            # Statistiques de base
+            avg_signal = sum(signals) / len(signals)
+            min_signal = min(signals)
+            max_signal = max(signals)
+
+            avg_quality = sum(qualities) / len(qualities)
+            min_quality = min(qualities)
+            max_quality = max(qualities)
+
+            # Stabilité (écart-type)
+            signal_variance = sum((s - avg_signal) ** 2 for s in signals) / len(signals)
+            signal_stability = signal_variance ** 0.5
+
+            quality_variance = sum((q - avg_quality) ** 2 for q in qualities) / len(qualities)
+            quality_stability = quality_variance ** 0.5
+
+            # Compter les alertes
+            alert_count = sum(1 for s in recent_samples if self._has_alert(s))
+            alert_percentage = (alert_count / len(recent_samples)) * 100
+
+            # Formater le texte des statistiques avancées
+            stats_text = "=== Statistiques Avancées (50 derniers échantillons) ===\n\n"
+
+            stats_text += "📶 SIGNAL :\n"
+            stats_text += f"  Moyenne: {avg_signal:.1f} dBm\n"
+            stats_text += f"  Min/Max: {min_signal:.1f} / {max_signal:.1f} dBm\n"
+            stats_text += f"  Stabilité: ±{signal_stability:.1f} dBm\n\n"
+
+            stats_text += "📊 QUALITÉ :\n"
+            stats_text += f"  Moyenne: {avg_quality:.1f}%\n"
+            stats_text += f"  Min/Max: {min_quality:.1f} / {max_quality:.1f}%\n"
+            stats_text += f"  Stabilité: ±{quality_stability:.1f}%\n\n"
+
+            stats_text += "🚨 ALERTES :\n"
+            stats_text += f"  Total: {alert_count}/{len(recent_samples)} échantillons\n"
+            stats_text += f"   Pourcentage: {alert_percentage:.1f}%\n\n"
+
+            # Évaluation globale
+            if alert_percentage < 5:
+                evaluation = "🟢 Excellente stabilité"
+            elif alert_percentage < 15:
+                evaluation = "🟡 Stabilité acceptable"
             else:
-                duration = last_time - first_time
+                evaluation = "🔴 Problèmes de stabilité"
 
-            total_seconds = duration.total_seconds()
-            if total_seconds < 60:
-                return f"{total_seconds:.1f} secondes"
-            elif total_seconds < 3600:
-                return f"{total_seconds/60:.1f} minutes"
-            else:
-                return f"{total_seconds/3600:.1f} heures"
-        except:
-            return f"~{len(self.samples)} échantillons"
+            stats_text += f"📋 ÉVALUATION : {evaluation}\n"
+              # Mettre à jour l'affichage
+            self.wifi_advanced_stats_text.delete('1.0', tk.END)
+            self.wifi_advanced_stats_text.insert('1.0', stats_text)
 
-    def _count_total_alerts(self):
-        """Compte le nombre total d'alertes"""
-        total = 0
-        for sample in self.samples:
-            if sample.signal_strength < -85 or sample.quality < 20:
-                total += 1
-            elif self._check_rate_alerts(sample):
-                total += 1
-        return total
-
-    def generate_final_network_report(self):
-        """Génère le rapport final de l'analyse réseau"""
-        if not hasattr(self, 'wifi_final_report_text') or not self.samples:
-            return
-
-        # Calculer les métriques du rapport
-        signals = [s.signal_strength for s in self.samples]
-        qualities = [s.quality for s in self.samples]
-        total_alerts = self._count_total_alerts()
-
-        # Calcul du score global (amélioré)
-        signal_score = self._calculate_signal_score(signals)
-        quality_score = self._calculate_quality_score(qualities)
-        alert_score = self._calculate_alert_score(total_alerts, len(self.samples))
-
-        global_score = int((signal_score + quality_score + alert_score) / 3)
-
-        # Génération du rapport
-        report = f"""🏆 RAPPORT FINAL - QUALITÉ RÉSEAU WIFI
-============================================================
-
-📊 SCORE GLOBAL : {global_score}/100
-{self._get_score_status(global_score)}
-
-📋 INFORMATIONS GÉNÉRALES
-• Durée d'analyse : {self._get_analysis_duration()}
-• Échantillons collectés : {len(self.samples)}
-• Intervalle d'échantillonnage : 1.0 secondes
-
-📶 ANALYSE DU SIGNAL WIFI
-• Signal moyen : {np.mean(signals):.1f} dBm
-• Signal minimum : {min(signals)} dBm
-• Signal maximum : {max(signals)} dBm
-• Variation : {max(signals) - min(signals)} dBm
-{self._get_signal_evaluation(np.mean(signals))}
-
-🎯 ANALYSE DE LA QUALITÉ
-• Qualité moyenne : {np.mean(qualities):.1f}%
-• Qualité minimum : {min(qualities):.0f}%
-• Qualité maximum : {max(qualities):.0f}%
-• Temps avec qualité > 70% : {self._calculate_good_quality_time(qualities):.1f}%
-{self._get_quality_evaluation(np.mean(qualities))}
-
-🚨 ANALYSE DES ALERTES
-• Total d'alertes : {total_alerts}
-• Pourcentage d'alertes : {(total_alerts/len(self.samples)*100):.1f}%
-{self._get_alert_evaluation(total_alerts, len(self.samples))}
-
-💡 RECOMMANDATIONS
-{self._get_recommendations(global_score, np.mean(signals), np.mean(qualities), total_alerts)}
-
-📝 CONCLUSION
-{self._get_conclusion(global_score)}
-
-📅 Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}
-============================================================
-"""
-
-        # Afficher le rapport
-        self.wifi_final_report_text.delete('1.0', tk.END)
-        self.wifi_final_report_text.insert('1.0', report)
-
-    def _calculate_signal_score(self, signals):
-        """Calcule le score du signal (0-100)"""
-        avg_signal = np.mean(signals)
-        if avg_signal >= -60:
-            return 100
-        elif avg_signal >= -70:
-            return 90
-        elif avg_signal >= -80:
-            return 70
-        elif avg_signal >= -85:
-            return 50
-        else:
-            return 30
-
-    def _calculate_quality_score(self, qualities):
-        """Calcule le score de qualité (0-100)"""
-        avg_quality = np.mean(qualities)
-        return min(100, max(0, int(avg_quality)))
-
-    def _calculate_alert_score(self, total_alerts, total_samples):
-        """Calcule le score basé sur les alertes (0-100)"""
-        if total_samples == 0:
-            return 100
-
-        alert_rate = total_alerts / total_samples
-        if alert_rate < 0.05:  # Moins de 5% d'alertes
-            return 100
-        elif alert_rate < 0.15:  # Moins de 15% d'alertes
-            return 80
-        elif alert_rate < 0.30:  # Moins de 30% d'alertes
-            return 60
-        else:
-            return 30
-
-    def _get_score_status(self, score):
-        """Retourne le statut basé sur le score"""
-        if score >= 85:
-            return "✅ EXCELLENT - Aucune action requise"
-        elif score >= 70:
-            return "⚠️ BON - Améliorations mineures possibles"
-        elif score >= 50:
-            return "⚠️ MOYEN - Améliorations possibles"
-        else:
-            return "❌ PROBLÉMATIQUE - Intervention nécessaire"
-
-    def _get_signal_evaluation(self, avg_signal):
-        """Évalue la qualité du signal"""
-        if avg_signal >= -60:
-            return "✅ Signal excellent (-50 à -60 dBm)"
-        elif avg_signal >= -70:
-            return "✅ Signal très bon (-60 à -70 dBm)"
-        elif avg_signal >= -80:
-            return "⚠️ Signal acceptable (-70 à -80 dBm)"
-        else:
-            return "❌ Signal faible (< -80 dBm)"
-
-    def _get_quality_evaluation(self, avg_quality):
-        """Évalue la qualité de connexion"""
-        if avg_quality >= 80:
-            return "✅ Qualité excellente (> 80%)"
-        elif avg_quality >= 60:
-            return "✅ Qualité bonne (60-80%)"
-        elif avg_quality >= 40:
-            return "⚠️ Qualité moyenne (40-60%)"
-        else:
-            return "❌ Qualité faible (< 40%)"
-
-    def _get_alert_evaluation(self, total_alerts, total_samples):
-        """Évalue le niveau d'alertes"""
-        if total_samples == 0:
-            return "✅ Aucune donnée"
-
-        alert_rate = total_alerts / total_samples
-        if alert_rate < 0.05:
-            return "✅ Très peu d'alertes - réseau stable"
-        elif alert_rate < 0.15:
-            return "✅ Peu d'alertes - surveillance recommandée"
-        elif alert_rate < 0.30:
-            return "⚠️ Quelques alertes - surveillance recommandée"
-        else:
-            return "❌ Beaucoup d'alertes - intervention nécessaire"
-
-    def _calculate_good_quality_time(self, qualities):
-        """Calcule le pourcentage de temps avec bonne qualité"""
-        good_quality_count = sum(1 for q in qualities if q > 70)
-        return (good_quality_count / len(qualities)) * 100 if qualities else 0
-
-    def _get_recommendations(self, score, avg_signal, avg_quality, total_alerts):
-        """Génère les recommandations"""
-        if score >= 85:
-            return "✅ Réseau en excellent état - Aucune action requise\n   • Continuer la surveillance périodique\n   • Documenter cette configuration pour référence"
-        elif score >= 70:
-            return "✅ Réseau en bon état - Surveillance recommandée\n   • Vérifier périodiquement les performances\n   • Surveiller les alertes sporadiques"
-        elif score >= 50:
-            return "⚠️ Réseau nécessitant des améliorations\n   • Analyser les causes des alertes\n   • Vérifier la position des points d'accès\n   • Contrôler les interférences"
-        else:
-            return "❌ Réseau nécessitant une intervention urgente\n   • Vérifier la couverture WiFi\n   • Repositionner les points d'accès\n   • Analyser les sources d'interférences\n   • Contacter le support technique"
-
-    def _get_conclusion(self, score):
-        """Génère la conclusion du rapport"""
-        if score >= 85:
-            return "Votre réseau WiFi offre d'excellentes performances. La qualité de service est optimale pour les opérations critiques."
-        elif score >= 70:
-            return "Votre réseau WiFi offre de bonnes performances avec quelques améliorations mineures possibles."
-        elif score >= 50:
-            return "Votre réseau WiFi offre des performances correctes mais pourrait bénéficier de quelques améliorations pour optimiser la stabilité et les performances."
-        else:
-            return "Votre réseau WiFi présente des problèmes significatifs qui nécessitent une attention immédiate pour assurer un service fiable."
-
-    def update_wifi_history_display(self):
-        """Met à jour l'affichage de l'historique WiFi avec les événements récents"""
-        if not hasattr(self, 'wifi_history_text') or not self.samples:
-            return
-
-        # Prendre les 10 derniers échantillons pour l'historique
-        recent_samples = self.samples[-10:] if len(self.samples) >= 10 else self.samples
-
-        # Vider le texte actuel
-        self.wifi_history_text.delete('1.0', tk.END)
-
-        history_text = "=== HISTORIQUE WIFI RÉCENT ===\n\n"
-
-        for i, sample in enumerate(reversed(recent_samples)):
-            timestamp = datetime.now().strftime('%H:%M:%S')
-
-            # Vérifier s'il y a des alertes pour cet échantillon
-            alerts = []
-            if sample.signal_strength < -80:
-                alerts.append(f"Signal faible: {sample.signal_strength} dBm")
-            if sample.quality < 40:
-                alerts.append(f"Qualité faible: {sample.quality}%")
-
-            # Créer l'entrée d'historique
-            status_icon = "⚠️" if alerts else "✅"
-            history_text += f"{status_icon} {timestamp} | Signal: {sample.signal_strength} dBm | Qualité: {sample.quality}%"
-
-            if alerts:
-                history_text += f" | {len(alerts)} alerte(s)\n"
-                for alert in alerts:
-                    history_text += f"    → {alert}\n"
-            else:
-                history_text += " | Réseau OK\n"
-
-            history_text += "\n"
-
-        # Ajouter les statistiques globales
-        if len(self.samples) > 0:
-            avg_signal = sum(s.signal_strength for s in self.samples) / len(self.samples)
-            avg_quality = sum(s.quality for s in self.samples) / len(self.samples)
-
-            history_text += "\n=== RÉSUMÉ GLOBAL ===\n"
-            history_text += f"📊 Échantillons analysés: {len(self.samples)}\n"
-            history_text += f"📶 Signal moyen: {avg_signal:.1f} dBm\n"
-            history_text += f"🎯 Qualité moyenne: {avg_quality:.1f}%\n"
-
-            # État général du réseau
-            if avg_signal > -70 and avg_quality > 60:
-                history_text += "✅ État réseau: EXCELLENT\n"
-            elif avg_signal > -80 and avg_quality > 40:
-                history_text += "🟡 État réseau: CORRECT\n"
-            else:
-                history_text += "🔴 État réseau: PROBLÉMATIQUE\n"
-
-        # Insérer le texte
-        self.wifi_history_text.insert('1.0', history_text)
-
-
-def main():
-    """Point d'entrée principal de l'application"""
-    try:
-        # Configuration du logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler('wifi_analyzer.log'),
-                logging.StreamHandler(sys.stdout)
-            ]
-        )
-
-        logging.info("Démarrage de l'application WiFi Analyzer")
-
-        # Créer la fenêtre principale
-        root = tk.Tk()
-
-        # Créer l'interface utilisateur
-        app = NetworkAnalyzerUI(root)
-        # Configuration de la fermeture propre
-        def on_closing():
-            logging.info("Fermeture de l'application")
-            if app.amr_monitor:
-                app.amr_monitor.stop()
-            try:
-                root.unbind('<Left>')
-                root.unbind('<Right>')
-                root.unbind('<Home>')
-                root.unbind('<End>')
-                root.unbind('<space>')
-            except Exception:
-                pass
-            root.destroy()
-
-        root.protocol("WM_DELETE_WINDOW", on_closing)
-
-        # Lancer la boucle principale
-        logging.info("Interface utilisateur prête")
-        root.mainloop()
-
-    except Exception as e:
-        logging.error(f"Erreur lors du démarrage de l'application: {e}")
-        messagebox.showerror("Erreur", f"Impossible de démarrer l'application:\n{e}")
-        sys.exit(1)
+        except Exception as e:
+            logging.error(f"Erreur dans update_advanced_wifi_stats: {str(e)}")
 
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = NetworkAnalyzerUI(root)
+    root.mainloop()
