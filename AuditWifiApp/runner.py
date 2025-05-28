@@ -825,6 +825,26 @@ class NetworkAnalyzerUI:
 
         self.moxa_results.see('1.0')  # Remonter au début
 
+    def prompt_for_tag(self, mac_address):
+        """Prompt the user to provide a tag for a new MAC address"""
+        # Don't prompt if MAC is invalid or None
+        if not mac_address or mac_address == "Unknown":
+            return
+
+        # Use the simpledialog module to ask for input
+        tag = simpledialog.askstring(
+            "Nouveau point d'accès détecté",
+            f"Saisissez un nom/tag pour le point d'accès {mac_address}:",
+            parent=self.master
+        )
+
+        # If the user provided a tag, save it
+        if tag:
+            self.mac_manager.add_tag(mac_address, tag)
+            return tag
+
+        return None
+
     def update_data(self):
         """Met à jour les données en temps réel"""
         if not self.analyzer.is_collecting:
@@ -1284,8 +1304,7 @@ class NetworkAnalyzerUI:
             self.amr_listbox.delete(index)
             if ip in self.amr_ips:
                 self.amr_ips.remove(ip)
-        if selection:
-            self.save_amr_ips()
+        if selection:            self.save_amr_ips()
 
     def save_amr_ips(self) -> None:
         try:
@@ -1300,117 +1319,384 @@ class NetworkAnalyzerUI:
             messagebox.showinfo("Traceroute", "Sélectionnez une adresse IP")
             return
         ip = self.amr_listbox.get(selection[0])
+
+        # Show a progress message
+        messagebox.showinfo("Traceroute", f"Lancement du traceroute vers {ip}...\nCela peut prendre quelques secondes.")
+
         hops = self._perform_traceroute(ip)
         if hops is None:
-            messagebox.showerror("Traceroute", f"Echec du traceroute vers {ip}")
+            messagebox.showerror("Traceroute", f"Echec du traceroute vers {ip}.\nVérifiez :\n• La connectivité réseau\n• L'adresse IP\n• Les permissions système")
         else:
-            messagebox.showinfo("Traceroute", f"{ip} : {hops} sauts")
+            # Afficher les résultats détaillés dans une nouvelle fenêtre
+            self._show_detailed_traceroute_results(ip, hops)
 
     def _perform_traceroute(self, ip: str) -> Optional[int]:
         try:
-            result = subprocess.run([
-                "traceroute", "-n", ip
-            ], capture_output=True, text=True, check=False, timeout=30)
+            # Use appropriate command based on operating system
+            if os.name == 'nt':  # Windows
+                # Windows uses tracert command
+                result = subprocess.run([
+                    "tracert", "-d", ip
+                ], capture_output=True, text=True, check=False, timeout=30)
+            else:  # Unix-like systems (Linux, macOS)
+                # Unix systems use traceroute command
+                result = subprocess.run([
+                    "traceroute", "-n", ip
+                ], capture_output=True, text=True, check=False, timeout=30)
+
             if result.returncode != 0:
+                logging.error(f"Traceroute command failed with return code {result.returncode}")
                 return None
+
+            # Parse output to count hops and extract detailed information
             hop_lines = [
                 line for line in result.stdout.splitlines()
                 if re.match(r"^\s*\d+\s", line)
             ]
+
+            # Store detailed traceroute information
+            self.last_traceroute_details = {
+                'target_ip': ip,
+                'hop_count': len(hop_lines),
+                'hops': [],
+                'raw_output': result.stdout,
+                'execution_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+            # Parse each hop for detailed information
+            for hop_line in hop_lines:
+                hop_info = self._parse_hop_line(hop_line)
+                if hop_info:
+                    self.last_traceroute_details['hops'].append(hop_info)
+
             return len(hop_lines)
+        except FileNotFoundError as e:
+            logging.error(f"Traceroute command not found: {e}")
+            return None
+        except subprocess.TimeoutExpired:
+            logging.error(f"Traceroute timeout for {ip}")
+            return None
         except Exception as e:
             logging.error(f"Traceroute error: {e}")
             return None
 
-    def start_amr_monitoring(self) -> None:
-        if not self.amr_ips:
-            messagebox.showwarning("Monitoring AMR", "Ajoutez au moins une adresse IP")
+    def _parse_hop_line(self, line: str) -> Optional[dict]:
+        """Parse une ligne de traceroute pour extraire les informations détaillées"""
+        try:
+            if os.name == 'nt':  # Windows tracert format
+                # Format: "  1    <1 ms    <1 ms    <1 ms  192.168.1.1"
+                # ou     "  1     *        *        *     Request timed out."
+                parts = line.strip().split()
+                if len(parts) >= 2:
+                    hop_num = int(parts[0])
+
+                    if "Request timed out" in line or "*" in line:
+                        return {
+                            'hop': hop_num,
+                            'ip': 'timeout',
+                            'times': ['*', '*', '*'],
+                            'avg_time': None,
+                            'status': 'timeout'
+                        }
+
+                    # Chercher l'IP (dernier élément qui ressemble à une IP)
+                    ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+                    ip_matches = re.findall(ip_pattern, line)
+                    ip = ip_matches[-1] if ip_matches else 'unknown'
+
+                    # Extraire les temps de réponse
+                    time_pattern = r'(\d+)\s*ms|<(\d+)\s*ms|\*'
+                    time_matches = re.findall(r'(\d+)\s*ms|<(\d+)\s*ms|\*', line)
+                    times = []
+                    numeric_times = []
+
+                    for match in time_matches:
+                        if match[0]:  # Temps normal
+                            time_val = int(match[0])
+                            times.append(f"{time_val} ms")
+                            numeric_times.append(time_val)
+                        elif match[1]:  # Temps <X ms
+                            time_val = int(match[1])
+                            times.append(f"<{time_val} ms")
+                            numeric_times.append(time_val)
+                        else:  # Timeout *
+                            times.append("*")
+
+                    avg_time = sum(numeric_times) / len(numeric_times) if numeric_times else None
+
+                    return {
+                        'hop': hop_num,
+                        'ip': ip,
+                        'times': times,
+                        'avg_time': avg_time,
+                        'status': 'success' if numeric_times else 'partial_timeout'
+                    }
+            else:  # Unix traceroute format
+                # Format similaire mais peut varier selon les systèmes
+                parts = line.strip().split()
+                if len(parts) >= 2:
+                    hop_num = int(parts[0])
+                    # Implémentation simplifiée pour Unix
+                    return {
+                        'hop': hop_num,
+                        'ip': parts[1] if len(parts) > 1 else 'unknown',
+                        'times': parts[2:] if len(parts) > 2 else [],
+                        'avg_time': None,
+                        'status': 'success'
+                    }
+
+        except (ValueError, IndexError) as e:
+            logging.warning(f"Erreur lors du parsing de la ligne traceroute: {line} - {e}")
+
+        return None
+
+    def _show_detailed_traceroute_results(self, ip: str, hop_count: int):
+        """Affiche les résultats détaillés du traceroute dans une nouvelle fenêtre"""
+        if not hasattr(self, 'last_traceroute_details'):
+            messagebox.showinfo("Traceroute", f"Traceroute vers {ip} réussi\n\nNombre de sauts : {hop_count}")
             return
-        self.amr_monitor = AMRMonitor(self.amr_ips, interval=3)
-        def amr_callback(res):
-            self.master.after(0, self._update_amr_status, res)
-        self.amr_monitor.start(amr_callback)
-        self.amr_start_button.config(state=tk.DISABLED)
-        self.amr_stop_button.config(state=tk.NORMAL)
 
-    def stop_amr_monitoring(self) -> None:
-        if self.amr_monitor:
-            self.amr_monitor.stop()
-            self.amr_monitor = None
-        self.amr_start_button.config(state=tk.NORMAL)
-        self.amr_stop_button.config(state=tk.DISABLED)
+        details = self.last_traceroute_details
 
-    def _update_amr_status(self, results: Dict[str, Dict[str, Optional[int]]]) -> None:
-        lines = []
-        for ip, data in results.items():
-            if data["reachable"]:
-                latency = data["latency"] if data["latency"] is not None else "n/a"
-                lines.append(f"{ip} : ✅ {latency} ms")
+        # Créer une nouvelle fenêtre pour les détails
+        result_window = tk.Toplevel(self.master)
+        result_window.title(f"Traceroute vers {ip}")
+        result_window.geometry("700x500")
+        result_window.resizable(True, True)
+
+        # Frame principal avec padding
+        main_frame = ttk.Frame(result_window, padding=10)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Titre et informations générales
+        title_frame = ttk.Frame(main_frame)
+        title_frame.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Label(title_frame, text=f"Traceroute vers {ip}",
+                 font=('Arial', 14, 'bold')).pack(anchor='w')
+        ttk.Label(title_frame, text=f"Exécuté le: {details['execution_time']}",
+                 font=('Arial', 10)).pack(anchor='w')
+        ttk.Label(title_frame, text=f"Nombre total de sauts: {details['hop_count']}",
+                 font=('Arial', 10, 'bold')).pack(anchor='w')
+
+        # Analyse du chemin réseau
+        analysis_frame = ttk.LabelFrame(main_frame, text="Analyse du chemin réseau", padding=5)
+        analysis_frame.pack(fill=tk.X, pady=(0, 10))
+
+        analysis_text = self._analyze_traceroute_path(details)
+        analysis_label = ttk.Label(analysis_frame, text=analysis_text, font=('Arial', 9))
+        analysis_label.pack(anchor='w', fill=tk.X)
+
+        # Tableau des sauts avec scrollbar
+        table_frame = ttk.LabelFrame(main_frame, text="Détail des sauts", padding=5)
+        table_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        # Créer un tableau avec Treeview
+        columns = ('Saut', 'Adresse IP', 'Temps 1', 'Temps 2', 'Temps 3', 'Moy.', 'Statut')
+        tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=10)
+
+        # Configurer les colonnes
+        tree.heading('Saut', text='#')
+        tree.heading('Adresse IP', text='Adresse IP')
+        tree.heading('Temps 1', text='Temps 1')
+        tree.heading('Temps 2', text='Temps 2')
+        tree.heading('Temps 3', text='Temps 3')
+        tree.heading('Moy.', text='Moyenne')
+        tree.heading('Statut', text='Statut')
+
+        tree.column('Saut', width=50, anchor='center')
+        tree.column('Adresse IP', width=120, anchor='center')
+        tree.column('Temps 1', width=80, anchor='center')
+        tree.column('Temps 2', width=80, anchor='center')
+        tree.column('Temps 3', width=80, anchor='center')
+        tree.column('Moy.', width=80, anchor='center')
+        tree.column('Statut', width=100, anchor='center')
+
+        # Remplir le tableau avec les données
+        for hop in details['hops']:
+            status_display = {
+                'success': '✅ OK',
+                'timeout': '❌ Timeout',
+                'partial_timeout': '⚠️ Partiel'
+            }.get(hop.get('status', 'unknown'), '❓ Inconnu')
+
+            # Préparer les temps d'affichage
+            times = hop.get('times', ['*', '*', '*'])
+            while len(times) < 3:
+                times.append('*')
+
+            avg_display = f"{hop['avg_time']:.1f} ms" if hop.get('avg_time') is not None else '*'
+
+            tree.insert('', tk.END, values=(
+                hop['hop'],
+                hop['ip'],
+                times[0],
+                times[1] if len(times) > 1 else '*',
+                times[2] if len(times) > 2 else '*',
+                avg_display,
+                status_display
+            ))
+
+        # Ajouter scrollbar au tableau
+        tree_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=tree.yview)
+        tree.configure(yscrollcommand=tree_scroll.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Zone de texte brut (repliable)
+        raw_frame = ttk.LabelFrame(main_frame, text="Sortie brute (cliquez pour voir/masquer)", padding=5)
+        raw_frame.pack(fill=tk.X, pady=(0, 10))
+
+        self.raw_text_visible = False
+        raw_text = tk.Text(raw_frame, height=8, wrap=tk.WORD, font=('Courier', 9))
+        raw_scroll = ttk.Scrollbar(raw_frame, command=raw_text.yview)
+        raw_text.configure(yscrollcommand=raw_scroll.set)
+        raw_text.insert('1.0', details['raw_output'])
+        raw_text.config(state=tk.DISABLED)
+
+        def toggle_raw_output():
+            if self.raw_text_visible:
+                raw_text.pack_forget()
+                raw_scroll.pack_forget()
+                self.raw_text_visible = False
             else:
-                lines.append(f"{ip} : ❌")
-        self.amr_status_text.delete("1.0", tk.END)
-        self.amr_status_text.insert("1.0", "\n".join(lines))
+                raw_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+                raw_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+                self.raw_text_visible = True
 
-    def open_mac_tag_manager(self) -> None:
-        """Open a window to manage MAC address tags."""
-        window = tk.Toplevel(self.master)
-        window.title("Gestion des MAC")
-        window.geometry("400x300")
+        raw_frame.bind('<Button-1>', lambda e: toggle_raw_output())
+        ttk.Label(raw_frame, text="(Cliquez ici pour voir/masquer la sortie complète)").pack()
 
-        search_var = tk.StringVar()
-        ttk.Entry(window, textvariable=search_var).pack(fill=tk.X, padx=5, pady=5)
+        # Boutons d'action
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=(10, 0))
 
-        tree = ttk.Treeview(window, columns=("mac", "tag"), show="headings")
-        tree.heading("mac", text="MAC")
-        tree.heading("tag", text="Tag")
-        tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        ttk.Button(button_frame, text="📋 Copier résultats",
+                  command=lambda: self._copy_traceroute_to_clipboard(details)).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(button_frame, text="💾 Sauvegarder",
+                  command=lambda: self._save_traceroute_results(details)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="🔄 Relancer",
+                  command=lambda: [result_window.destroy(), self.traceroute_selected_ip()]).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Fermer",
+                  command=result_window.destroy).pack(side=tk.RIGHT)
 
-        def populate():
-            tree.delete(*tree.get_children())
-            query = search_var.get().lower()
-            for mac, tag in sorted(self.mac_manager.tags.items()):
-                if query in mac.lower() or query in tag.lower():
-                    tree.insert("", tk.END, values=(mac, tag))
+        # Centrer la fenêtre
+        result_window.update_idletasks()
+        x = (result_window.winfo_screenwidth() // 2) - (700 // 2)
+        y = (result_window.winfo_screenheight() // 2) - (500 // 2)
+        result_window.geometry(f"700x500+{x}+{y}")
 
-        populate()
+    def _analyze_traceroute_path(self, details: dict) -> str:
+        """Analyse le chemin traceroute et fournit des informations utiles"""
+        hops = details.get('hops', [])
+        if not hops:
+            return "Aucune donnée à analyser."
 
-        def add_or_edit():
-            mac = simpledialog.askstring("Adresse MAC", "MAC:")
-            if not mac:
-                return
-            if not self.mac_manager.validate_mac(mac):
-                messagebox.showerror("MAC invalide", "Format MAC invalide")
-                return
-            tag = simpledialog.askstring("Tag", "Tag:") or ""
-            self.mac_manager.set_tag(mac, tag)
-            self.mac_manager.save_tags()
-            populate()
+        analysis = []
 
-        def delete_selected():
-            item = tree.selection()
-            if not item:
-                return
-            mac = tree.item(item[0], "values")[0]
-            self.mac_manager.delete_tag(mac)
-            self.mac_manager.save_tags()
-            populate()
+        # Analyser les temps de réponse
+        successful_hops = [hop for hop in hops if hop.get('avg_time') is not None]
+        if successful_hops:
+            avg_times = [hop['avg_time'] for hop in successful_hops]
+            total_time = max(avg_times) if avg_times else 0
 
-        btn_frame = ttk.Frame(window)
-        btn_frame.pack(fill=tk.X, pady=5)
-        ttk.Button(btn_frame, text="Ajouter/Éditer", command=add_or_edit).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Supprimer", command=delete_selected).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Fermer", command=window.destroy).pack(side=tk.RIGHT, padx=5)
+            analysis.append(f"⏱️ Temps total estimé: {total_time:.1f} ms")
 
-        search_var.trace_add("write", lambda *args: populate())
+            # Identifier les sauts lents
+            if avg_times:
+                slow_threshold = sum(avg_times) / len(avg_times) * 2  # 2x la moyenne
+                slow_hops = [hop for hop in successful_hops if hop['avg_time'] > slow_threshold]
+                if slow_hops:
+                    analysis.append(f"🐌 Sauts lents détectés: {len(slow_hops)} (>{slow_threshold:.1f}ms)")
 
-    def prompt_for_tag(self, mac: str) -> None:
-        """Prompt user to tag a newly seen MAC address."""
-        if not self.mac_manager.validate_mac(mac):
-            return
-        tag = simpledialog.askstring("Nouveau point d'accès", f"Tag pour {mac} :")
-        if tag is not None:
-            self.mac_manager.set_tag(mac, tag)
-            self.mac_manager.save_tags()
+        # Analyser les timeouts
+        timeout_hops = [hop for hop in hops if hop.get('status') in ['timeout', 'partial_timeout']]
+        if timeout_hops:
+            analysis.append(f"⚠️ Sauts avec timeouts: {len(timeout_hops)}")
+
+        # Analyser le type de réseau
+        first_hop = hops[0] if hops else None
+        if first_hop and first_hop.get('ip') != 'timeout':
+            ip = first_hop['ip']
+            if ip.startswith('192.168.'):
+                analysis.append("🏠 Réseau local privé (192.168.x.x)")
+            elif ip.startswith('10.'):
+                analysis.append("🏢 Réseau d'entreprise privé (10.x.x.x)")
+            elif ip.startswith('172.'):
+                analysis.append("🏢 Réseau privé (172.x.x.x)")
+            else:
+                analysis.append("🌐 Connexion directe ou réseau public")
+
+        return " | ".join(analysis) if analysis else "Analyse en cours..."
+
+    def _copy_traceroute_to_clipboard(self, details: dict):
+        """Copie les résultats du traceroute dans le presse-papiers"""
+        try:
+            text = f"Traceroute vers {details['target_ip']}\n"
+            text += f"Exécuté le: {details['execution_time']}\n"
+            text += f"Nombre de sauts: {details['hop_count']}\n\n"
+
+            text += "Détail des sauts:\n"
+            text += "Saut | Adresse IP      | Temps 1   | Temps 2   | Temps 3   | Moyenne   | Statut\n"
+            text += "-" * 80 + "\n"
+
+            for hop in details['hops']:
+                times = hop.get('times', ['*', '*', '*'])
+                while len(times) < 3:
+                    times.append('*')
+
+                avg_str = f"{hop['avg_time']:.1f}ms" if hop.get('avg_time') else '*'
+                status = hop.get('status', 'unknown')
+
+                text += f"{hop['hop']:4d} | {hop['ip']:15s} | {times[0]:9s} | {times[1]:9s} | {times[2]:9s} | {avg_str:9s} | {status}\n"
+
+            self.master.clipboard_clear()
+            self.master.clipboard_append(text)
+            messagebox.showinfo("Copié", "Résultats copiés dans le presse-papiers!")
+
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la copie: {str(e)}")
+
+    def _save_traceroute_results(self, details: dict):
+        """Sauvegarde les résultats du traceroute dans un fichier"""
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            default_filename = f"traceroute_{details['target_ip']}_{timestamp}.txt"
+
+            filepath = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Fichiers texte", "*.txt"), ("Tous les fichiers", "*.*")],
+                title="Sauvegarder les résultats du traceroute",
+                initialfile=default_filename
+            )
+
+            if filepath:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"Traceroute vers {details['target_ip']}\n")
+                    f.write(f"Exécuté le: {details['execution_time']}\n")
+                    f.write(f"Nombre de sauts: {details['hop_count']}\n\n")
+
+                    f.write("Analyse:\n")
+                    f.write(self._analyze_traceroute_path(details) + "\n\n")
+
+                    f.write("Détail des sauts:\n")
+                    f.write("=" * 80 + "\n")
+
+                    for hop in details['hops']:
+                        f.write(f"Saut {hop['hop']:2d}: {hop['ip']}\n")
+                        f.write(f"  Temps: {', '.join(hop.get('times', ['*']))}\n")
+                        if hop.get('avg_time'):
+                            f.write(f"  Moyenne: {hop['avg_time']:.1f} ms\n")
+                        f.write(f"  Statut: {hop.get('status', 'unknown')}\n\n")
+
+                    f.write("\nSortie brute du système:\n")
+                    f.write("=" * 80 + "\n")
+                    f.write(details['raw_output'])
+
+                messagebox.showinfo("Sauvegardé", f"Résultats sauvegardés dans:\n{filepath}")
+
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde: {str(e)}")
 
     # === MÉTHODES DE NAVIGATION TEMPORELLE ===
 
@@ -1624,10 +1910,6 @@ class NetworkAnalyzerUI:
             else:
                 start_idx = self.current_view_start
                 end_idx = min(len(samples_snapshot), start_idx + self.current_view_window)
-
-                # S'assurer qu'on a assez d'échantillons à afficher
-                if end_idx - start_idx < self.current_view_window and end_idx == len(samples_snapshot):
-                    start_idx = max(0, end_idx - self.current_view_window)
 
             # Extraire les données à afficher (même vue que l'écran principal)
             display_samples = samples_snapshot[start_idx:end_idx]
@@ -1982,10 +2264,3 @@ class NetworkAnalyzerUI:
             if hasattr(self, 'wifi_advanced_stats_text'):
                 self.wifi_advanced_stats_text.delete('1.0', tk.END)
                 self.wifi_advanced_stats_text.insert('1.0', f"Erreur lors du calcul des statistiques :\n{str(e)}")
-
-    # === FIN DES MÉTHODES UTILITAIRES ===
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = NetworkAnalyzerUI(root)
-    root.mainloop()
