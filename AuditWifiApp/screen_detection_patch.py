@@ -7,37 +7,37 @@ Patch de correction pour la détection d'écran portable
 
 def apply_screen_detection_fix():
     """Applique la correction de détection d'écran portable"""
-    
+
     # Code de la méthode is_portable_screen() à ajouter
     is_portable_screen_method = '''
     def is_portable_screen(self):
         """Détermine si l'écran est un écran portable basé sur la taille physique et le DPI"""
         screen_width = self.master.winfo_screenwidth()
         screen_height = self.master.winfo_screenheight()
-        
+
         try:
             # Calculer la taille physique de l'écran
             dpi = self.master.winfo_fpixels('1i')
             diagonal_pixels = (screen_width**2 + screen_height**2)**0.5
             diagonal_inches = diagonal_pixels / dpi
-            
+
             # Critères pour écran portable :
             # - Écran physique <= 16.5 pouces (laptops 15-16")
             # - OU résolution classique faible
             # - OU DPI élevé (écrans haute densité, souvent portables)
             is_portable = (
-                diagonal_inches <= 16.5 or  
-                screen_width < 1366 or screen_height < 768 or  
-                dpi > 110  
+                diagonal_inches <= 16.5 or
+                screen_width < 1366 or screen_height < 768 or
+                dpi > 110
             )
-            
+
             return is_portable, diagonal_inches, dpi
-            
+
         except Exception:
             # Fallback si la détection DPI échoue
             return screen_width < 1366 or screen_height < 768, None, None
 '''
-    
+
     # Modifications pour setup_style()
     setup_style_fix = '''
         # Utiliser la détection centralisée
@@ -45,19 +45,19 @@ def apply_screen_detection_fix():
         screen_width = self.master.winfo_screenwidth()
         screen_height = self.master.winfo_screenheight()
 '''
-    
+
     # Modifications pour optimize_window_for_screen()
     optimize_window_fix = '''
         # Utiliser la méthode centralisée de détection
         is_small_screen, diagonal_inches, dpi = self.is_portable_screen()
-        
+
         if is_small_screen:
             # Pour les petits écrans (laptops), utiliser 95% de l'écran
             window_width = int(screen_width * 0.95)
             window_height = int(screen_height * 0.90)
             x = (screen_width - window_width) // 2
             y = (screen_height - window_height) // 2
-            
+
             self.master.geometry(f"{window_width}x{window_height}+{x}+{y}")
             if diagonal_inches:
                 print(f"📱 Fenêtre optimisée: {window_width}x{window_height} pour écran portable {diagonal_inches:.1f}″ (DPI:{dpi:.0f})")
@@ -75,13 +75,13 @@ def apply_screen_detection_fix():
                     self.master.geometry("1200x800")
             print(f"🖥️ Fenêtre maximisée pour grand écran")
 '''
-    
+
     # Modifications pour setup_graphs()
     setup_graphs_fix = '''
         # Utiliser la détection centralisée pour cohérence
         is_small_screen, diagonal_inches, dpi = self.is_portable_screen()
 '''
-    
+
     print("📋 PATCH DE CORRECTION - DÉTECTION ÉCRAN PORTABLE")
     print("=" * 60)
     print()
@@ -108,7 +108,7 @@ def apply_screen_detection_fix():
     print("   • runner.py (corrections appliquées)")
     print("   • SCREEN_DETECTION_REPORT.md (documentation)")
     print("   • quick_screen_test.py (test de validation)")
-    
+
     return {
         'method': is_portable_screen_method,
         'setup_style': setup_style_fix,
@@ -119,9 +119,9 @@ def apply_screen_detection_fix():
 def main():
     print("🚀 Application du patch de détection d'écran portable")
     print()
-    
+
     fixes = apply_screen_detection_fix()
-    
+
     print()
     print("📋 INSTRUCTIONS D'APPLICATION:")
     print("   1. Les corrections ont été documentées")

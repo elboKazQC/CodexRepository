@@ -8,8 +8,19 @@ import json
 import requests
 from datetime import datetime
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from pathlib import Path
+
+# Import Retry with proper fallback handling
+try:
+    from urllib3.util.retry import Retry
+    RETRY_AVAILABLE = True
+except ImportError:
+    try:
+        from urllib3.util import Retry
+        RETRY_AVAILABLE = True
+    except ImportError:
+        Retry = None
+        RETRY_AVAILABLE = False
 
 def create_retry_session(
     retries=3,
@@ -19,16 +30,23 @@ def create_retry_session(
 ):
     """Crée une session requests avec retry automatique"""
     session = requests.Session()
-    retry = Retry(
-        total=retries,
-        read=retries,
-        connect=retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=status_forcelist,
-    )
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
+
+    if RETRY_AVAILABLE and Retry is not None:
+        try:
+            retry = Retry(
+                total=retries,
+                read=retries,
+                connect=retries,
+                backoff_factor=backoff_factor,
+                status_forcelist=status_forcelist,
+            )
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+        except Exception:
+            # If retry setup fails, continue with basic session
+            pass
+
     return session
 
 def _log_error(msg: str) -> None:
@@ -44,7 +62,7 @@ def truncate_logs(logs, max_length=8000):
     """Tronque les logs de manière intelligente pour rester dans les limites de l'API"""
     if len(logs) <= max_length:
         return logs
-    
+
     # Garder le début et la fin des logs
     half_length = max_length // 2
     return f"{logs[:half_length]}\n...[LOGS TRONQUÉS]...\n{logs[-half_length:]}"
@@ -60,39 +78,85 @@ def get_api_key():
 
 def analyze_moxa_logs(logs, current_config, custom_instructions: str | None = None):
     """
-    Envoie les logs Moxa et la configuration à OpenAI pour analyse.
-    
+    Envoie les logs Moxa et la configuration à OpenAI pour analyse avec support des instructions personnalisées.
+
     Args:
         logs (str): Les logs Moxa à analyser
         current_config (dict): La configuration actuelle du Moxa
-        
+        custom_instructions (str, optional): Instructions personnalisées prioritaires pour adapter l'analyse
+
     Returns:
-        str: La réponse brute d'OpenAI
+        str: La réponse d'OpenAI adaptée selon les instructions
     """
     if not logs or not logs.strip():  # Vérifier si les logs sont vides
         raise ValueError("Les logs sont vides")
-        
 
     api_key = get_api_key()
 
     # Tronquer les logs si nécessaire
     truncated_logs = truncate_logs(logs)
 
-    extra = f"\n\nInstructions supplémentaires :\n{custom_instructions}" if custom_instructions else ""
+    # Prompt de base avec les données techniques
+    base_prompt = f"""Vous êtes un expert en analyse de logs et configuration réseau WiFi industriel Moxa.
 
-    prompt = f"""Analysez ces logs Moxa et la configuration actuelle.
-Identifiez les problèmes et suggérez des ajustements pour optimiser le roaming et la stabilité.{extra}
-
-Configuration actuelle:
+CONFIGURATION ACTUELLE MOXA:
 {json.dumps(current_config, indent=2)}
 
-Logs à analyser:
+LOGS À ANALYSER:
 {truncated_logs}
 
-Donnez une analyse détaillée avec:
-1. Les problèmes détectés
-2. Les recommandations d'ajustements de configuration
-3. Une explication de l'impact attendu de ces changements"""
+INSTRUCTIONS DE BASE:
+- Analysez les logs en détail
+- Identifiez les problèmes de performance, stabilité, sécurité
+- Proposez des solutions concrètes d'ajustement de configuration
+- Donnez un score global /100 si pertinent
+- Soyez précis et actionnable"""
+
+    # Adapter le prompt selon les instructions personnalisées
+    if custom_instructions and custom_instructions.strip():
+        # Nettoyer les instructions par défaut si présentes
+        custom_clean = custom_instructions.replace("Exemple: Concentrez-vous sur les problèmes de latence et donnez des solutions prioritaires en format liste numérotée.", "").strip()
+
+        if custom_clean:
+            enhanced_prompt = base_prompt + f"""
+
+INSTRUCTIONS PERSONNALISÉES PRIORITAIRES:
+{custom_clean}
+
+IMPORTANT: Suivez en priorité les instructions personnalisées ci-dessus.
+Vous avez la liberté complète pour:
+- Adapter votre style de réponse selon la demande
+- Vous concentrer sur des aspects spécifiques demandés
+- Utiliser le format de sortie demandé (bullet points, tableaux, listes, etc.)
+- Ajouter des analyses non-standard si demandé
+- Ignorer certains critères standard si les instructions le précisent
+- Ajuster le niveau de détail selon les besoins
+
+Répondez selon ces instructions personnalisées tout en gardant votre expertise technique Moxa."""
+        else:
+            enhanced_prompt = base_prompt + """
+
+FORMAT DE RÉPONSE STANDARD:
+1. Score global (/100)
+2. Problèmes identifiés avec priorités
+3. Recommandations d'ajustements de configuration
+4. Impact attendu des changements
+5. Conclusion et prochaines étapes
+
+Soyez détaillé et professionnel."""
+    else:
+        enhanced_prompt = base_prompt + """
+
+FORMAT DE RÉPONSE STANDARD:
+1. Score global (/100)
+2. Problèmes identifiés avec priorités
+3. Recommandations d'ajustements de configuration
+4. Impact attendu des changements
+5. Conclusion et prochaines étapes
+
+Soyez détaillé et professionnel."""
+
+    prompt = enhanced_prompt
 
     session = create_retry_session()
 
@@ -102,11 +166,19 @@ Donnez une analyse détaillée avec:
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
-            },
-            json={
+            },            json={
                 "model": "gpt-4",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.2,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Vous êtes un expert en réseaux WiFi industriels Moxa. Vous pouvez adapter votre analyse selon les besoins spécifiques de l'utilisateur et suivre leurs instructions personnalisées avec flexibilité."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "temperature": 0.7,  # Un peu plus de créativité pour s'adapter aux instructions personnalisées
                 "max_tokens": 2000
             },
             timeout=60
