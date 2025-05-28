@@ -20,6 +20,8 @@ import matplotlib.dates as mdates
 import numpy as np
 from typing import List, Optional, Dict
 import os
+import subprocess
+import re
 from dotenv import load_dotenv
 
 # Charger automatiquement les variables d'environnement depuis un fichier .env
@@ -81,11 +83,23 @@ class NetworkAnalyzerUI:
                 pass
         self.current_config = self.config_manager.get_config()
 
+        # Fichier pour la persistance des IPs AMR
+        self.amr_ips_file = os.path.join(self.config_dir, "amr_ips.json")
+        if os.path.exists(self.amr_ips_file):
+            try:
+                with open(self.amr_ips_file, "r", encoding="utf-8") as f:
+                    self.amr_ips = json.load(f)
+            except Exception:
+                self.amr_ips = []
+
         # Configuration du style
         self.setup_style()
 
         # Création de l'interface
         self.create_interface()
+        # Charger les IPs enregistrées
+        for ip in self.amr_ips:
+            self.amr_listbox.insert(tk.END, ip)
 
         # Configuration des graphiques
         self.setup_graphs()
@@ -404,6 +418,7 @@ class NetworkAnalyzerUI:
         self.amr_ip_var = tk.StringVar()
         ttk.Entry(amr_control, textvariable=self.amr_ip_var).pack(fill=tk.X, pady=2)
         ttk.Button(amr_control, text="Ajouter", command=self.add_amr_ip).pack(fill=tk.X, pady=2)
+        ttk.Button(amr_control, text="Supprimer", command=self.remove_amr_ip).pack(fill=tk.X, pady=2)
 
         self.amr_listbox = tk.Listbox(amr_control, height=6)
         self.amr_listbox.pack(fill=tk.BOTH, expand=True, pady=5)
@@ -412,6 +427,7 @@ class NetworkAnalyzerUI:
         self.amr_start_button.pack(fill=tk.X, pady=2)
         self.amr_stop_button = ttk.Button(amr_control, text="⏹ Arrêter", command=self.stop_amr_monitoring, state=tk.DISABLED)
         self.amr_stop_button.pack(fill=tk.X, pady=2)
+        ttk.Button(amr_control, text="Traceroute", command=self.traceroute_selected_ip).pack(fill=tk.X, pady=2)
 
         status_frame = ttk.LabelFrame(self.amr_frame, text="Statut", padding=10)
         status_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -1236,7 +1252,53 @@ class NetworkAnalyzerUI:
         if ip and ip not in self.amr_ips:
             self.amr_ips.append(ip)
             self.amr_listbox.insert(tk.END, ip)
+            self.save_amr_ips()
         self.amr_ip_var.set("")
+
+    def remove_amr_ip(self) -> None:
+        selection = self.amr_listbox.curselection()
+        for index in reversed(selection):
+            ip = self.amr_listbox.get(index)
+            self.amr_listbox.delete(index)
+            if ip in self.amr_ips:
+                self.amr_ips.remove(ip)
+        if selection:
+            self.save_amr_ips()
+
+    def save_amr_ips(self) -> None:
+        try:
+            with open(self.amr_ips_file, "w", encoding="utf-8") as f:
+                json.dump(self.amr_ips, f, indent=2)
+        except Exception as e:
+            logging.error(f"Erreur lors de la sauvegarde des IPs AMR: {e}")
+
+    def traceroute_selected_ip(self) -> None:
+        selection = self.amr_listbox.curselection()
+        if not selection:
+            messagebox.showinfo("Traceroute", "Sélectionnez une adresse IP")
+            return
+        ip = self.amr_listbox.get(selection[0])
+        hops = self._perform_traceroute(ip)
+        if hops is None:
+            messagebox.showerror("Traceroute", f"Echec du traceroute vers {ip}")
+        else:
+            messagebox.showinfo("Traceroute", f"{ip} : {hops} sauts")
+
+    def _perform_traceroute(self, ip: str) -> Optional[int]:
+        try:
+            result = subprocess.run([
+                "traceroute", "-n", ip
+            ], capture_output=True, text=True, check=False, timeout=30)
+            if result.returncode != 0:
+                return None
+            hop_lines = [
+                line for line in result.stdout.splitlines()
+                if re.match(r"^\s*\d+\s", line)
+            ]
+            return len(hop_lines)
+        except Exception as e:
+            logging.error(f"Traceroute error: {e}")
+            return None
 
     def start_amr_monitoring(self) -> None:
         if not self.amr_ips:
