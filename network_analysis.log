@@ -64,3 +64,75 @@
 2025-05-29 12:05:52,514 - NetworkAnalyzer - INFO - Analyse rÃ©seau arrÃªtÃ©e
 2025-05-29 12:07:39,571 - NetworkAnalyzer - INFO - Analyse rÃ©seau dÃ©marrÃ©e
 2025-05-29 12:09:41,306 - NetworkAnalyzer - INFO - Analyse rÃ©seau arrÃªtÃ©e
+2025-05-29 12:43:51,208 - INFO - Démarrage de la collecte WiFi
+2025-05-29 12:43:51,334 - INFO - Cible de ping utilisée: 10.136.136.1
+2025-05-29 12:43:51,335 - NetworkAnalyzer - INFO - Analyse rÃ©seau dÃ©marrÃ©e
+2025-05-29 12:43:51,335 - INFO - Analyse réseau démarrée
+2025-05-29 12:43:52,123 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:43:53,773 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:43:55,396 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:43:57,041 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:43:58,668 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:00,329 - DEBUG - Échantillon collecté: Noovelia - -54dBm
+2025-05-29 12:44:01,963 - DEBUG - Échantillon collecté: Noovelia - -54dBm
+2025-05-29 12:44:03,651 - DEBUG - Échantillon collecté: Noovelia - -54dBm
+2025-05-29 12:44:05,273 - DEBUG - Échantillon collecté: Noovelia - -60dBm
+2025-05-29 12:44:06,932 - DEBUG - 10 échantillons collectés
+2025-05-29 12:44:06,932 - DEBUG - Échantillon collecté: Noovelia - -60dBm
+2025-05-29 12:44:08,578 - DEBUG - Échantillon collecté: Noovelia - -60dBm
+2025-05-29 12:44:10,249 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:11,906 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:13,548 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:15,180 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:44:16,801 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:44:18,427 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:44:20,060 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:21,684 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:23,353 - DEBUG - 20 échantillons collectés
+2025-05-29 12:44:23,353 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:24,990 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:26,652 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:28,284 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:29,928 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:44:31,566 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:44:33,193 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:44:34,822 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:44:36,462 - DEBUG - Échantillon collecté: Noovelia - -63dBm
+2025-05-29 12:44:38,091 - DEBUG - Échantillon collecté: Noovelia - -63dBm
+2025-05-29 12:44:39,740 - DEBUG - 30 échantillons collectés
+2025-05-29 12:44:39,740 - DEBUG - Échantillon collecté: Noovelia - -63dBm
+2025-05-29 12:44:41,380 - DEBUG - Échantillon collecté: Noovelia - -63dBm
+2025-05-29 12:44:43,007 - DEBUG - Échantillon collecté: Noovelia - -63dBm
+2025-05-29 12:44:44,612 - DEBUG - Échantillon collecté: Noovelia - -63dBm
+2025-05-29 12:44:46,273 - DEBUG - Échantillon collecté: Noovelia - -62dBm
+2025-05-29 12:44:47,969 - DEBUG - Échantillon collecté: Noovelia - -62dBm
+2025-05-29 12:44:49,645 - DEBUG - Échantillon collecté: Noovelia - -62dBm
+2025-05-29 12:44:51,300 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:44:52,945 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:44:54,587 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:44:56,221 - DEBUG - 40 échantillons collectés
+2025-05-29 12:44:56,221 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:44:57,861 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:44:59,538 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:01,227 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:02,872 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:04,511 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:06,207 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:07,894 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:09,557 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:11,258 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:12,924 - DEBUG - 50 échantillons collectés
+2025-05-29 12:45:12,924 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:14,576 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:16,232 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:17,883 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:19,516 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:21,154 - DEBUG - Échantillon collecté: Noovelia - -56dBm
+2025-05-29 12:45:22,825 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:45:24,445 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:45:26,124 - DEBUG - Échantillon collecté: Noovelia - -57dBm
+2025-05-29 12:45:27,780 - DEBUG - Échantillon collecté: Noovelia - -59dBm
+2025-05-29 12:45:27,783 - INFO - Arrêt de la collecte WiFi
+2025-05-29 12:45:27,783 - NetworkAnalyzer - INFO - Analyse rÃ©seau arrÃªtÃ©e
+2025-05-29 12:45:27,783 - INFO - Analyse réseau arrêtée
+2025-05-29 12:45:27,788 - INFO - Rapport final généré avec succès
