@@ -1353,7 +1353,7 @@ class NetworkAnalyzerUI:
         self.context_label.config(text=f"📈 Meilleur signal: {max(signals)} dBm {peak_time}")
 
     def go_to_signal_low(self):
-        """Va au signal le plus faible"""
+        """Va au signal le plus faible et affiche le point d'accès associé"""
         if not self.samples:
             self.context_label.config(text="❌ Aucune donnée disponible")
             return
@@ -1367,7 +1367,18 @@ class NetworkAnalyzerUI:
         self.current_view_window = 60
         self.update_display()
         low_time = self._get_relative_time(low_idx)
-        self.context_label.config(text=f"📉 Signal le plus faible: {min(signals)} dBm {low_time}")
+
+        # Informations sur le point d'accès associé
+        sample = self.samples[low_idx]
+        ap_info = ""
+        if getattr(sample, "bssid", None):
+            ap_info = f" - AP: {sample.bssid}"
+            if getattr(sample, "ssid", None):
+                ap_info += f" ({sample.ssid})"
+
+        self.context_label.config(
+            text=f"📉 Signal le plus faible: {min(signals)} dBm {low_time}{ap_info}"
+        )
 
     def change_view_mode(self):
         """Change le mode de visualisation"""
