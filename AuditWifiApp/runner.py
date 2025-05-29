@@ -2553,33 +2553,33 @@ def main():
                 logging.StreamHandler()
             ]
         )
-        
+
         # Créer la fenêtre principale
         root = tk.Tk()
-        
+
         # Créer l'application
         app = NetworkAnalyzerUI(root)
-        
+
         # Démarrer la boucle principale
         print("🚀 Démarrage de l'Analyseur Réseau WiFi & Moxa...")
         print("📊 Interface graphique chargée avec succès")
-        
+
         root.mainloop()
-        
+
     except Exception as e:
         error_msg = f"Erreur lors du démarrage de l'application: {str(e)}"
         print(f"❌ {error_msg}")
         logging.error(error_msg)
-        
+
         # Afficher une boîte de dialogue d'erreur si possible
         try:
             import tkinter.messagebox as msgbox
             msgbox.showerror("Erreur de démarrage", error_msg)
         except:
             pass
-        
+
         return 1
-    
+
     return 0
 
 
