@@ -23,13 +23,25 @@ class WifiSample:
     jitter: float = 0.0
 
     @classmethod
-    def from_powershell_data(cls, data: Dict, prev_latency: Optional[float] = None) -> 'WifiSample':
-        """Crée un échantillon à partir des données PowerShell"""
-        # Convertit le pourcentage en valeur numérique
+    def from_powershell_data(
+        cls, data: Dict, prev_latency: Optional[float] = None
+    ) -> 'WifiSample':
+        """Crée un échantillon à partir des données PowerShell."""
+
         signal_str = data.get('SignalStrength', '0%').replace('%', '')
         quality = int(signal_str) if signal_str.isdigit() else 0
 
-        latency = float(data.get('PingLatency', -1))
+        def _parse_latency(value) -> float:
+            """Interpréte la latence renvoyée par PowerShell."""
+            try:
+                if isinstance(value, str):
+                    clean = value.strip().lower().replace('ms', '').replace('<', '')
+                    return float(clean)
+                return float(value)
+            except (ValueError, TypeError):
+                return -1.0
+
+        latency = _parse_latency(data.get('PingLatency', -1))
         jitter = 0.0
         if prev_latency is not None and latency >= 0 and prev_latency >= 0:
             jitter = abs(latency - prev_latency)

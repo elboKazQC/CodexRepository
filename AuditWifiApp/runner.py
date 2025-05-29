@@ -260,7 +260,6 @@ class NetworkAnalyzerUI:
 
         # Zone de statistiques - Compacte
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
-        stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=(5, 5))
 
         # Zone de statistiques avec hauteur augmentée pour éviter le scroll
