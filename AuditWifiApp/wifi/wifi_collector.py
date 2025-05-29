@@ -135,6 +135,24 @@ class WifiCollector:
         try:
             if platform.system().lower().startswith('win'):
                 cmd = ["ping", "-n", "1", "-w", "2000", target]
+
+            else:
+                cmd = ["ping", "-c", "1", "-W", "2", target]
+
+            output = subprocess.check_output(
+                cmd, text=True, encoding='latin1', stderr=subprocess.DEVNULL
+            )
+
+            patterns = [
+                r"temps[<=>]\s*([0-9]+[,.]?[0-9]*) ?ms",
+                r"time[<=>]?\s*([0-9]+[,.]?[0-9]*) ?ms",
+                r"Average = ([0-9]+[,.]?[0-9]*)",
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, output)
+                if match:
+                    return float(match.group(1).replace(',', '.'))
+
                 regex = r"temps[<=](\d+)ms"
             else:
                 cmd = ["ping", "-c", "1", "-W", "2", target]
@@ -144,6 +162,7 @@ class WifiCollector:
             match = re.search(regex, output)
             if match:
                 return float(match.group(1))
+
         except Exception as e:
             self.logger.debug(f"Ping failed: {e}")
         return -1.0
