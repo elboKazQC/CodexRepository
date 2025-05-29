@@ -23,6 +23,10 @@ from typing import List, Optional, Dict
 import os
 import subprocess
 import re
+
+# Seuils de jitter en millisecondes
+JITTER_WARNING_MS = 30
+JITTER_CRITICAL_MS = 50
 from dotenv import load_dotenv
 
 # Charger automatiquement les variables d'environnement depuis un fichier .env
@@ -572,11 +576,11 @@ class NetworkAnalyzerUI:
 
         # === GRAPHIQUES ===
         # Figure principale
-        self.fig = Figure(figsize=(10, 6))
-        self.fig.subplots_adjust(hspace=0.3)
+        self.fig = Figure(figsize=(10, 8))
+        self.fig.subplots_adjust(hspace=0.4)
 
         # Graphique du signal avec marqueurs d'alertes
-        self.ax1 = self.fig.add_subplot(211)
+        self.ax1 = self.fig.add_subplot(311)
         self.ax1.set_title("Force du signal WiFi")
         self.ax1.set_ylabel("Signal (dBm)")
         self.ax1.grid(True, alpha=0.3)
@@ -585,7 +589,7 @@ class NetworkAnalyzerUI:
         self.ax1.legend()
 
         # Graphique de la qualité avec marqueurs d'alertes
-        self.ax2 = self.fig.add_subplot(212)
+        self.ax2 = self.fig.add_subplot(312)
         self.ax2.set_title("Qualité de la connexion")
         self.ax2.set_ylabel("Qualité (%)")
         self.ax2.set_xlabel("Temps (échantillons)")
@@ -593,6 +597,16 @@ class NetworkAnalyzerUI:
         self.quality_line, = self.ax2.plot([], [], 'g-', linewidth=2, label="Qualité")
         self.ax2.set_ylim(0, 100)
         self.ax2.legend()
+
+        # Graphique du jitter
+        self.ax3 = self.fig.add_subplot(313)
+        self.ax3.set_title("Jitter de la latence")
+        self.ax3.set_ylabel("Jitter (ms)")
+        self.ax3.set_xlabel("Temps (échantillons)")
+        self.ax3.grid(True, alpha=0.3)
+        self.jitter_line, = self.ax3.plot([], [], 'm-', linewidth=2, label="Jitter")
+        self.ax3.set_ylim(0, 100)
+        self.ax3.legend()
 
         # Canvas Matplotlib
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_main_frame)
@@ -896,7 +910,15 @@ class NetworkAnalyzerUI:
         if sample.quality < 20:
             alerts.append(f"🔴 Qualité CRITIQUE : {sample.quality}%")
         elif sample.quality < 40:
-            alerts.append(f"⚠️ Qualité faible : {sample.quality}%")        # Débits - Seuils réalistes et intelligents
+            alerts.append(f"⚠️ Qualité faible : {sample.quality}%")
+
+        # Jitter
+        if sample.jitter >= JITTER_CRITICAL_MS:
+            alerts.append(f"🔴 Jitter CRITIQUE : {sample.jitter:.1f} ms")
+        elif sample.jitter >= JITTER_WARNING_MS:
+            alerts.append(f"⚠️ Jitter élevé : {sample.jitter:.1f} ms")
+
+        # Débits - Seuils réalistes et intelligents
         try:
             tx_rate = int(sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
             rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])
@@ -944,7 +966,9 @@ class NetworkAnalyzerUI:
             'ssid': sample.ssid if hasattr(sample, 'ssid') else "N/A",
             'channel': sample.channel if hasattr(sample, 'channel') else None,
             'band': sample.band if hasattr(sample, 'band') else None,
-            'alerts': alerts.copy() if alerts else []
+            'alerts': alerts.copy() if alerts else [],
+            'latency': sample.ping_latency,
+            'jitter': sample.jitter
         }
 
         self.wifi_history_entries.append(entry)
@@ -1131,6 +1155,7 @@ class NetworkAnalyzerUI:
 
             signals = [s.signal_strength for s in display_samples]
             qualities = [s.quality for s in display_samples]
+            jitters = [s.jitter for s in display_samples]
             x_data = range(len(signals))
 
             # Vérifier que nous avons des données valides
@@ -1141,11 +1166,15 @@ class NetworkAnalyzerUI:
             try:
                 self.signal_line.set_data(x_data, signals)
                 self.quality_line.set_data(x_data, qualities)
+                self.jitter_line.set_data(x_data, jitters)
 
                 # Mise à jour des axes avec valeurs valides
                 if len(signals) > 0:
                     self.ax1.set_xlim(0, max(1, len(signals)))
                     self.ax2.set_xlim(0, max(1, len(qualities)))
+                    self.ax3.set_xlim(0, max(1, len(jitters)))
+                    if jitters:
+                        self.ax3.set_ylim(0, max(jitters) + 5)
 
                 # Marquer les alertes sur les graphiques
                 self.mark_alerts_on_graphs()
@@ -1222,10 +1251,11 @@ class NetworkAnalyzerUI:
                 elif self._check_rate_alerts(sample):
                     has_alert = True
                 if has_alert:
-                    # Marquer sur les deux graphiques
+                    # Marquer sur les trois graphiques
                     marker1 = self.ax1.axvline(x=i, color='red', alpha=0.5, linewidth=1)
                     marker2 = self.ax2.axvline(x=i, color='red', alpha=0.5, linewidth=1)
-                    self.alert_markers.extend([marker1, marker2])
+                    marker3 = self.ax3.axvline(x=i, color='red', alpha=0.5, linewidth=1)
+                    self.alert_markers.extend([marker1, marker2, marker3])
         except Exception as e:
             logging.error(f"Erreur dans mark_alerts_on_graphs: {str(e)}")
             # Éviter le crash en cas d'erreur
@@ -1237,11 +1267,16 @@ class NetworkAnalyzerUI:
         current_sample = self.samples[-1]  # Dernier échantillon
         signal_values = [s.signal_strength for s in self.samples[-100:]]  # 100 derniers échantillons (augmenté de 20 à 100)
         quality_values = [s.quality for s in self.samples[-100:]]
+        latency_values = [s.ping_latency for s in self.samples[-100:] if s.ping_latency >= 0]
+        jitter_values = [s.jitter for s in self.samples[-100:]]
 
         # Stats WiFi actuelles
         stats_text = "=== État Actuel ===\n"
         stats_text += f"Signal : {current_sample.signal_strength} dBm\n"
         stats_text += f"Qualité: {current_sample.quality}%\n"
+        if current_sample.ping_latency >= 0:
+            stats_text += f"Latence: {current_sample.ping_latency} ms\n"
+            stats_text += f"Jitter: {current_sample.jitter:.1f} ms\n"
 
         # Stats moyennes (100 derniers échantillons)
         avg_signal = sum(signal_values) / len(signal_values)
@@ -1249,6 +1284,11 @@ class NetworkAnalyzerUI:
         stats_text += "\n=== Moyenne (100 éch.) ===\n"
         stats_text += f"Signal : {avg_signal:.1f} dBm\n"
         stats_text += f"Qualité: {avg_quality:.1f}%\n"
+        if latency_values:
+            avg_latency = sum(latency_values) / len(latency_values)
+            avg_jitter = sum(jitter_values) / len(jitter_values) if jitter_values else 0
+            stats_text += f"Latence: {avg_latency:.1f} ms\n"
+            stats_text += f"Jitter: {avg_jitter:.1f} ms\n"
 
         # Débits actuels
         try:
@@ -1934,7 +1974,7 @@ class NetworkAnalyzerUI:
         fs_fig.subplots_adjust(hspace=0.4, left=0.1, right=0.95, top=0.95, bottom=0.15)
 
         # Signal subplot
-        self.fs_ax1 = fs_fig.add_subplot(211)
+        self.fs_ax1 = fs_fig.add_subplot(311)
         self.fs_ax1.set_title("Force du signal WiFi", fontsize=12)
         self.fs_ax1.set_ylabel("Signal (dBm)")
         self.fs_ax1.grid(True, alpha=0.3)
@@ -1943,7 +1983,7 @@ class NetworkAnalyzerUI:
         self.fs_ax1.legend()
 
         # Quality subplot
-        self.fs_ax2 = fs_fig.add_subplot(212)
+        self.fs_ax2 = fs_fig.add_subplot(312)
         self.fs_ax2.set_title("Qualité de la connexion", fontsize=12)
         self.fs_ax2.set_ylabel("Qualité (%)")
         self.fs_ax2.set_xlabel("Temps (échantillons)")
@@ -1952,6 +1992,16 @@ class NetworkAnalyzerUI:
         # Garder les limites fixes pour la qualité (0-100%)
         self.fs_ax2.set_ylim(0, 100)
         self.fs_ax2.legend()
+
+        # Jitter subplot
+        self.fs_ax3 = fs_fig.add_subplot(313)
+        self.fs_ax3.set_title("Jitter de la latence", fontsize=12)
+        self.fs_ax3.set_ylabel("Jitter (ms)")
+        self.fs_ax3.set_xlabel("Temps (échantillons)")
+        self.fs_ax3.grid(True, alpha=0.3)
+        self.fs_jitter_line, = self.fs_ax3.plot([], [], 'm-', linewidth=2, label="Jitter")
+        self.fs_ax3.set_ylim(0, 100)
+        self.fs_ax3.legend()
 
         # Canvas avec gestion des barres de défilement pour petits écrans
         canvas_frame = ttk.Frame(self.fullscreen_window)
@@ -2013,6 +2063,7 @@ class NetworkAnalyzerUI:
 
             signals = [s.signal_strength for s in display_samples]
             qualities = [s.quality for s in display_samples]
+            jitters = [s.jitter for s in display_samples]
             x_data = range(len(signals))
 
             # Mettre à jour les données
@@ -2036,6 +2087,14 @@ class NetworkAnalyzerUI:
                 # Ajuster l'axe X pour la qualité aussi
                 if hasattr(self, 'fs_ax2') and len(x_data) > 0:
                     self.fs_ax2.set_xlim(0, max(x_data) if x_data else 1)
+
+            if hasattr(self, 'fs_jitter_line') and self.fs_jitter_line is not None:
+                self.fs_jitter_line.set_data(x_data, jitters)
+
+                if hasattr(self, 'fs_ax3') and len(x_data) > 0:
+                    self.fs_ax3.set_xlim(0, max(x_data) if x_data else 1)
+                    if jitters:
+                        self.fs_ax3.set_ylim(0, max(jitters) + 5)
 
             # Redessiner
             if hasattr(self, 'fs_canvas') and self.fs_canvas is not None:
@@ -2331,7 +2390,13 @@ class NetworkAnalyzerUI:
 
             # Calculer les moyennes
             avg_signal = sum(entry['signal'] for entry in recent_entries) / len(recent_entries)
-            avg_quality = sum(entry['quality'] for entry in recent_entries) / len(recent_entries)            # Calculer min/max
+            avg_quality = sum(entry['quality'] for entry in recent_entries) / len(recent_entries)
+            latencies = [entry['latency'] for entry in recent_entries if entry.get('latency', -1) >= 0]
+            jitters = [entry['jitter'] for entry in recent_entries if 'jitter' in entry]
+            avg_latency = sum(latencies) / len(latencies) if latencies else 0
+            avg_jitter = sum(jitters) / len(jitters) if jitters else 0
+
+            # Calculer min/max
             signals = [entry['signal'] for entry in recent_entries]
             qualities = [entry['quality'] for entry in recent_entries]
             min_signal, max_signal = min(signals), max(signals)
@@ -2382,6 +2447,10 @@ class NetworkAnalyzerUI:
             stats_text += f"• Moyenne : {avg_quality:.1f}%\n"
             stats_text += f"• Min/Max : {min_quality:.1f} / {max_quality:.1f}%\n"
             stats_text += f"• Variation : {max_quality - min_quality:.1f}%\n\n"
+
+            stats_text += "⏱ LATENCE :\n"
+            stats_text += f"• Moyenne : {avg_latency:.1f} ms\n"
+            stats_text += f"• Jitter moyen : {avg_jitter:.1f} ms\n\n"
 
             stats_text += "🚨 ALERTES :\n"
             stats_text += f"• Pourcentage d'échantillons avec alertes : {alert_percentage:.1f}%\n"

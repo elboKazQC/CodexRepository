@@ -32,6 +32,8 @@ WIFI_THRESHOLDS = {
     'PACKET_LOSS_CRITICAL': 20,  # %, seuil critique pour perte de paquets
     'LATENCY_WARNING': 100,  # ms, seuil d'avertissement pour la latence
     'LATENCY_CRITICAL': 200,  # ms, seuil critique pour la latence
+    'JITTER_WARNING': 30,  # ms, seuil d'avertissement pour le jitter
+    'JITTER_CRITICAL': 50,  # ms, seuil critique pour le jitter
 }
 
 def _percent_to_dbm(percent: int) -> int:
@@ -64,6 +66,7 @@ class WifiDataCollector:
         self._setup_logging()
         self.ps_collector = PowerShellWiFiCollector()
         self.records: List[WifiRecord] = []
+        self.last_latency: Optional[float] = None
 
     def _setup_logging(self):
         """Configure le système de logging"""
@@ -181,10 +184,16 @@ class WifiDataCollector:
                 # Créer le ping measurement si disponible
                 ping_measurement = None
                 if int(wifi_data.get('PingLatency', -1)) >= 0:
+                    latency = int(wifi_data['PingLatency'])
+                    jitter = 0.0
+                    if self.last_latency is not None and self.last_latency >= 0:
+                        jitter = abs(latency - self.last_latency)
                     ping_measurement = PingMeasurement(
-                        latency=int(wifi_data['PingLatency']),
+                        latency=latency,
+                        jitter=jitter,
                         packet_loss=int(wifi_data.get('PacketLoss', 0))
                     )
+                    self.last_latency = latency
 
                 # Créer le record
                 record = WifiRecord(
@@ -221,12 +230,18 @@ class WifiDataCollector:
         if not ping_meas:
             return NetworkStatus.WARNING
 
-        if (ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_CRITICAL'] or
-            ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_CRITICAL']):
+        if (
+            ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_CRITICAL']
+            or ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_CRITICAL']
+            or ping_meas.jitter >= WIFI_THRESHOLDS['JITTER_CRITICAL']
+        ):
             return NetworkStatus.CRITICAL
 
-        if (ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_WARNING'] or
-            ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_WARNING']):
+        if (
+            ping_meas.lost_percent >= WIFI_THRESHOLDS['PACKET_LOSS_WARNING']
+            or ping_meas.latency >= WIFI_THRESHOLDS['LATENCY_WARNING']
+            or ping_meas.jitter >= WIFI_THRESHOLDS['JITTER_WARNING']
+        ):
             return NetworkStatus.WARNING
 
         return NetworkStatus.GOOD
@@ -271,10 +286,15 @@ class WifiDataCollector:
                         time_match = re.search(r"temps[<=](\d+)ms", ping)
                         if time_match:
                             latency = int(time_match.group(1))
+                            jitter = 0.0
+                            if self.last_latency is not None and self.last_latency >= 0:
+                                jitter = abs(latency - self.last_latency)
                             ping_measurement = PingMeasurement(
                                 latency=latency,
+                                jitter=jitter,
                                 packet_loss=0 if latency > 0 else 100
                             )
+                            self.last_latency = latency
                 except Exception as e:
                     self.logger.warning(f"Erreur lors du ping: {str(e)}")
 
