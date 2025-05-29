@@ -941,6 +941,9 @@ class NetworkAnalyzerUI:
             'signal': sample.signal_strength,
             'quality': sample.quality,
             'bssid': sample.bssid if hasattr(sample, 'bssid') else "Unknown",
+            'ssid': sample.ssid if hasattr(sample, 'ssid') else "N/A",
+            'channel': sample.channel if hasattr(sample, 'channel') else None,
+            'band': sample.band if hasattr(sample, 'band') else None,
             'alerts': alerts.copy() if alerts else []
         }
 
@@ -965,6 +968,12 @@ class NetworkAnalyzerUI:
                 history_text += f"[{entry['timestamp']}] "
                 history_text += f"Signal: {entry['signal']} dBm, "
                 history_text += f"Qualité: {entry['quality']}%"
+                if entry.get('channel'):
+                    history_text += f", Canal: {entry['channel']}"
+                if entry.get('band'):
+                    history_text += f", Bande: {entry['band']}"
+                if entry.get('ssid') and entry['ssid'] != 'N/A':
+                    history_text += f", SSID: {entry['ssid']}"
 
                 # Ajouter le BSSID si disponible
                 if entry.get('bssid') and entry['bssid'] != "Unknown":
@@ -2345,13 +2354,18 @@ class NetworkAnalyzerUI:
                             'count': 0,
                             'signals': [],
                             'qualities': [],
+                            'channels': {},
                             'alerts': 0
                         }
                     bssid_info[bssid]['count'] += 1
                     bssid_info[bssid]['signals'].append(entry['signal'])
                     bssid_info[bssid]['qualities'].append(entry['quality'])
+                    ch = entry.get('channel')
+                    if ch:
+                        bssid_info[bssid]['channels'][ch] = bssid_info[bssid]['channels'].get(ch, 0) + 1
                     if entry['alerts']:
-                        bssid_info[bssid]['alerts'] += 1            # Évaluation de la stabilité
+                        bssid_info[bssid]['alerts'] += 1
+            # Évaluation de la stabilité
             signal_stability = "Excellent" if max_signal - min_signal < 10 else "Bon" if max_signal - min_signal < 20 else "Variable"
 
             # Formatage des statistiques pour l'affichage
@@ -2390,15 +2404,21 @@ class NetworkAnalyzerUI:
 
                 for bssid, info in sorted_bssids[:5]:  # Afficher les 5 premiers
                     avg_signal = sum(info['signals']) / len(info['signals'])
+                    min_sig = min(info['signals'])
+                    max_sig = max(info['signals'])
                     avg_quality = sum(info['qualities']) / len(info['qualities'])
                     alert_rate = (info['alerts'] / info['count'] * 100) if info['count'] > 0 else 0
+                    usage_rate = info['count'] / total_samples * 100 if total_samples > 0 else 0
 
                     tag = self.mac_manager.get_tag(bssid)
                     tag_str = f" ({tag})" if tag else ""
                     stats_text += f"\n  🔸 {bssid}{tag_str}\n"
-                    stats_text += f"    • Échantillons : {info['count']}\n"
-                    stats_text += f"    • Signal moyen : {avg_signal:.1f} dBm\n"
+                    stats_text += f"    • Utilisation : {info['count']} échantillons ({usage_rate:.1f}%)\n"
+                    stats_text += f"    • Signal : {avg_signal:.1f} dBm (min {min_sig:.1f}, max {max_sig:.1f})\n"
                     stats_text += f"    • Qualité moyenne : {avg_quality:.1f}%\n"
+                    if info['channels']:
+                        channel_list = ', '.join(f"{ch}({cnt})" for ch, cnt in sorted(info['channels'].items(), key=lambda x: x[1], reverse=True))
+                        stats_text += f"    • Canaux : {channel_list}\n"
                     stats_text += f"    • Taux d'alertes : {alert_rate:.1f}%\n"
 
                 if len(bssid_info) > 5:
