@@ -468,7 +468,7 @@ class NetworkAnalyzerUI:
         self.current_view_window = 300  # Consistant avec la valeur du constructeur
         self.is_real_time = True
         self.alert_markers = []
-        
+
         # Variables pour zoom temporel
         self.temporal_view = "5min"  # Options: "1min", "5min", "total"
         self.update_interval = 1000  # 1 seconde
@@ -501,11 +501,11 @@ class NetworkAnalyzerUI:
         # Frame pour les contrôles de zoom temporel
         temporal_frame = ttk.Frame(nav_frame)
         temporal_frame.pack(fill=tk.X, pady=2)
-        
+
         ttk.Label(temporal_frame, text="⏱️ Zoom temporel:").pack(side=tk.LEFT, padx=5)
-        
+
         self.temporal_view_var = tk.StringVar(value="5min")
-        
+
         ttk.Radiobutton(temporal_frame, text="1 min", variable=self.temporal_view_var,
                        value="1min", command=self.change_temporal_view).pack(side=tk.LEFT, padx=3)
         ttk.Radiobutton(temporal_frame, text="5 min", variable=self.temporal_view_var,
@@ -1853,7 +1853,7 @@ class NetworkAnalyzerUI:
         self.context_label.config(text="✅ Aucune alerte trouvée avant cette position")
 
     def go_to_signal_peak(self):
-        """Va au pic de signal le plus élevé"""
+        """Va au pic de signal le plus élevé et affiche le point d'accès associé"""
         if not self.samples:
             self.context_label.config(text="❌ Aucune donnée disponible")
             return
@@ -1867,7 +1867,18 @@ class NetworkAnalyzerUI:
         self.current_view_window = 60
         self.update_display()
         peak_time = self._get_relative_time(peak_idx)
-        self.context_label.config(text=f"📈 Meilleur signal: {max(signals)} dBm {peak_time}")
+
+        # Informations sur le point d'accès associé
+        sample = self.samples[peak_idx]
+        ap_info = ""
+        if getattr(sample, "bssid", None):
+            ap_info = f" - AP: {sample.bssid}"
+            if getattr(sample, "ssid", None):
+                ap_info += f" ({sample.ssid})"
+
+        self.context_label.config(
+            text=f"📈 Meilleur signal: {max(signals)} dBm {peak_time}{ap_info}"
+        )
 
     def go_to_signal_low(self):
         """Va au signal le plus faible et affiche le point d'accès associé"""
@@ -1913,7 +1924,7 @@ class NetworkAnalyzerUI:
         """Change la vue temporelle (1min, 5min, total)"""
         selected = self.temporal_view_var.get()
         self.temporal_view = selected
-        
+
         # Calculer le nombre d'échantillons selon la vue sélectionnée
         # En assumant 1 échantillon par seconde
         if selected == "1min":
@@ -1922,21 +1933,21 @@ class NetworkAnalyzerUI:
             self.current_view_window = 300  # 5 minutes = 300 échantillons
         elif selected == "total":
             self.current_view_window = len(self.samples) if self.samples else 300
-        
+
         # Si en mode temps réel, ajuster la position de début
         if self.is_real_time and self.samples:
             self.current_view_start = max(0, len(self.samples) - self.current_view_window)
-        
+
         # Mettre à jour l'affichage
         self.update_display()
-        
+
         # Mettre à jour le label contextuel
         view_labels = {
             "1min": "⏱️ Vue 1 minute - Analyse détaillée",
-            "5min": "⏱️ Vue 5 minutes - Analyse standard", 
+            "5min": "⏱️ Vue 5 minutes - Analyse standard",
             "total": "⏱️ Vue totale - Historique complet"
         }
-        
+
         current_label = self.context_label.cget("text")
         # Garder le mode (direct/analyse) mais changer la partie temporelle
         if "Mode suivi direct" in current_label:
@@ -2023,15 +2034,13 @@ class NetworkAnalyzerUI:
 
         # Frame pour les boutons en bas
         button_frame = ttk.Frame(self.fullscreen_window)
-        button_frame.pack(pady=5)
-
-        # Bouton pour synchroniser la vue
+        button_frame.pack(pady=5)        # Bouton pour synchroniser la vue
         ttk.Button(button_frame, text="Synchroniser vue",
-                  command=self.sync_fullscreen_view).pack(side=tk.LEFT, padx=5)        # Bouton pour fermer
-        ttk.Button(button_frame, text="Fermer",
-                  command=self.fullscreen_window.destroy).pack(side=tk.LEFT, padx=5)
+                  command=self.sync_fullscreen_view).pack(side=tk.LEFT, padx=5)
 
-        # Mettre à jour les graphiques avec la vue actuelle
+        # Bouton pour fermer
+        ttk.Button(button_frame, text="Fermer",
+                  command=self.fullscreen_window.destroy).pack(side=tk.LEFT, padx=5)        # Mettre à jour les graphiques avec la vue actuelle
         self.update_fullscreen_display()
 
     def update_fullscreen_display(self):
@@ -2057,11 +2066,6 @@ class NetworkAnalyzerUI:
             else:
                 start_idx = self.current_view_start
                 end_idx = min(len(samples_snapshot), start_idx + self.current_view_window)
-
-                # Si on essaie d'afficher plus d'échantillons qu'il n'y en a,
-                # ajuster le début pour montrer les derniers échantillons disponibles
-                if end_idx - start_idx < self.current_view_window and end_idx == len(samples_snapshot):
-                    start_idx = max(0, end_idx - self.current_view_window)
 
             # Extraire les données à afficher (même vue que l'écran principal)
             display_samples = samples_snapshot[start_idx:end_idx]
@@ -2538,52 +2542,47 @@ class NetworkAnalyzerUI:
 
 
 def main():
-    """Point d'entrée principal de l'application"""
+    """Fonction principale pour démarrer l'application"""
     try:
-        # Configuration de base du logging
+        # Configuration du logging
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('wifi_analyzer.log', encoding='utf-8'),
+                logging.FileHandler('network_analysis.log'),
                 logging.StreamHandler()
             ]
         )
-
-        logging.info("🚀 Démarrage de l'application WiFi Analyzer")
-
-        # Créer l'interface principale
+        
+        # Créer la fenêtre principale
         root = tk.Tk()
+        
+        # Créer l'application
         app = NetworkAnalyzerUI(root)
-
-        # Lancer l'application
-        logging.info("✅ Interface créée, lancement de la boucle principale")
+        
+        # Démarrer la boucle principale
+        print("🚀 Démarrage de l'Analyseur Réseau WiFi & Moxa...")
+        print("📊 Interface graphique chargée avec succès")
+        
         root.mainloop()
-
+        
     except Exception as e:
-        error_msg = f"❌ Erreur fatale lors du lancement: {str(e)}"
+        error_msg = f"Erreur lors du démarrage de l'application: {str(e)}"
+        print(f"❌ {error_msg}")
         logging.error(error_msg)
-        print(error_msg)
-
-        # Afficher l'erreur à l'utilisateur
-        import traceback
-        traceback.print_exc()
-
-        # Essayer d'afficher une boîte de dialogue d'erreur
+        
+        # Afficher une boîte de dialogue d'erreur si possible
         try:
-            messagebox.showerror("Erreur de lancement", f"Impossible de démarrer l'application:\n\n{str(e)}")
+            import tkinter.messagebox as msgbox
+            msgbox.showerror("Erreur de démarrage", error_msg)
         except:
             pass
-
-        return False
-
-    return True
+        
+        return 1
+    
+    return 0
 
 
 if __name__ == "__main__":
-    print("🎯 WIFI ANALYZER - APPLICATION PRINCIPALE")
-    print("=" * 50)
-    success = main()
-    if not success:
-        input("Appuyez sur Entrée pour fermer...")
-        sys.exit(1)
+    exit_code = main()
+    sys.exit(exit_code)
