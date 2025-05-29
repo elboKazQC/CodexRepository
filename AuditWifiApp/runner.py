@@ -1041,6 +1041,10 @@ class NetworkAnalyzerUI:
                 report += f"📅 Généré le : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
                 report += f"📊 Échantillons analysés : {len(self.samples)}\n\n"
 
+                if 'analysis_duration_seconds' in combined_report:
+                    minutes = combined_report['analysis_duration_seconds'] / 60
+                    report += f"⏱️ Durée de l'analyse : {minutes:.1f} min\n\n"
+
                 # Section WiFi
                 if 'wifi_analysis' in combined_report and combined_report['wifi_analysis']:
                     wifi = combined_report['wifi_analysis']
@@ -1059,6 +1063,14 @@ class NetworkAnalyzerUI:
 
                     dropouts = wifi.get('dropouts', 0)
                     report += f"Déconnexions : {dropouts}\n\n"
+
+                if 'ping' in combined_report and combined_report['ping']:
+                    ping = combined_report['ping']
+                    report += "📡 STATISTIQUES PING\n"
+                    report += "-" * 20 + "\n"
+                    report += f"Latence moyenne : {ping.get('average_latency', 0):.1f} ms\n"
+                    report += f"Latence max/min : {ping.get('max_latency', 0):.1f} / {ping.get('min_latency', 0):.1f} ms\n"
+                    report += f"Jitter moyen : {ping.get('average_jitter', 0):.1f} ms\n\n"
 
                 # Section recommandations
                 if 'recommendations' in combined_report and combined_report['recommendations']:

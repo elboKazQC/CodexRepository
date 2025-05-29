@@ -25,6 +25,9 @@ class NetworkAnalyzer:
         self.is_collecting = False
         self.current_wifi_analysis: Optional[WifiAnalysis] = None
         self.current_moxa_analysis = None
+        self.last_wifi_samples: List[WifiSample] = []
+        self.start_time: Optional[datetime] = None
+        self.end_time: Optional[datetime] = None
 
         # Configuration du logging
         self.logger = self._setup_logging()
@@ -74,6 +77,8 @@ class NetworkAnalyzer:
                 return False
 
             self.is_collecting = True
+            self.start_time = datetime.now()
+            self.end_time = None
             self.logger.info("Analyse réseau démarrée")
             return True
 
@@ -91,8 +96,10 @@ class NetworkAnalyzer:
                 # Analyser les derniers échantillons
                 if samples:
                     self.current_wifi_analysis = self.wifi_analyzer.analyze_samples(samples)
+                    self.last_wifi_samples = samples
 
                 self.is_collecting = False
+                self.end_time = datetime.now()
                 self.logger.info("Analyse réseau arrêtée")
         except Exception as e:
             self.logger.error(f"Erreur à l'arrêt de l'analyse: {e}")
@@ -162,6 +169,13 @@ class NetworkAnalyzer:
                 "dropouts": self.current_wifi_analysis.dropout_count
             }
 
+        if self.last_wifi_samples:
+            report["ping"] = self._calculate_ping_stats(self.last_wifi_samples)
+
+        if self.start_time and self.end_time:
+            duration = (self.end_time - self.start_time).total_seconds()
+            report["analysis_duration_seconds"] = int(duration)
+
         # Ajouter l'analyse Moxa si disponible
         if self.current_moxa_analysis:
             report["moxa_analysis"] = self.current_moxa_analysis
@@ -194,6 +208,21 @@ class NetworkAnalyzer:
                 recommendations.extend(self.current_moxa_analysis['recommendations'])
 
         return recommendations
+
+    def _calculate_ping_stats(self, samples: List[WifiSample]) -> Dict[str, float]:
+        """Calcule des statistiques de latence et de jitter."""
+        latencies = [s.ping_latency for s in samples if s.ping_latency >= 0]
+        jitters = [s.jitter for s in samples if s.jitter > 0]
+
+        if not latencies:
+            return {}
+
+        return {
+            "average_latency": round(sum(latencies) / len(latencies), 1),
+            "max_latency": round(max(latencies), 1),
+            "min_latency": round(min(latencies), 1),
+            "average_jitter": round(sum(jitters) / len(jitters), 1) if jitters else 0.0,
+        }
 
     def export_data(self, export_dir: str = "exports") -> str:
         """Exporte toutes les données d'analyse"""
