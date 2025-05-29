@@ -599,7 +599,8 @@ class NetworkAnalyzerUI:
 
         # Graphique du jitter
         self.ax3 = self.fig.add_subplot(313)
-        self.ax3.set_title("Jitter de la latence")
+        target = getattr(self.analyzer.wifi_collector, 'ping_target', 'n/a')
+        self.ax3.set_title(f"Jitter de la latence ({target})")
         self.ax3.set_ylabel("Jitter (ms)")
         self.ax3.set_xlabel("Temps (échantillons)")
         self.ax3.grid(True, alpha=0.3)
@@ -631,6 +632,10 @@ class NetworkAnalyzerUI:
                 self.samples = []
                 self.start_button.config(state=tk.DISABLED)
                 self.stop_button.config(state=tk.NORMAL)
+                target = getattr(self.analyzer.wifi_collector, 'ping_target', 'n/a')
+                self.ax3.set_title(f"Jitter de la latence ({target})")
+                if hasattr(self, 'fs_ax3'):
+                    self.fs_ax3.set_title(f"Jitter de la latence ({target})", fontsize=12)
                 self.update_data()
                 self.update_status("Collection en cours...")
         except Exception as e:
@@ -1276,6 +1281,8 @@ class NetworkAnalyzerUI:
         if current_sample.ping_latency >= 0:
             stats_text += f"Latence: {current_sample.ping_latency} ms\n"
             stats_text += f"Jitter: {current_sample.jitter:.1f} ms\n"
+            if hasattr(self.analyzer.wifi_collector, 'ping_target'):
+                stats_text += f"Cible: {self.analyzer.wifi_collector.ping_target}\n"
 
         # Stats moyennes (100 derniers échantillons)
         avg_signal = sum(signal_values) / len(signal_values)
@@ -1994,7 +2001,8 @@ class NetworkAnalyzerUI:
 
         # Jitter subplot
         self.fs_ax3 = fs_fig.add_subplot(313)
-        self.fs_ax3.set_title("Jitter de la latence", fontsize=12)
+        target = getattr(self.analyzer.wifi_collector, 'ping_target', 'n/a')
+        self.fs_ax3.set_title(f"Jitter de la latence ({target})", fontsize=12)
         self.fs_ax3.set_ylabel("Jitter (ms)")
         self.fs_ax3.set_xlabel("Temps (échantillons)")
         self.fs_ax3.grid(True, alpha=0.3)
