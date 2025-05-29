@@ -5,6 +5,8 @@ import subprocess
 from datetime import datetime
 from typing import Optional, Dict, List
 from dataclasses import dataclass
+import platform
+import re
 
 @dataclass
 class WifiSample:
@@ -21,6 +23,7 @@ class WifiSample:
     raw_data: Dict = None
     ping_latency: float = -1.0
     jitter: float = 0.0
+    ping_target: str = ""
 
     @classmethod
     def from_powershell_data(
@@ -35,7 +38,9 @@ class WifiSample:
             """Interpréte la latence renvoyée par PowerShell."""
             try:
                 if isinstance(value, str):
-                    clean = value.strip().lower().replace('ms', '').replace('<', '')
+                    clean = (
+                        value.strip().lower().replace("ms", "").replace("<", "").replace(",", ".")
+                    )
                     return float(clean)
                 return float(value)
             except (ValueError, TypeError):
@@ -71,6 +76,8 @@ class WifiCollector:
         self.max_errors = 5
         self.logger = self._setup_logging()
         self.last_latency: Optional[float] = None
+        self.latency_history: List[float] = []
+        self.ping_target: str = ""
 
     def _setup_logging(self) -> logging.Logger:
         """Configure le système de journalisation avec rotation des fichiers"""
@@ -108,6 +115,62 @@ class WifiCollector:
 
         return logger
 
+    def _detect_ping_target(self) -> str:
+        """Tente de détecter la gateway par d\xE9faut, sinon retourne DNS Google."""
+        try:
+            if platform.system().lower().startswith('win'):
+                output = subprocess.check_output(["route", "print", "0.0.0.0"], text=True, encoding='latin1')
+                match = re.search(r"0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)", output)
+                if match:
+                    return match.group(1)
+            else:
+                output = subprocess.check_output(["ip", "route", "show", "default"], text=True)
+                match = re.search(r"default via (\d+\.\d+\.\d+\.\d+)", output)
+                if match:
+                    return match.group(1)
+        except Exception as e:
+            self.logger.debug(f"Impossible de d\xE9tecter la gateway: {e}")
+        return "8.8.8.8"
+
+    def _perform_ping(self, target: str) -> float:
+        """R\xE9alise un ping non bloquant vers la cible."""
+        try:
+            if platform.system().lower().startswith("win"):
+                cmd = ["ping", "-n", "1", "-w", "2000", target]
+                regexes = [
+                    r"temps[=<]\s*(\d+(?:[\.,]\d+)?)",
+                    r"time[=<]\s*(\d+(?:[\.,]\d+)?)",
+                ]
+            else:
+                cmd = ["ping", "-c", "1", "-W", "2", target]
+                regexes = [r"time[=<]\s*(\d+(?:[\.,]\d+)?)\s*ms"]
+
+            output = subprocess.check_output(
+                cmd, text=True, encoding="latin1", stderr=subprocess.DEVNULL
+            )
+            for reg in regexes:
+                match = re.search(reg, output, re.IGNORECASE)
+                if match:
+                    value = match.group(1).replace(",", ".")
+                    return float(value)
+        except Exception as e:
+            self.logger.debug(f"Ping failed: {e}")
+        return -1.0
+
+    def _update_jitter(self, latency: float) -> float:
+        """Calcule le jitter moyen sur une fen\xEAtre glissante."""
+        if latency >= 0:
+            self.latency_history.append(latency)
+            if len(self.latency_history) > 20:
+                self.latency_history.pop(0)
+        if len(self.latency_history) < 2:
+            return 0.0
+        diffs = [
+            abs(self.latency_history[i] - self.latency_history[i - 1])
+            for i in range(1, len(self.latency_history))
+        ]
+        return sum(diffs) / len(diffs)
+
     def start_collection(self) -> bool:
         """Démarre la collecte WiFi"""
         try:
@@ -118,6 +181,9 @@ class WifiCollector:
             self.error_count = 0
             self.is_collecting = True
             self.samples = []
+            self.latency_history = []
+            self.ping_target = self._detect_ping_target()
+            self.logger.info(f"Cible de ping utilisée: {self.ping_target}")
             return True
 
         except Exception as e:
@@ -143,9 +209,22 @@ class WifiCollector:
 
             # Si nous sommes connectés, créer l'échantillon
             if data.get('Status') == 'Connected':
-                sample = WifiSample.from_powershell_data(data, self.last_latency)
-                self.last_latency = sample.ping_latency
+                sample = WifiSample.from_powershell_data(data)
+
+                # Mesurer la latence si nécessaire
+                latency = sample.ping_latency
+                if latency < 0:
+                    latency = self._perform_ping(self.ping_target)
+                sample.ping_latency = latency
+
+                # Calculer le jitter moyen
+                sample.jitter = self._update_jitter(latency)
+                sample.ping_target = self.ping_target
+
+                self.last_latency = latency
                 self.samples.append(sample)
+                if len(self.samples) % 10 == 0:
+                    self.logger.debug(f"{len(self.samples)} échantillons collectés")
                 self.error_count = 0  # Réinitialise le compteur d'erreurs
                 self.logger.debug(f"Échantillon collecté: {sample.ssid} - {sample.signal_strength}dBm")
                 return sample
