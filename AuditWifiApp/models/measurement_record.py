@@ -30,7 +30,8 @@ class WifiMeasurement:
 class PingMeasurement:
     """Mesure de connectivité réseau"""
     latency: int  # en millisecondes
-    packet_loss: int  # pourcentage de perte de paquets
+    jitter: float = 0.0  # variation de la latence
+    packet_loss: int = 0  # pourcentage de perte de paquets
 
 @dataclass
 class MeasurementRecord:

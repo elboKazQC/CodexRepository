@@ -18,14 +18,21 @@ class WifiSample:
     status: str
     transmit_rate: str
     receive_rate: str
-    raw_data: Dict
+    raw_data: Dict = None
+    ping_latency: float = -1.0
+    jitter: float = 0.0
 
     @classmethod
-    def from_powershell_data(cls, data: Dict) -> 'WifiSample':
+    def from_powershell_data(cls, data: Dict, prev_latency: Optional[float] = None) -> 'WifiSample':
         """Crée un échantillon à partir des données PowerShell"""
         # Convertit le pourcentage en valeur numérique
         signal_str = data.get('SignalStrength', '0%').replace('%', '')
         quality = int(signal_str) if signal_str.isdigit() else 0
+
+        latency = float(data.get('PingLatency', -1))
+        jitter = 0.0
+        if prev_latency is not None and latency >= 0 and prev_latency >= 0:
+            jitter = abs(latency - prev_latency)
 
         return cls(
             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),
@@ -38,6 +45,8 @@ class WifiSample:
             status=data.get('Status', 'Disconnected'),
             transmit_rate=data.get('TransmitRate', '0 Mbps'),
             receive_rate=data.get('ReceiveRate', '0 Mbps'),
+            ping_latency=latency,
+            jitter=jitter,
             raw_data=data
         )
 
@@ -49,6 +58,7 @@ class WifiCollector:
         self.error_count = 0
         self.max_errors = 5
         self.logger = self._setup_logging()
+        self.last_latency: Optional[float] = None
 
     def _setup_logging(self) -> logging.Logger:
         """Configure le système de journalisation avec rotation des fichiers"""
@@ -121,7 +131,8 @@ class WifiCollector:
 
             # Si nous sommes connectés, créer l'échantillon
             if data.get('Status') == 'Connected':
-                sample = WifiSample.from_powershell_data(data)
+                sample = WifiSample.from_powershell_data(data, self.last_latency)
+                self.last_latency = sample.ping_latency
                 self.samples.append(sample)
                 self.error_count = 0  # Réinitialise le compteur d'erreurs
                 self.logger.debug(f"Échantillon collecté: {sample.ssid} - {sample.signal_strength}dBm")
