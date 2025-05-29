@@ -1,3 +1,4 @@
+# language: PowerShell
 # -*- coding: utf-8 -*-
 import sys
 import json
@@ -41,6 +42,9 @@ class NetworkAnalyzerUI:
 
         # Optimiser la fenêtre selon la taille de l'écran
         self.optimize_window_for_screen()
+
+        # Fenêtre de gestion des MAC
+        self.mac_manager_window = None
 
         # Initialisation des composants
         self.analyzer = NetworkAnalyzer()
@@ -1314,42 +1318,21 @@ class NetworkAnalyzerUI:
             logging.error(f"Erreur lors de la sauvegarde des IPs AMR: {e}")
 
     def start_amr_monitoring(self) -> None:
-        """Start background ping of all configured AMR IPs."""
-        if self.amr_monitor and getattr(self.amr_monitor, "_running", False):
-            return
-        if not self.amr_ips:
-            messagebox.showinfo("Monitoring AMR", "Ajoutez des IPs avant de démarrer")
-            return
+        """Démarre le monitoring AMR"""
         self.amr_monitor = AMRMonitor(self.amr_ips)
-        self.amr_monitor.start(self.update_amr_status)
+        self.amr_monitor.start(callback=self.update_amr_status)
         self.amr_start_button.config(state=tk.DISABLED)
         self.amr_stop_button.config(state=tk.NORMAL)
         self.update_status("Monitoring AMR démarré")
 
     def stop_amr_monitoring(self) -> None:
-        """Stop AMR monitoring thread."""
+        """Arrête le monitoring AMR"""
         if self.amr_monitor:
             self.amr_monitor.stop()
             self.amr_monitor = None
         self.amr_start_button.config(state=tk.NORMAL)
         self.amr_stop_button.config(state=tk.DISABLED)
         self.update_status("Monitoring AMR arrêté")
-
-    def update_amr_status(self, results: Dict[str, Dict[str, Optional[int]]]) -> None:
-        """Update the AMR status text widget with ping results."""
-        try:
-            self.amr_status_text.delete("1.0", tk.END)
-            for ip, info in results.items():
-                if info["reachable"]:
-                    latency = info.get("latency")
-                    msg = f"{ip} : OK"
-                    if latency is not None:
-                        msg += f" ({latency} ms)"
-                else:
-                    msg = f"{ip} : ❌"
-                self.amr_status_text.insert(tk.END, msg + "\n")
-        except Exception as e:
-            logging.error(f"Erreur mise à jour statut AMR: {e}")
 
     def traceroute_selected_ip(self) -> None:
         selection = self.amr_listbox.curselection()
@@ -1494,12 +1477,10 @@ class NetworkAnalyzerUI:
             messagebox.showinfo("Traceroute", f"Traceroute vers {ip} réussi\n\nNombre de sauts : {hop_count}")
             return
 
-        details = self.last_traceroute_details
-
-        # Créer une nouvelle fenêtre pour les détails
+        details = self.last_traceroute_details        # Créer une nouvelle fenêtre pour les détails
         result_window = tk.Toplevel(self.master)
         result_window.title(f"Traceroute vers {ip}")
-        result_window.geometry("700x500")
+        result_window.geometry("800x650")
         result_window.resizable(True, True)
 
         # Frame principal avec padding
@@ -1616,13 +1597,11 @@ class NetworkAnalyzerUI:
         ttk.Button(button_frame, text="🔄 Relancer",
                   command=lambda: [result_window.destroy(), self.traceroute_selected_ip()]).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Fermer",
-                  command=result_window.destroy).pack(side=tk.RIGHT)
-
-        # Centrer la fenêtre
+                  command=result_window.destroy).pack(side=tk.RIGHT)        # Centrer la fenêtre
         result_window.update_idletasks()
-        x = (result_window.winfo_screenwidth() // 2) - (700 // 2)
-        y = (result_window.winfo_screenheight() // 2) - (500 // 2)
-        result_window.geometry(f"700x500+{x}+{y}")
+        x = (result_window.winfo_screenwidth() // 2) - (800 // 2)
+        y = (result_window.winfo_screenheight() // 2) - (650 // 2)
+        result_window.geometry(f"800x650+{x}+{y}")
 
     def _analyze_traceroute_path(self, details: dict) -> str:
         """Analyse le chemin traceroute et fournit des informations utiles"""
@@ -2116,82 +2095,12 @@ class NetworkAnalyzerUI:
                 # Ligne vide
                 text_widget.insert('end', '\n')
 
-    def open_mac_tag_manager(self):
-        """Display a simple window to manage MAC address tags."""
-        if hasattr(self, '_mac_window') and self._mac_window.winfo_exists():
-            self._mac_window.lift()
-            return
-
-        self._mac_window = tk.Toplevel(self.master)
-        self._mac_window.title("Gestion des MAC")
-        self._mac_window.geometry("400x300")
-        self._mac_window.resizable(False, False)
-
-        frame = ttk.Frame(self._mac_window, padding=10)
-        frame.pack(fill=tk.BOTH, expand=True)
-
-        self.mac_listbox = tk.Listbox(frame)
-        self.mac_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scroll = ttk.Scrollbar(frame, command=self.mac_listbox.yview)
-        self.mac_listbox.configure(yscrollcommand=scroll.set)
-        scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        form = ttk.Frame(self._mac_window, padding=5)
-        form.pack(fill=tk.X)
-        mac_var = tk.StringVar()
-        tag_var = tk.StringVar()
-        ttk.Entry(form, textvariable=mac_var, width=17).grid(row=0, column=0, padx=5, pady=2)
-        ttk.Entry(form, textvariable=tag_var, width=15).grid(row=0, column=1, padx=5, pady=2)
-
-        def refresh():
-            self.mac_listbox.delete(0, tk.END)
-            for mac, tag in sorted(self.mac_manager.tags.items()):
-                self.mac_listbox.insert(tk.END, f"{mac} : {tag}")
-
-        def add_or_update():
-            mac = mac_var.get().strip()
-            tag = tag_var.get().strip()
-            if not self.mac_manager.add_tag(mac, tag):
-                messagebox.showerror("Erreur", "Adresse MAC invalide")
-                return
-            refresh()
-            mac_var.set("")
-            tag_var.set("")
-
-        def delete_selected():
-            sel = self.mac_listbox.curselection()
-            if sel:
-                mac = self.mac_listbox.get(sel[0]).split(':')[0].strip()
-                self.mac_manager.delete_tag(mac)
-                self.mac_manager.save_tags()
-                refresh()
-
-        def edit_selected(event=None):
-            sel = self.mac_listbox.curselection()
-            if not sel:
-                return
-            item = self.mac_listbox.get(sel[0])
-            mac, tag = item.split(':', 1)
-            new_tag = simpledialog.askstring("Modifier Tag", f"Tag pour {mac.strip()}", initialvalue=tag.strip(), parent=self._mac_window)
-            if new_tag:
-                self.mac_manager.set_tag(mac.strip(), new_tag)
-                self.mac_manager.save_tags()
-                refresh()
-
-        ttk.Button(form, text="Ajouter/MàJ", command=add_or_update).grid(row=1, column=0, padx=5, pady=5)
-        ttk.Button(form, text="Supprimer", command=delete_selected).grid(row=1, column=1, padx=5, pady=5)
-
-        self.mac_listbox.bind('<Double-1>', edit_selected)
-        refresh()
-
     # === MÉTHODES UTILITAIRES MANQUANTES ===
 
     def _get_relative_time(self, position: int) -> str:
         """Retourne une description du temps relatif pour une position donnée"""
         if not self.samples or position >= len(self.samples):
-            return "Position inconnue"
-
-        # Calculer le temps relatif en secondes (basé sur l'intervalle de collecte)
+            return "Position inconnue"        # Calculer le temps relatif en secondes (basé sur l'intervalle de collecte)
         time_offset = position * (self.update_interval / 1000.0)  # Convertir ms en secondes
 
         if time_offset < 60:
@@ -2226,11 +2135,105 @@ class NetworkAnalyzerUI:
 
             # Seuils critiques pour les débits
             min_tx_critical = 10  # TX critique si < 10 Mbps
-            min_rx_critical = 2   # RX critique si < 2 Mbps            # Alerte si les deux débits sont vraiment problématiques
+            min_rx_critical = 2   # RX critique si < 2 Mbps
+              # Alerte si les deux débits sont vraiment problématiques
             return tx_rate < min_tx_critical and rx_rate < min_rx_critical
 
         except (ValueError, IndexError, KeyError):
             return False
+
+    def update_amr_status(self, status_data):
+        """Met à jour le statut AMR dans l'interface"""
+        try:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            status_text = f"[{timestamp}] {status_data}\n"
+            self.amr_status_text.insert('1.0', status_text)
+        except Exception as e:
+            logging.error(f"Erreur dans update_amr_status: {e}")
+
+    def open_mac_tag_manager(self):
+        """Ouvre la fenêtre de gestion des tags MAC"""
+        if self.mac_manager_window and self.mac_manager_window.winfo_exists():
+            self.mac_manager_window.lift()
+            return
+
+        self.mac_manager_window = tk.Toplevel(self.master)
+        self.mac_manager_window.title("Gestion des Tags MAC")
+        self.mac_manager_window.geometry("400x500")
+
+        # Frame principal
+        main_frame = ttk.Frame(self.mac_manager_window, padding=10)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Liste des MAC et leurs tags
+        list_frame = ttk.LabelFrame(main_frame, text="MACs et Tags", padding=5)
+        list_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.mac_listbox = tk.Listbox(list_frame, selectmode=tk.SINGLE)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.mac_listbox.yview)
+        self.mac_listbox.configure(yscrollcommand=scrollbar.set)
+        self.mac_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Frame pour l'ajout/édition
+        edit_frame = ttk.Frame(main_frame)
+        edit_frame.pack(fill=tk.X, pady=10)
+
+        ttk.Label(edit_frame, text="MAC:").pack(side=tk.LEFT)
+        self.mac_entry = ttk.Entry(edit_frame)
+        self.mac_entry.pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(edit_frame, text="Tag:").pack(side=tk.LEFT)
+        self.tag_entry = ttk.Entry(edit_frame)
+        self.tag_entry.pack(side=tk.LEFT, padx=5)
+
+        # Boutons
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(fill=tk.X, pady=5)
+
+        ttk.Button(btn_frame, text="Ajouter/Modifier",
+                  command=self._add_or_update_mac_tag).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Supprimer",
+                  command=self._delete_mac_tag).pack(side=tk.LEFT, padx=5)        # Remplir la liste
+        self._update_mac_list()
+
+        # Gestionnaire d'événements pour la sélection
+        self.mac_listbox.bind('<<ListboxSelect>>', self._on_mac_select)
+
+    def _update_mac_list(self):
+        """Met à jour la liste des MACs dans l'interface"""
+        if hasattr(self, 'mac_listbox'):
+            self.mac_listbox.delete(0, tk.END)
+            for mac, tag in self.mac_manager.get_all_tags().items():
+                self.mac_listbox.insert(tk.END, f"{mac} - {tag}")
+
+    def _add_or_update_mac_tag(self):
+        """Ajoute ou met à jour un tag MAC"""
+        mac = self.mac_entry.get().strip()
+        tag = self.tag_entry.get().strip()
+        if mac and tag:
+            self.mac_manager.add_tag(mac, tag)
+            self._update_mac_list()
+            self.mac_entry.delete(0, tk.END)
+            self.tag_entry.delete(0, tk.END)
+
+    def _delete_mac_tag(self):
+        """Supprime un tag MAC"""
+        selection = self.mac_listbox.curselection()
+        if selection:
+            mac = self.mac_listbox.get(selection[0]).split(" - ")[0]
+            self.mac_manager.remove_tag(mac)
+            self._update_mac_list()
+
+    def _on_mac_select(self, event):
+        """Gère la sélection d'un MAC dans la liste"""
+        selection = self.mac_listbox.curselection()
+        if selection:
+            mac, tag = self.mac_listbox.get(selection[0]).split(" - ")
+            self.mac_entry.delete(0, tk.END)
+            self.mac_entry.insert(0, mac)
+            self.tag_entry.delete(0, tk.END)
+            self.tag_entry.insert(0, tag)
 
     def update_advanced_wifi_stats(self):
         """Met à jour les statistiques WiFi avancées"""
@@ -2252,13 +2255,13 @@ class NetworkAnalyzerUI:
 
             # Calculer les moyennes
             avg_signal = sum(entry['signal'] for entry in recent_entries) / len(recent_entries)
-            avg_quality = sum(entry['quality'] for entry in recent_entries) / len(recent_entries)
-
-            # Calculer min/max
+            avg_quality = sum(entry['quality'] for entry in recent_entries) / len(recent_entries)            # Calculer min/max
             signals = [entry['signal'] for entry in recent_entries]
             qualities = [entry['quality'] for entry in recent_entries]
             min_signal, max_signal = min(signals), max(signals)
-            min_quality, max_quality = min(qualities), max(qualities)            # Compter les différents types d'alertes
+            min_quality, max_quality = min(qualities), max(qualities)
+
+            # Compter les différents types d'alertes
             alert_types = {}
             for entry in recent_entries:
                 for alert in entry['alerts']:
@@ -2281,11 +2284,10 @@ class NetworkAnalyzerUI:
                     bssid_info[bssid]['signals'].append(entry['signal'])
                     bssid_info[bssid]['qualities'].append(entry['quality'])
                     if entry['alerts']:
-                        bssid_info[bssid]['alerts'] += 1
-
-            # Évaluation de la stabilité
+                        bssid_info[bssid]['alerts'] += 1            # Évaluation de la stabilité
             signal_stability = "Excellent" if max_signal - min_signal < 10 else "Bon" if max_signal - min_signal < 20 else "Variable"
-              # Formatage des statistiques pour l'affichage
+
+            # Formatage des statistiques pour l'affichage
             stats_text = "=== STATISTIQUES WiFi AVANCÉES ===\n"
             stats_text += f"Période d'analyse : {len(recent_entries)} échantillons\n\n"
 
@@ -2370,3 +2372,55 @@ class NetworkAnalyzerUI:
             if hasattr(self, 'wifi_advanced_stats_text'):
                 self.wifi_advanced_stats_text.delete('1.0', tk.END)
                 self.wifi_advanced_stats_text.insert('1.0', f"Erreur lors du calcul des statistiques :\n{str(e)}")
+
+
+def main():
+    """Point d'entrée principal de l'application"""
+    try:
+        # Configuration de base du logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('wifi_analyzer.log', encoding='utf-8'),
+                logging.StreamHandler()
+            ]
+        )
+
+        logging.info("🚀 Démarrage de l'application WiFi Analyzer")
+
+        # Créer l'interface principale
+        root = tk.Tk()
+        app = NetworkAnalyzerUI(root)
+
+        # Lancer l'application
+        logging.info("✅ Interface créée, lancement de la boucle principale")
+        root.mainloop()
+
+    except Exception as e:
+        error_msg = f"❌ Erreur fatale lors du lancement: {str(e)}"
+        logging.error(error_msg)
+        print(error_msg)
+
+        # Afficher l'erreur à l'utilisateur
+        import traceback
+        traceback.print_exc()
+
+        # Essayer d'afficher une boîte de dialogue d'erreur
+        try:
+            messagebox.showerror("Erreur de lancement", f"Impossible de démarrer l'application:\n\n{str(e)}")
+        except:
+            pass
+
+        return False
+
+    return True
+
+
+if __name__ == "__main__":
+    print("🎯 WIFI ANALYZER - APPLICATION PRINCIPALE")
+    print("=" * 50)
+    success = main()
+    if not success:
+        input("Appuyez sur Entrée pour fermer...")
+        sys.exit(1)

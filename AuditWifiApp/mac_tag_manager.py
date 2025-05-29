@@ -67,3 +67,12 @@ class MacTagManager:
     def delete_tag(self, mac: str) -> None:
         """Remove tag for MAC address."""
         self.tags.pop(mac.upper(), None)
+
+    def remove_tag(self, mac: str) -> None:
+        """Remove tag for MAC address and save immediately."""
+        self.tags.pop(mac.upper(), None)
+        self.save_tags()
+
+    def get_all_tags(self) -> Dict[str, str]:
+        """Return all MAC tags as a dictionary."""
+        return self.tags.copy()
