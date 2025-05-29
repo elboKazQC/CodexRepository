@@ -2306,23 +2306,52 @@ class NetworkAnalyzerUI:
         """Vérifie s'il y a des problèmes de débit dans l'échantillon"""
         try:
             tx_rate = int(sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
-            rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])
-
-            # Seuils critiques pour les débits
+            rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])            # Seuils critiques pour les débits
             min_tx_critical = 10  # TX critique si < 10 Mbps
             min_rx_critical = 2   # RX critique si < 2 Mbps
-              # Alerte si les deux débits sont vraiment problématiques
+            # Alerte si les deux débits sont vraiment problématiques
             return tx_rate < min_tx_critical and rx_rate < min_rx_critical
 
         except (ValueError, IndexError, KeyError):
             return False
 
     def update_amr_status(self, status_data):
-        """Met à jour le statut AMR dans l'interface"""
+        """Met à jour le statut AMR dans l'interface avec formatage des pertes de paquets"""
         try:
             timestamp = datetime.now().strftime("%H:%M:%S")
-            status_text = f"[{timestamp}] {status_data}\n"
+
+            # Formater l'affichage de manière lisible avec pertes de paquets
+            if isinstance(status_data, dict):
+                status_lines = [f"🕐 [{timestamp}] Monitoring AMR:"]
+
+                for ip, data in status_data.items():
+                    if isinstance(data, dict):
+                        reachable = data.get('reachable', False)
+                        latency = data.get('latency', 0)
+                        perte = data.get('perte', '0%')
+                        qualite = data.get('qualite', '🔵')
+
+                        if reachable:
+                            status_lines.append(f"  📡 {ip}: {latency}ms - Perte: {perte} {qualite}")
+                        else:
+                            status_lines.append(f"  ❌ {ip}: Injoignable 🔴")
+                    else:
+                        status_lines.append(f"  📡 {ip}: {data}")
+
+                status_text = "\n".join(status_lines) + "\n\n"
+            else:
+                status_text = f"[{timestamp}] {status_data}\n"
+
             self.amr_status_text.insert('1.0', status_text)
+
+            # Limiter l'affichage pour éviter l'accumulation
+            content = self.amr_status_text.get('1.0', tk.END)
+            lines = content.split('\n')
+            if len(lines) > 50:  # Garder seulement les 50 dernières lignes
+                limited_content = '\n'.join(lines[:50])
+                self.amr_status_text.delete('1.0', tk.END)
+                self.amr_status_text.insert('1.0', limited_content)
+
         except Exception as e:
             logging.error(f"Erreur dans update_amr_status: {e}")
 

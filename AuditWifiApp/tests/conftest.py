@@ -1,7 +1,7 @@
 """
 Configuration and fixtures for pytest.
 """
-import pytest
+import pytest  # type: ignore
 from unittest.mock import MagicMock, patch
 from contextlib import ExitStack
 from dotenv import load_dotenv
@@ -102,7 +102,9 @@ def patch_ttk_style():
     """Patch style classes to avoid initializing real GUI elements."""
     patches = [
         patch('tkinter.ttk.Style'),
-        patch('tkinter.messagebox'),
+        patch('tkinter.messagebox.showinfo'),
+        patch('tkinter.messagebox.showerror'),
+        patch('tkinter.messagebox.showwarning'),
         patch('log_manager.messagebox'),
     ]
     try:
@@ -113,5 +115,9 @@ def patch_ttk_style():
         pass
     with ExitStack() as stack:
         for p in patches:
-            stack.enter_context(p)
+            try:
+                stack.enter_context(p)
+            except AttributeError:
+                # Ignorer les patches qui ne peuvent pas être appliqués
+                pass
         yield
