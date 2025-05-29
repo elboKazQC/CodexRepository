@@ -50,11 +50,9 @@ class NetworkAnalyzerUI:
         self.analyzer = NetworkAnalyzer()
         self.samples: List[WifiSample] = []
         self.amr_ips: List[str] = []
-        self.amr_monitor: Optional[AMRMonitor] = None
-
-        # Variables pour la navigation temporelle
+        self.amr_monitor: Optional[AMRMonitor] = None        # Variables pour la navigation temporelle
         self.current_view_start = 0
-        self.current_view_window = 100  # Nombre d'échantillons à afficher
+        self.current_view_window = 300  # Nombre d'échantillons à afficher (augmenté de 100 à 300)
         self.is_real_time = True  # Mode temps réel vs navigation
         self.realtime_var = tk.BooleanVar(value=True)  # Variable pour le checkbox temps réel
         self.alert_markers = []  # Marqueurs d'alertes sur les graphiques
@@ -112,12 +110,11 @@ class NetworkAnalyzerUI:
             self.amr_listbox.insert(tk.END, ip)
 
         # Configuration des graphiques
-        self.setup_graphs()
-          # Variables pour les mises à jour
+        self.setup_graphs()        # Variables pour les mises à jour
         self.update_interval = 1000  # ms
-        self.max_samples = 100        # Historique pour l'onglet WiFi
+        self.max_samples = 500        # Historique pour l'onglet WiFi (augmenté de 100 à 500)
         self.wifi_history_entries = []
-        self.max_history_entries = 1000
+        self.max_history_entries = 5000  # Augmenté de 1000 à 5000 pour plus d'historique
 
     def is_portable_screen(self):
         """Détermine si l'écran est un écran portable basé sur la taille physique et le DPI"""
@@ -460,11 +457,10 @@ class NetworkAnalyzerUI:
         status_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def setup_graphs(self):
-        """Configure les graphiques avec navigation simplifiée et intuitive"""
-        # Variables de navigation
-        self.max_samples = 100
+        """Configure les graphiques avec navigation simplifiée et intuitive"""        # Variables de navigation
+        self.max_samples = 500  # Consistant avec la valeur du constructeur
         self.current_view_start = 0
-        self.current_view_window = 100
+        self.current_view_window = 300  # Consistant avec la valeur du constructeur
         self.is_real_time = True
         self.alert_markers = []
 
@@ -933,9 +929,7 @@ class NetworkAnalyzerUI:
 
         # Limiter la taille de l'historique
         if len(self.wifi_history_entries) > self.max_history_entries:
-            self.wifi_history_entries = self.wifi_history_entries[-self.max_history_entries:]
-
-        # Mettre à jour l'affichage de l'historique
+            self.wifi_history_entries = self.wifi_history_entries[-self.max_history_entries:]        # Mettre à jour l'affichage de l'historique
         self.update_wifi_history_display()
 
     def update_wifi_history_display(self):
@@ -943,10 +937,10 @@ class NetworkAnalyzerUI:
         if not hasattr(self, 'wifi_history_text'):
             return
 
-        try:            # Limiter l'affichage aux 50 dernières entrées pour les performances
-            recent_entries = self.wifi_history_entries[-50:]
+        try:            # Limiter l'affichage aux 300 dernières entrées pour les performances
+            recent_entries = self.wifi_history_entries[-300:]
 
-            history_text = "=== Historique WiFi (50 dernières entrées) ===\n\n"
+            history_text = "=== Historique WiFi (300 dernières entrées) ===\n\n"
 
             for entry in reversed(recent_entries):  # Plus récent en premier
                 history_text += f"[{entry['timestamp']}] "
@@ -1208,22 +1202,20 @@ class NetworkAnalyzerUI:
     def update_stats(self):
         """Met à jour les statistiques dans l'interface"""
         if not self.samples:
-            return
-
-        # Calcul des statistiques
+            return        # Calcul des statistiques
         current_sample = self.samples[-1]  # Dernier échantillon
-        signal_values = [s.signal_strength for s in self.samples[-20:]]  # 20 derniers échantillons
-        quality_values = [s.quality for s in self.samples[-20:]]
+        signal_values = [s.signal_strength for s in self.samples[-100:]]  # 100 derniers échantillons (augmenté de 20 à 100)
+        quality_values = [s.quality for s in self.samples[-100:]]
 
         # Stats WiFi actuelles
         stats_text = "=== État Actuel ===\n"
         stats_text += f"Signal : {current_sample.signal_strength} dBm\n"
         stats_text += f"Qualité: {current_sample.quality}%\n"
 
-        # Stats moyennes (20 derniers échantillons)
+        # Stats moyennes (100 derniers échantillons)
         avg_signal = sum(signal_values) / len(signal_values)
         avg_quality = sum(quality_values) / len(quality_values)
-        stats_text += "\n=== Moyenne (20 éch.) ===\n"
+        stats_text += "\n=== Moyenne (100 éch.) ===\n"
         stats_text += f"Signal : {avg_signal:.1f} dBm\n"
         stats_text += f"Qualité: {avg_quality:.1f}%\n"
 
@@ -2243,10 +2235,8 @@ class NetworkAnalyzerUI:
                 if hasattr(self, 'wifi_advanced_stats_text'):
                     self.wifi_advanced_stats_text.delete('1.0', tk.END)
                     self.wifi_advanced_stats_text.insert('1.0', "=== Statistiques WiFi Avancées ===\n\nAucune donnée disponible.\nDémarrez la collecte pour voir les statistiques.")
-                return
-
-            # Calculer les statistiques sur les dernières entrées
-            recent_entries = self.wifi_history_entries[-50:]  # 50 dernières entrées
+                return            # Calculer les statistiques sur les dernières entrées
+            recent_entries = self.wifi_history_entries[-300:]  # 300 dernières entrées
 
             # Compter les alertes
             total_samples = len(recent_entries)
