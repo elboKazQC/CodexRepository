@@ -457,12 +457,18 @@ class NetworkAnalyzerUI:
         status_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def setup_graphs(self):
-        """Configure les graphiques avec navigation simplifiée et intuitive"""        # Variables de navigation
+        """Configure les graphiques avec navigation simplifiée et intuitive"""
+
+        # Variables de navigation
         self.max_samples = 500  # Consistant avec la valeur du constructeur
         self.current_view_start = 0
         self.current_view_window = 300  # Consistant avec la valeur du constructeur
         self.is_real_time = True
         self.alert_markers = []
+        
+        # Variables pour zoom temporel
+        self.temporal_view = "5min"  # Options: "1min", "5min", "total"
+        self.update_interval = 1000  # 1 seconde
 
         # Frame principal pour les graphiques
         graph_main_frame = ttk.Frame(self.wifi_frame)
@@ -481,15 +487,28 @@ class NetworkAnalyzerUI:
         ttk.Radiobutton(view_frame, text="📡 Suivi Direct", variable=self.view_mode,
                        value="direct", command=self.change_view_mode).pack(side=tk.LEFT, padx=8)
         ttk.Radiobutton(view_frame, text="📊 Analyse", variable=self.view_mode,
-                       value="analysis", command=self.change_view_mode).pack(side=tk.LEFT, padx=8)
-
-        # Bouton plein écran
+                       value="analysis", command=self.change_view_mode).pack(side=tk.LEFT, padx=8)        # Bouton plein écran
         self.fullscreen_button = ttk.Button(
             view_frame,
             text="🖥️ Plein Écran",
             command=self.open_fullscreen_graphs
         )
         self.fullscreen_button.pack(side=tk.RIGHT, padx=8)
+
+        # Frame pour les contrôles de zoom temporel
+        temporal_frame = ttk.Frame(nav_frame)
+        temporal_frame.pack(fill=tk.X, pady=2)
+        
+        ttk.Label(temporal_frame, text="⏱️ Zoom temporel:").pack(side=tk.LEFT, padx=5)
+        
+        self.temporal_view_var = tk.StringVar(value="5min")
+        
+        ttk.Radiobutton(temporal_frame, text="1 min", variable=self.temporal_view_var,
+                       value="1min", command=self.change_temporal_view).pack(side=tk.LEFT, padx=3)
+        ttk.Radiobutton(temporal_frame, text="5 min", variable=self.temporal_view_var,
+                       value="5min", command=self.change_temporal_view).pack(side=tk.LEFT, padx=3)
+        ttk.Radiobutton(temporal_frame, text="Total", variable=self.temporal_view_var,
+                       value="total", command=self.change_temporal_view).pack(side=tk.LEFT, padx=3)
 
         if is_small_screen:
             # MISE EN PAGE RESPONSIVE POUR PETITS ÉCRANS
@@ -1072,10 +1091,13 @@ class NetworkAnalyzerUI:
         if not self.samples:
             return
 
-        try:
-            # Créer une copie locale des échantillons pour éviter les problèmes
+        try:            # Créer une copie locale des échantillons pour éviter les problèmes
             # de concurrence lorsque la liste est modifiée pendant la navigation
             samples_snapshot = list(self.samples)
+
+            # Ajuster current_view_window pour la vue "total"
+            if self.temporal_view == "total":
+                self.current_view_window = len(samples_snapshot) if samples_snapshot else 300
 
             # Déterminer la plage d'affichage selon le mode
             if self.is_real_time:
@@ -1821,6 +1843,41 @@ class NetworkAnalyzerUI:
             self.is_real_time = False
             self.context_label.config(text="📊 Mode analyse - Naviguez avec les boutons ou la souris sur les graphiques")
 
+    def change_temporal_view(self):
+        """Change la vue temporelle (1min, 5min, total)"""
+        selected = self.temporal_view_var.get()
+        self.temporal_view = selected
+        
+        # Calculer le nombre d'échantillons selon la vue sélectionnée
+        # En assumant 1 échantillon par seconde
+        if selected == "1min":
+            self.current_view_window = 60  # 1 minute = 60 échantillons
+        elif selected == "5min":
+            self.current_view_window = 300  # 5 minutes = 300 échantillons
+        elif selected == "total":
+            self.current_view_window = len(self.samples) if self.samples else 300
+        
+        # Si en mode temps réel, ajuster la position de début
+        if self.is_real_time and self.samples:
+            self.current_view_start = max(0, len(self.samples) - self.current_view_window)
+        
+        # Mettre à jour l'affichage
+        self.update_display()
+        
+        # Mettre à jour le label contextuel
+        view_labels = {
+            "1min": "⏱️ Vue 1 minute - Analyse détaillée",
+            "5min": "⏱️ Vue 5 minutes - Analyse standard", 
+            "total": "⏱️ Vue totale - Historique complet"
+        }
+        
+        current_label = self.context_label.cget("text")
+        # Garder le mode (direct/analyse) mais changer la partie temporelle
+        if "Mode suivi direct" in current_label:
+            self.context_label.config(text=f"📡 Mode suivi direct - {view_labels[selected]}")
+        else:
+            self.context_label.config(text=f"📊 Mode analyse - {view_labels[selected]}")
+
     def open_fullscreen_graphs(self):
         """Ouvre les graphiques en plein écran dans une nouvelle fenêtre"""
         if self.fullscreen_window and self.fullscreen_window.winfo_exists():
@@ -1893,11 +1950,11 @@ class NetworkAnalyzerUI:
 
         # Bouton pour synchroniser la vue
         ttk.Button(button_frame, text="Synchroniser vue",
-                  command=self.sync_fullscreen_view).pack(side=tk.LEFT, padx=5)
-
-        # Bouton pour fermer
+                  command=self.sync_fullscreen_view).pack(side=tk.LEFT, padx=5)        # Bouton pour fermer
         ttk.Button(button_frame, text="Fermer",
-                  command=self.fullscreen_window.destroy).pack(side=tk.LEFT, padx=5)        # Mettre à jour les graphiques avec la vue actuelle
+                  command=self.fullscreen_window.destroy).pack(side=tk.LEFT, padx=5)
+
+        # Mettre à jour les graphiques avec la vue actuelle
         self.update_fullscreen_display()
 
     def update_fullscreen_display(self):
@@ -1912,6 +1969,10 @@ class NetworkAnalyzerUI:
             # Utiliser exactement la même logique que la vue principale
             samples_snapshot = list(self.samples)
 
+            # Ajuster current_view_window pour la vue "total" (même logique que update_display)
+            if self.temporal_view == "total":
+                self.current_view_window = len(samples_snapshot) if samples_snapshot else 300
+
             # Déterminer la plage d'affichage selon le mode (même logique que update_display)
             if self.is_real_time:
                 start_idx = max(0, len(samples_snapshot) - self.current_view_window)
@@ -1919,6 +1980,11 @@ class NetworkAnalyzerUI:
             else:
                 start_idx = self.current_view_start
                 end_idx = min(len(samples_snapshot), start_idx + self.current_view_window)
+
+                # Si on essaie d'afficher plus d'échantillons qu'il n'y en a,
+                # ajuster le début pour montrer les derniers échantillons disponibles
+                if end_idx - start_idx < self.current_view_window and end_idx == len(samples_snapshot):
+                    start_idx = max(0, end_idx - self.current_view_window)
 
             # Extraire les données à afficher (même vue que l'écran principal)
             display_samples = samples_snapshot[start_idx:end_idx]
