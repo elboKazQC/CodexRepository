@@ -44,6 +44,11 @@ Le rapport final comprend plusieurs sections détaillées :
   - **40-60%** : Qualité moyenne
   - **< 40%** : Qualité faible
 
+#### 📡 Analyse de la Latence (Ping & Jitter)
+- Latence moyenne et maximale
+- Valeur minimale constatée
+- Jitter moyen calculé
+
 #### 🚨 Analyse des Alertes
 - Nombre total d'alertes détectées
 - Pourcentage d'échantillons avec alertes
