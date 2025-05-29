@@ -80,6 +80,7 @@ Le script `launch_demo.py` charge automatiquement 30 minutes de données simulé
 - **⏸️ Pause** : Arrête la navigation automatique
 - **⏩ Suivant** : Avance d'une fenêtre
 - **⏭️ Dernier** : Va à la fin de l'historique
+- **📉 Signal faible** : Affiche le BSSID/SSID du point d'accès le plus faible
 
 ### Fenêtres d'Affichage
 - **50** : Analyse fine (5 minutes d'historique)
