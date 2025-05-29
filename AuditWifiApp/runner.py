@@ -1072,6 +1072,21 @@ class NetworkAnalyzerUI:
                     report += f"Latence max/min : {ping.get('max_latency', 0):.1f} / {ping.get('min_latency', 0):.1f} ms\n"
                     report += f"Jitter moyen : {ping.get('average_jitter', 0):.1f} ms\n\n"
 
+                if 'access_points' in combined_report and combined_report['access_points']:
+                    report += "📡 POINTS D'ACCÈS\n"
+                    report += "-" * 20 + "\n"
+                    ap_stats = combined_report['access_points']
+                    sorted_aps = sorted(ap_stats.items(), key=lambda x: x[1]['count'], reverse=True)
+                    for bssid, info in sorted_aps[:5]:
+                        tag = self.mac_manager.get_tag(bssid)
+                        tag_str = f" ({tag})" if tag else ""
+                        report += f"{bssid}{tag_str}\n"
+                        report += f"  • Utilisation : {info['count']} échantillons\n"
+                        report += f"  • Signal moyen : {info['average_signal']:.1f} dBm (min {info['min_signal']:.1f}, max {info['max_signal']:.1f})\n"
+                        report += f"  • Qualité moyenne : {info['average_quality']:.1f}%\n\n"
+                    if len(ap_stats) > 5:
+                        report += f"... et {len(ap_stats) - 5} autres points d'accès\n\n"
+
                 # Section recommandations
                 if 'recommendations' in combined_report and combined_report['recommendations']:
                     report += "💡 RECOMMANDATIONS\n"

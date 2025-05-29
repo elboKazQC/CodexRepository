@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 import logging
 
@@ -171,6 +171,7 @@ class NetworkAnalyzer:
 
         if self.last_wifi_samples:
             report["ping"] = self._calculate_ping_stats(self.last_wifi_samples)
+            report["access_points"] = self._calculate_bssid_stats(self.last_wifi_samples)
 
         if self.start_time and self.end_time:
             duration = (self.end_time - self.start_time).total_seconds()
@@ -223,6 +224,37 @@ class NetworkAnalyzer:
             "min_latency": round(min(latencies), 1),
             "average_jitter": round(sum(jitters) / len(jitters), 1) if jitters else 0.0,
         }
+
+    def _calculate_bssid_stats(self, samples: List[WifiSample]) -> Dict[str, Dict[str, float]]:
+        """Calcule des statistiques par point d'accès (BSSID)."""
+        stats: Dict[str, Dict[str, Any]] = {}
+        for s in samples:
+            bssid = getattr(s, "bssid", None)
+            if not bssid or bssid in {"00:00:00:00:00:00", "Unknown"}:
+                continue
+
+            if bssid not in stats:
+                stats[bssid] = {
+                    "count": 0,
+                    "signals": [],
+                    "qualities": [],
+                }
+
+            stats[bssid]["count"] += 1
+            stats[bssid]["signals"].append(s.signal_strength)
+            stats[bssid]["qualities"].append(s.quality)
+
+        result: Dict[str, Dict[str, float]] = {}
+        for bssid, data in stats.items():
+            result[bssid] = {
+                "count": data["count"],
+                "average_signal": round(sum(data["signals"]) / len(data["signals"]), 1),
+                "min_signal": float(min(data["signals"])),
+                "max_signal": float(max(data["signals"])),
+                "average_quality": round(sum(data["qualities"]) / len(data["qualities"]), 1),
+            }
+
+        return result
 
     def export_data(self, export_dir: str = "exports") -> str:
         """Exporte toutes les données d'analyse"""
