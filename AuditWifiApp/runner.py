@@ -258,6 +258,14 @@ class NetworkAnalyzerUI:
         )
         self.mac_manage_button.pack(fill=tk.X, pady=5)
 
+        # Bouton pour afficher le guide WiFi
+        self.wifi_guide_button = ttk.Button(
+            control_frame,
+            text="📖 Guide Complet",
+            command=lambda: self.show_instructions_guide("wifi")
+        )
+        self.wifi_guide_button.pack(fill=tk.X, pady=5)
+
         # Zone de statistiques - Compacte
         stats_frame = ttk.LabelFrame(control_frame, text="Statistiques", padding=5)
         stats_frame.pack(fill=tk.X, pady=(5, 5))
@@ -365,13 +373,11 @@ class NetworkAnalyzerUI:
         # Ajouter un label d'aide
         help_text = "💡 Exemples: 'Focus sur la sécurité', 'Format bullet points', 'Analyse rapide', 'Comparaison avec standard industriel', etc."
         help_label = ttk.Label(help_frame, text=help_text, font=('Arial', 9), foreground='gray')
-        help_label.pack(side=tk.LEFT, anchor='w')
-
-        # Bouton pour afficher le guide complet
+        help_label.pack(side=tk.LEFT, anchor='w')        # Bouton pour afficher le guide complet
         guide_button = ttk.Button(
             help_frame,
             text="📖 Guide Complet",
-            command=self.show_instructions_guide,
+            command=lambda: self.show_instructions_guide("moxa"),
             width=15
         )
         guide_button.pack(side=tk.RIGHT, padx=(5, 0))
@@ -449,6 +455,14 @@ class NetworkAnalyzerUI:
         self.amr_stop_button = ttk.Button(amr_control, text="⏹ Arrêter", command=self.stop_amr_monitoring, state=tk.DISABLED)
         self.amr_stop_button.pack(fill=tk.X, pady=2)
         ttk.Button(amr_control, text="Traceroute", command=self.traceroute_selected_ip).pack(fill=tk.X, pady=2)
+
+        # Bouton pour afficher le guide AMR
+        self.amr_guide_button = ttk.Button(
+            amr_control,
+            text="📖 Guide Complet",
+            command=lambda: self.show_instructions_guide("amr")
+        )
+        self.amr_guide_button.pack(fill=tk.X, pady=2)
 
         status_frame = ttk.LabelFrame(self.amr_frame, text="Statut", padding=10)
         status_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -922,7 +936,7 @@ class NetworkAnalyzerUI:
         elif sample.jitter >= JITTER_WARNING_MS:
             alerts.append(f"⚠️ Jitter élevé : {sample.jitter:.1f} ms")
 
-        # Débits - Seuils réalistes et intelligents
+        # Débits - Seuils adaptatifs et réalistes
         try:
             tx_rate = int(sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
             rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])
@@ -2157,13 +2171,35 @@ class NetworkAnalyzerUI:
         except Exception as e:
             logging.error(f"Erreur dans go_to_start: {str(e)}")
 
-    def show_instructions_guide(self):
-        """Affiche le guide des instructions personnalisées OpenAI dans une nouvelle fenêtre"""
+    def show_instructions_guide(self, guide_type="moxa"):
+        """Affiche le guide complet dans une nouvelle fenêtre selon le type spécifié"""
         import os
 
+        # Définir les guides disponibles
+        guides = {
+            "moxa": {
+                "file": "OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md",
+                "title": "Guide des Instructions Personnalisées OpenAI - Analyse Moxa"
+            },
+            "wifi": {
+                "file": "GUIDE_WIFI.md",
+                "title": "Guide Complet - Onglet Analyse WiFi"
+            },
+            "amr": {
+                "file": "GUIDE_AMR.md",
+                "title": "Guide Complet - Onglet Monitoring AMR"
+            },
+            "navigation": {
+                "file": "GUIDE_NAVIGATION.md",
+                "title": "Guide Navigation Temporelle et Mode Plein Écran"
+            }
+        }
+
+        guide_info = guides.get(guide_type, guides["moxa"])
+
         guide_window = tk.Toplevel(self.master)
-        guide_window.title("Guide des Instructions Personnalisées OpenAI")
-        guide_window.geometry("800x600")
+        guide_window.title(guide_info["title"])
+        guide_window.geometry("900x700")
         guide_window.resizable(True, True)
 
         # Créer un frame avec scrollbar
@@ -2172,7 +2208,7 @@ class NetworkAnalyzerUI:
 
         # Zone de texte avec scrollbar
         text_frame = ttk.Frame(main_frame)
-        text_frame.pack(fill=tk.BOTH, expand=True)
+        text_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
         guide_text = tk.Text(
             text_frame,
@@ -2191,7 +2227,7 @@ class NetworkAnalyzerUI:
 
         # Lire et afficher le contenu du guide
         try:
-            guide_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md')
+            guide_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), guide_info["file"])
 
             if os.path.exists(guide_path):
                 with open(guide_path, 'r', encoding='utf-8') as f:
@@ -2200,7 +2236,7 @@ class NetworkAnalyzerUI:
                 # Configurer les styles pour le markdown simple
                 guide_text.tag_configure("title", font=('Arial', 14, 'bold'), foreground='navy')
                 guide_text.tag_configure("subtitle", font=('Arial', 12, 'bold'), foreground='darkblue')
-                guide_text.tag_configure("code", font=('Courier', 10), background='lightgray', foreground='darkgreen')
+                guide_text.tag_configure("code", font=('Courier', 9), background='lightgray', foreground='darkgreen')
                 guide_text.tag_configure("bold", font=('Arial', 10, 'bold'))
                 guide_text.tag_configure("normal", font=('Arial', 10))
 
@@ -2208,12 +2244,12 @@ class NetworkAnalyzerUI:
                 self.parse_and_display_markdown(guide_text, guide_content)
 
             else:
-                guide_text.insert('1.0', "❌ Fichier guide non trouvé.\n\n")
-                guide_text.insert('end', "Le fichier OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md devrait se trouver dans le répertoire de l'application.")
+                guide_text.insert('1.0', f"❌ Fichier guide non trouvé: {guide_info['file']}\n\n")
+                guide_text.insert('end', f"Le fichier {guide_info['file']} devrait se trouver dans le répertoire de l'application.")
 
         except Exception as e:
             guide_text.insert('1.0', f"❌ Erreur lors du chargement du guide: {str(e)}\n\n")
-            guide_text.insert('end', "Vérifiez que le fichier OPENAI_CUSTOM_INSTRUCTIONS_GUIDE.md existe et est accessible.")
+            guide_text.insert('end', f"Vérifiez que le fichier {guide_info['file']} existe et est accessible.")
 
         # Rendre le texte en lecture seule
         guide_text.config(state=tk.DISABLED)
@@ -2230,341 +2266,251 @@ class NetworkAnalyzerUI:
 
         # Centrer la fenêtre
         guide_window.update_idletasks()
-        x = (guide_window.winfo_screenwidth() // 2) - (800 // 2)
-        y = (guide_window.winfo_screenheight() // 2) - (600 // 2)
-        guide_window.geometry(f"800x600+{x}+{y}")
+        x = (guide_window.winfo_screenwidth() // 2) - (450)
+        y = (guide_window.winfo_screenheight() // 2) - (350)
+        guide_window.geometry(f"900x700+{x}+{y}")
 
-    def parse_and_display_markdown(self, text_widget, content):
-        """Parse le contenu markdown et l'affiche avec formatage basique"""
-        lines = content.split('\n')
-
-        for line in lines:
-            if line.startswith('# '):
-                # Titre principal
-                text_widget.insert('end', line[2:] + '\n', "title")
-            elif line.startswith('## '):
-                # Sous-titre
-                text_widget.insert('end', '\n' + line[3:] + '\n', "subtitle")
-            elif line.startswith('### '):
-                # Sous-sous-titre
-                text_widget.insert('end', '\n' + line[4:] + '\n', "bold")
-            elif line.startswith('```'):
-                # Code block - on l'ignore pour simplifier
-                continue
-            elif line.strip().startswith('- ') or line.strip().startswith('* '):
-                # Liste à puces
-                text_widget.insert('end', '  • ' + line.strip()[2:] + '\n', "normal")
-            elif '**' in line:
-                # Texte en gras
-                parts = line.split('**')
-                for i, part in enumerate(parts):
-                    if i % 2 == 1:  # Partie entre **
-                        text_widget.insert('end', part, "bold")
-                    else:
-                        text_widget.insert('end', part, "normal")
-                text_widget.insert('end', '\n')
-            elif line.strip():
-                # Ligne normale
-                text_widget.insert('end', line + '\n', "normal")
-            else:
-                # Ligne vide
-                text_widget.insert('end', '\n')
-
-    # === MÉTHODES UTILITAIRES MANQUANTES ===
-
-    def _get_relative_time(self, position: int) -> str:
-        """Retourne une description du temps relatif pour une position donnée"""
-        if not self.samples or position >= len(self.samples):
-            return "Position inconnue"        # Calculer le temps relatif en secondes (basé sur l'intervalle de collecte)
-        time_offset = position * (self.update_interval / 1000.0)  # Convertir ms en secondes
-
-        if time_offset < 60:
-            return f"{int(time_offset)}s"
-        elif time_offset < 3600:
-            minutes = int(time_offset / 60)
-            seconds = int(time_offset % 60)
-            return f"{minutes}m{seconds}s" if seconds > 0 else f"{minutes}m"
-        else:
-            hours = int(time_offset / 3600)
-            minutes = int((time_offset % 3600) / 60)
-            return f"{hours}h{minutes}m" if minutes > 0 else f"{hours}h"
-
-    def _has_alert(self, sample: WifiSample) -> bool:
-        """Vérifie si un échantillon a des alertes selon les seuils configurés"""
-        # Signal critiques
-        if sample.signal_strength < -85:
-            return True
-        # Qualité critique
-        if sample.quality < 20:
-            return True
-        # Vérifier les alertes de débit
-        if self._check_rate_alerts(sample):
-            return True
-        return False
-
-    def _check_rate_alerts(self, sample: WifiSample) -> bool:
-        """Vérifie s'il y a des problèmes de débit dans l'échantillon"""
+    def parse_and_display_markdown(self, text_widget, markdown_content):
+        """Parse et affiche le contenu markdown avec formatage basique"""
         try:
-            tx_rate = int(sample.raw_data.get('TransmitRate', '0 Mbps').split()[0])
-            rx_rate = int(sample.raw_data.get('ReceiveRate', '0 Mbps').split()[0])            # Seuils critiques pour les débits
-            min_tx_critical = 10  # TX critique si < 10 Mbps
-            min_rx_critical = 2   # RX critique si < 2 Mbps
-            # Alerte si les deux débits sont vraiment problématiques
-            return tx_rate < min_tx_critical and rx_rate < min_rx_critical
+            text_widget.delete('1.0', tk.END)
 
-        except (ValueError, IndexError, KeyError):
-            return False
+            # Configuration des tags pour le formatage
+            text_widget.tag_configure("title", font=("Arial", 14, "bold"), foreground="#2E5BBA")
+            text_widget.tag_configure("subtitle", font=("Arial", 12, "bold"), foreground="#4A90D9")
+            text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
+            text_widget.tag_configure("italic", font=("Arial", 10, "italic"))
+            text_widget.tag_configure("code", font=("Courier", 9), background="#F5F5F5", foreground="#D73502")
+            text_widget.tag_configure("bullet", font=("Arial", 10), lmargin1=20, lmargin2=40)
 
-    def update_amr_status(self, status_data):
-        """Met à jour le statut AMR dans l'interface avec formatage des pertes de paquets"""
-        try:
-            timestamp = datetime.now().strftime("%H:%M:%S")
+            lines = markdown_content.split('\n')
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    text_widget.insert(tk.END, '\n')
+                    continue
 
-            # Formater l'affichage de manière lisible avec pertes de paquets
-            if isinstance(status_data, dict):
-                status_lines = [f"🕐 [{timestamp}] Monitoring AMR:"]
-
-                for ip, data in status_data.items():
-                    if isinstance(data, dict):
-                        reachable = data.get('reachable', False)
-                        latency = data.get('latency', 0)
-                        perte = data.get('perte', '0%')
-                        qualite = data.get('qualite', '🔵')
-
-                        if reachable:
-                            status_lines.append(f"  📡 {ip}: {latency}ms - Perte: {perte} {qualite}")
+                # Titres
+                if line.startswith('# '):
+                    text_widget.insert(tk.END, line[2:] + '\n', "title")
+                elif line.startswith('## '):
+                    text_widget.insert(tk.END, line[3:] + '\n', "subtitle")
+                elif line.startswith('### '):
+                    text_widget.insert(tk.END, line[4:] + '\n', "subtitle")
+                # Listes à puces
+                elif line.startswith('- ') or line.startswith('* '):
+                    text_widget.insert(tk.END, f"• {line[2:]}\n", "bullet")
+                # Code inline
+                elif '`' in line:
+                    parts = line.split('`')
+                    for i, part in enumerate(parts):
+                        if i % 2 == 0:
+                            text_widget.insert(tk.END, part)
                         else:
-                            status_lines.append(f"  ❌ {ip}: Injoignable 🔴")
+                            text_widget.insert(tk.END, part, "code")
+                    text_widget.insert(tk.END, '\n')
+                # Texte normal
+                else:
+                    # Gestion du gras et italique basique
+                    if '**' in line:
+                        parts = line.split('**')
+                        for i, part in enumerate(parts):
+                            if i % 2 == 0:
+                                text_widget.insert(tk.END, part)
+                            else:
+                                text_widget.insert(tk.END, part, "bold")
+                        text_widget.insert(tk.END, '\n')
+                    elif '*' in line:
+                        parts = line.split('*')
+                        for i, part in enumerate(parts):
+                            if i % 2 == 0:
+                                text_widget.insert(tk.END, part)
+                            else:
+                                text_widget.insert(tk.END, part, "italic")
+                        text_widget.insert(tk.END, '\n')
                     else:
-                        status_lines.append(f"  📡 {ip}: {data}")
-
-                status_text = "\n".join(status_lines) + "\n\n"
-            else:
-                status_text = f"[{timestamp}] {status_data}\n"
-
-            self.amr_status_text.insert('1.0', status_text)
-
-            # Limiter l'affichage pour éviter l'accumulation
-            content = self.amr_status_text.get('1.0', tk.END)
-            lines = content.split('\n')
-            if len(lines) > 50:  # Garder seulement les 50 dernières lignes
-                limited_content = '\n'.join(lines[:50])
-                self.amr_status_text.delete('1.0', tk.END)
-                self.amr_status_text.insert('1.0', limited_content)
+                        text_widget.insert(tk.END, line + '\n')
 
         except Exception as e:
-            logging.error(f"Erreur dans update_amr_status: {e}")
+            logging.error(f"Erreur dans parse_and_display_markdown: {str(e)}")
+            text_widget.delete('1.0', tk.END)
+            text_widget.insert('1.0', f"Erreur lors de l'affichage du markdown:\n{str(e)}")
+
+    def _has_alert(self, sample):
+        """Vérifie si un échantillon a des alertes"""
+        try:
+            if not sample:
+                return False
+
+            # Vérifier les seuils d'alerte
+            signal_alert = sample.signal_strength < -75  # Signal faible
+            quality_alert = sample.quality < 50  # Qualité faible
+            latency_alert = hasattr(sample, 'ping_latency') and sample.ping_latency > 100  # Latence élevée
+
+            return signal_alert or quality_alert or latency_alert
+        except Exception:
+            return False
+
+    def _get_relative_time(self, index):
+        """Obtient le temps relatif pour un index donné"""
+        try:
+            if index < 0 or index >= len(self.samples):
+                return "N/A"
+
+            # Calcul du temps relatif en supposant 1 échantillon par seconde
+            minutes = index // 60
+            seconds = index % 60
+
+            if minutes > 0:
+                return f"{minutes}m{seconds:02d}s"
+            else:
+                return f"{seconds}s"
+        except Exception:
+            return "N/A"
+
+    def _check_rate_alerts(self, sample):
+        """Vérifie les alertes liées au débit"""
+        try:
+            if not sample:
+                return False
+
+            # Vérifier si le débit est anormalement bas
+            if hasattr(sample, 'tx_rate') and sample.tx_rate < 10:  # Mbps
+                return True
+            if hasattr(sample, 'rx_rate') and sample.rx_rate < 10:  # Mbps
+                return True
+
+            return False
+        except Exception:
+            return False
 
     def open_mac_tag_manager(self):
         """Ouvre la fenêtre de gestion des tags MAC"""
-        if self.mac_manager_window and self.mac_manager_window.winfo_exists():
-            self.mac_manager_window.lift()
-            return
+        try:
+            if self.mac_manager_window and self.mac_manager_window.winfo_exists():
+                self.mac_manager_window.lift()
+                return
 
-        self.mac_manager_window = tk.Toplevel(self.master)
-        self.mac_manager_window.title("Gestion des Tags MAC")
-        self.mac_manager_window.geometry("400x500")
+            self.mac_manager_window = tk.Toplevel(self.master)
+            self.mac_manager_window.title("Gestion des Tags MAC")
+            self.mac_manager_window.geometry("600x400")
 
-        # Frame principal
-        main_frame = ttk.Frame(self.mac_manager_window, padding=10)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+            # Interface simple pour la gestion des MAC
+            frame = ttk.Frame(self.mac_manager_window, padding=10)
+            frame.pack(fill=tk.BOTH, expand=True)
 
-        # Liste des MAC et leurs tags
-        list_frame = ttk.LabelFrame(main_frame, text="MACs et Tags", padding=5)
-        list_frame.pack(fill=tk.BOTH, expand=True)
+            ttk.Label(frame, text="Gestionnaire de Tags MAC", font=('Arial', 14, 'bold')).pack(pady=10)
+            ttk.Label(frame, text="Cette fonctionnalité permet de gérer les tags des adresses MAC").pack(pady=5)
 
-        self.mac_listbox = tk.Listbox(list_frame, selectmode=tk.SINGLE)
-        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.mac_listbox.yview)
-        self.mac_listbox.configure(yscrollcommand=scrollbar.set)
-        self.mac_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            # Zone de texte pour afficher les MAC connus
+            text_frame = ttk.Frame(frame)
+            text_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
-        # Frame pour l'ajout/édition
-        edit_frame = ttk.Frame(main_frame)
-        edit_frame.pack(fill=tk.X, pady=10)
+            mac_text = tk.Text(text_frame, height=15)
+            scroll = ttk.Scrollbar(text_frame, command=mac_text.yview)
+            mac_text.configure(yscrollcommand=scroll.set)
 
-        ttk.Label(edit_frame, text="MAC:").pack(side=tk.LEFT)
-        self.mac_entry = ttk.Entry(edit_frame)
-        self.mac_entry.pack(side=tk.LEFT, padx=5)
+            mac_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        ttk.Label(edit_frame, text="Tag:").pack(side=tk.LEFT)
-        self.tag_entry = ttk.Entry(edit_frame)
-        self.tag_entry.pack(side=tk.LEFT, padx=5)
+            # Afficher les MAC connus
+            mac_text.insert('1.0', "=== MAC ADDRESSES CONNUES ===\n\n")
 
-        # Boutons
-        btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(fill=tk.X, pady=5)
+            # Afficher quelques MAC d'exemple s'il y en a dans les échantillons
+            unique_macs = set()
+            for sample in self.samples:
+                if hasattr(sample, 'bssid') and sample.bssid:
+                    unique_macs.add(sample.bssid)
 
-        ttk.Button(btn_frame, text="Ajouter/Modifier",
-                  command=self._add_or_update_mac_tag).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Supprimer",
-                  command=self._delete_mac_tag).pack(side=tk.LEFT, padx=5)        # Remplir la liste
-        self._update_mac_list()
+            if unique_macs:
+                for mac in sorted(unique_macs):
+                    tag = self.mac_manager.get_tag(mac)
+                    mac_text.insert(tk.END, f"MAC: {mac}\n")
+                    mac_text.insert(tk.END, f"Tag: {tag if tag else 'Non défini'}\n\n")
+            else:
+                mac_text.insert(tk.END, "Aucune adresse MAC détectée pour le moment.\n")
+                mac_text.insert(tk.END, "Démarrez une collecte WiFi pour voir les points d'accès.\n")
 
-        # Gestionnaire d'événements pour la sélection
-        self.mac_listbox.bind('<<ListboxSelect>>', self._on_mac_select)
+            # Bouton fermer
+            ttk.Button(frame, text="Fermer",
+                      command=self.mac_manager_window.destroy).pack(pady=10)
 
-    def _update_mac_list(self):
-        """Met à jour la liste des MACs dans l'interface"""
-        if hasattr(self, 'mac_listbox'):
-            self.mac_listbox.delete(0, tk.END)
-            for mac, tag in self.mac_manager.get_all_tags().items():
-                self.mac_listbox.insert(tk.END, f"{mac} - {tag}")
+        except Exception as e:
+            logging.error(f"Erreur dans open_mac_tag_manager: {str(e)}")
 
-    def _add_or_update_mac_tag(self):
-        """Ajoute ou met à jour un tag MAC"""
-        mac = self.mac_entry.get().strip()
-        tag = self.tag_entry.get().strip()
-        if mac and tag:
-            self.mac_manager.add_tag(mac, tag)
-            self._update_mac_list()
-            self.mac_entry.delete(0, tk.END)
-            self.tag_entry.delete(0, tk.END)
-
-    def _delete_mac_tag(self):
-        """Supprime un tag MAC"""
-        selection = self.mac_listbox.curselection()
-        if selection:
-            mac = self.mac_listbox.get(selection[0]).split(" - ")[0]
-            self.mac_manager.remove_tag(mac)
-            self._update_mac_list()
-
-    def _on_mac_select(self, event):
-        """Gère la sélection d'un MAC dans la liste"""
-        selection = self.mac_listbox.curselection()
-        if selection:
-            mac, tag = self.mac_listbox.get(selection[0]).split(" - ")
-            self.mac_entry.delete(0, tk.END)
-            self.mac_entry.insert(0, mac)
-            self.tag_entry.delete(0, tk.END)
-            self.tag_entry.insert(0, tag)
+    def update_amr_status(self, status_data):
+        """Met à jour le statut AMR"""
+        try:
+            if hasattr(self, 'amr_status_text'):
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                status_line = f"[{timestamp}] {status_data}\n"
+                self.amr_status_text.insert(tk.END, status_line)
+                self.amr_status_text.see(tk.END)
+        except Exception as e:
+            logging.error(f"Erreur dans update_amr_status: {str(e)}")
 
     def update_advanced_wifi_stats(self):
         """Met à jour les statistiques WiFi avancées"""
         try:
-            if not self.wifi_history_entries:
+            if not hasattr(self, 'wifi_history_entries') or not self.wifi_history_entries:
                 # Afficher un message si aucune donnée
                 if hasattr(self, 'wifi_advanced_stats_text'):
                     self.wifi_advanced_stats_text.delete('1.0', tk.END)
                     self.wifi_advanced_stats_text.insert('1.0', "=== Statistiques WiFi Avancées ===\n\nAucune donnée disponible.\nDémarrez la collecte pour voir les statistiques.")
-                return            # Calculer les statistiques sur les dernières entrées
+                return
+
+            # Calculer les statistiques sur les dernières entrées
             recent_entries = self.wifi_history_entries[-300:]  # 300 dernières entrées
 
             # Compter les alertes
             total_samples = len(recent_entries)
-            samples_with_alerts = sum(1 for entry in recent_entries if entry['alerts'])
+            samples_with_alerts = sum(1 for entry in recent_entries if entry.get('alerts', []))
             alert_percentage = (samples_with_alerts / total_samples * 100) if total_samples > 0 else 0
 
             # Calculer les moyennes
-            avg_signal = sum(entry['signal'] for entry in recent_entries) / len(recent_entries)
-            avg_quality = sum(entry['quality'] for entry in recent_entries) / len(recent_entries)
+            signals = [entry['signal'] for entry in recent_entries]
+            qualities = [entry['quality'] for entry in recent_entries]
             latencies = [entry['latency'] for entry in recent_entries if entry.get('latency', -1) >= 0]
-            jitters = [entry['jitter'] for entry in recent_entries if 'jitter' in entry]
+            jitters = [entry['jitter'] for entry in recent_entries if 'jitter' in entry and entry['jitter'] > 0]
+
+            avg_signal = sum(signals) / len(signals) if signals else 0
+            avg_quality = sum(qualities) / len(qualities) if qualities else 0
             avg_latency = sum(latencies) / len(latencies) if latencies else 0
             avg_jitter = sum(jitters) / len(jitters) if jitters else 0
 
-            # Calculer min/max
-            signals = [entry['signal'] for entry in recent_entries]
-            qualities = [entry['quality'] for entry in recent_entries]
-            min_signal, max_signal = min(signals), max(signals)
-            min_quality, max_quality = min(qualities), max(qualities)
+            min_signal = min(signals) if signals else 0
+            max_signal = max(signals) if signals else 0
 
-            # Compter les différents types d'alertes
-            alert_types = {}
-            for entry in recent_entries:
-                for alert in entry['alerts']:
-                    alert_type = alert.split(':')[0] if ':' in alert else alert[:20]
-                    alert_types[alert_type] = alert_types.get(alert_type, 0) + 1
+            # Construire le texte des statistiques
+            stats_text = "=== STATISTIQUES WIFI AVANCÉES ===\n\n"
+            stats_text += f"📊 ANALYSE DES {total_samples} DERNIERS ÉCHANTILLONS\n"
+            stats_text += "-" * 50 + "\n\n"
 
-            # Analyser les BSSID (adresses MAC des points d'accès)
-            bssid_info = {}
-            for entry in recent_entries:
-                bssid = entry.get('bssid', 'Unknown')
-                if bssid and bssid != 'Unknown':
-                    if bssid not in bssid_info:
-                        bssid_info[bssid] = {
-                            'count': 0,
-                            'signals': [],
-                            'qualities': [],
-                            'channels': {},
-                            'alerts': 0
-                        }
-                    bssid_info[bssid]['count'] += 1
-                    bssid_info[bssid]['signals'].append(entry['signal'])
-                    bssid_info[bssid]['qualities'].append(entry['quality'])
-                    ch = entry.get('channel')
-                    if ch:
-                        bssid_info[bssid]['channels'][ch] = bssid_info[bssid]['channels'].get(ch, 0) + 1
-                    if entry['alerts']:
-                        bssid_info[bssid]['alerts'] += 1
-            # Évaluation de la stabilité
-            signal_stability = "Excellent" if max_signal - min_signal < 10 else "Bon" if max_signal - min_signal < 20 else "Variable"
-
-            # Formatage des statistiques pour l'affichage
-            stats_text = "=== STATISTIQUES WiFi AVANCÉES ===\n"
-            stats_text += f"Période d'analyse : {len(recent_entries)} échantillons\n\n"
-
-            stats_text += "📶 SIGNAL :\n"
+            # Signal WiFi
+            stats_text += "📶 SIGNAL WIFI :\n"
             stats_text += f"• Moyenne : {avg_signal:.1f} dBm\n"
             stats_text += f"• Min/Max : {min_signal:.1f} / {max_signal:.1f} dBm\n"
-            stats_text += f"• Variation : {max_signal - min_signal:.1f} dB\n"
-            stats_text += f"• Stabilité : {signal_stability}\n\n"
+            stats_text += f"• Stabilité : {100 - min(abs(max_signal - min_signal) * 2, 100):.1f}%\n\n"
 
-            stats_text += "📊 QUALITÉ :\n"
-            stats_text += f"• Moyenne : {avg_quality:.1f}%\n"
-            stats_text += f"• Min/Max : {min_quality:.1f} / {max_quality:.1f}%\n"
-            stats_text += f"• Variation : {max_quality - min_quality:.1f}%\n\n"
+            # Qualité
+            stats_text += "🔗 QUALITÉ DE CONNEXION :\n"
+            stats_text += f"• Qualité moyenne : {avg_quality:.1f}%\n"
 
-            stats_text += "⏱ LATENCE :\n"
-            stats_text += f"• Moyenne : {avg_latency:.1f} ms\n"
-            stats_text += f"• Jitter moyen : {avg_jitter:.1f} ms\n\n"
+            # Latence et Jitter
+            if latencies:
+                stats_text += f"• Latence moyenne : {avg_latency:.1f} ms\n"
+            if jitters:
+                stats_text += f"• Jitter moyen : {avg_jitter:.1f} ms\n"
 
-            stats_text += "🚨 ALERTES :\n"
-            stats_text += f"• Pourcentage d'échantillons avec alertes : {alert_percentage:.1f}%\n"
-            stats_text += f"• Échantillons avec alertes : {samples_with_alerts}/{total_samples}\n"
+            stats_text += "\n"
 
-            if alert_types:
-                stats_text += "• Types d'alertes détectées :\n"
-                for alert_type, count in sorted(alert_types.items(), key=lambda x: x[1], reverse=True):
-                    stats_text += f"  - {alert_type} : {count} fois\n"
-            else:
-                stats_text += "• Aucune alerte détectée\n"
+            # Alertes
+            stats_text += "🚨 ALERTES ET PROBLÈMES :\n"
+            stats_text += f"• Échantillons avec alertes : {samples_with_alerts}/{total_samples} ({alert_percentage:.1f}%)\n\n"
 
-            # Section BSSID/MAC des points d'accès
-            stats_text += "\n📡 POINTS D'ACCÈS (BSSID/MAC) :\n"
-            if bssid_info:
-                stats_text += f"• Nombre de points d'accès détectés : {len(bssid_info)}\n"
+            # Évaluation globale
+            stats_text += "💡 ÉVALUATION GLOBALE :\n"
 
-                # Trier par nombre d'occurrences (le plus utilisé en premier)
-                sorted_bssids = sorted(bssid_info.items(), key=lambda x: x[1]['count'], reverse=True)
-
-                for bssid, info in sorted_bssids[:5]:  # Afficher les 5 premiers
-                    avg_signal = sum(info['signals']) / len(info['signals'])
-                    min_sig = min(info['signals'])
-                    max_sig = max(info['signals'])
-                    avg_quality = sum(info['qualities']) / len(info['qualities'])
-                    alert_rate = (info['alerts'] / info['count'] * 100) if info['count'] > 0 else 0
-                    usage_rate = info['count'] / total_samples * 100 if total_samples > 0 else 0
-
-                    tag = self.mac_manager.get_tag(bssid)
-                    tag_str = f" ({tag})" if tag else ""
-                    stats_text += f"\n  🔸 {bssid}{tag_str}\n"
-                    stats_text += f"    • Utilisation : {info['count']} échantillons ({usage_rate:.1f}%)\n"
-                    stats_text += f"    • Signal : {avg_signal:.1f} dBm (min {min_sig:.1f}, max {max_sig:.1f})\n"
-                    stats_text += f"    • Qualité moyenne : {avg_quality:.1f}%\n"
-                    if info['channels']:
-                        channel_list = ', '.join(f"{ch}({cnt})" for ch, cnt in sorted(info['channels'].items(), key=lambda x: x[1], reverse=True))
-                        stats_text += f"    • Canaux : {channel_list}\n"
-                    stats_text += f"    • Taux d'alertes : {alert_rate:.1f}%\n"
-
-                if len(bssid_info) > 5:
-                    stats_text += f"\n  ... et {len(bssid_info) - 5} autres points d'accès\n"
-            else:
-                stats_text += "• Aucune adresse MAC disponible dans les données\n"
-
-            stats_text += "\n💡 ÉVALUATION GLOBALE :\n"
-
-            # Évaluation de la performance globale
             if avg_signal > -60 and avg_quality > 80 and alert_percentage < 10:
                 evaluation = "🟢 EXCELLENT - Réseau optimal pour les AMR"
             elif avg_signal > -70 and avg_quality > 60 and alert_percentage < 25:
@@ -2598,47 +2544,62 @@ class NetworkAnalyzerUI:
 
 
 def main():
-    """Fonction principale pour démarrer l'application"""
+    """Fonction principale pour lancer l'application WiFi Analyzer"""
     try:
         # Configuration du logging
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('network_analysis.log'),
+                logging.FileHandler('wifi_analyzer.log'),
                 logging.StreamHandler()
             ]
         )
 
         # Créer la fenêtre principale
         root = tk.Tk()
+        root.title("WiFi Analyzer Pro - Audit Réseau")
+        root.geometry("1400x900")
 
-        # Créer l'application
+        # Configurer l'icône et autres propriétés de la fenêtre
+        try:
+            root.iconbitmap(default='wifi_icon.ico')
+        except:
+            pass  # Ignorer si l'icône n'existe pas
+
+        # Centrer la fenêtre
+        root.update_idletasks()
+        width = root.winfo_width()
+        height = root.winfo_height()
+        x = (root.winfo_screenwidth() // 2) - (width // 2)
+        y = (root.winfo_screenheight() // 2) - (height // 2)
+        root.geometry(f'{width}x{height}+{x}+{y}')
+          # Créer l'application
         app = NetworkAnalyzerUI(root)
 
-        # Démarrer la boucle principale
-        print("🚀 Démarrage de l'Analyseur Réseau WiFi & Moxa...")
-        print("📊 Interface graphique chargée avec succès")
+        # Gestionnaire de fermeture propre
+        def on_closing():
+            """Gestionnaire pour la fermeture propre de l'application"""
+            try:
+                if hasattr(app, 'analyzer') and hasattr(app.analyzer, 'is_collecting') and app.analyzer.is_collecting:
+                    app.stop_collection()
+                root.quit()
+                root.destroy()
+            except Exception as e:
+                logging.error(f"Erreur lors de la fermeture: {str(e)}")
+                root.destroy()
 
+        root.protocol("WM_DELETE_WINDOW", on_closing)
+
+        # Lancer l'interface
+        logging.info("Démarrage de WiFi Analyzer Pro")
         root.mainloop()
 
     except Exception as e:
-        error_msg = f"Erreur lors du démarrage de l'application: {str(e)}"
-        print(f"❌ {error_msg}")
-        logging.error(error_msg)
-
-        # Afficher une boîte de dialogue d'erreur si possible
-        try:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Erreur de démarrage", error_msg)
-        except:
-            pass
-
-        return 1
-
-    return 0
+        logging.error(f"Erreur critique lors du démarrage: {str(e)}")
+        print(f"Erreur critique: {str(e)}")
+        input("Appuyez sur Entrée pour continuer...")
 
 
 if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+    main()

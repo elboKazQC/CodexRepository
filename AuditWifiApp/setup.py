@@ -14,7 +14,7 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         "pytest>=8.0.0",
-        "pytest-cov>=4.0.0", 
+        "pytest-cov>=4.0.0",
         "pytest-mock>=3.10.0",
     ],
     extras_require={
