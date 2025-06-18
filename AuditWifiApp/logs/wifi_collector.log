@@ -9001,3 +9001,11 @@
 2025-06-18 15:42:37,251 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
 2025-06-18 15:42:39,099 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
 2025-06-18 15:42:39,104 - INFO - [wifi_collector.py:270] - Arrêt de la collecte WiFi
+2025-06-18 15:57:27,746 - INFO - [wifi_collector.py:188] - Démarrage de la collecte WiFi
+2025-06-18 15:57:27,798 - INFO - [wifi_collector.py:194] - Cible de ping utilisée: 10.136.136.1
+2025-06-18 15:57:28,762 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:57:30,624 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:57:32,562 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:57:34,406 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:57:36,221 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:57:36,337 - INFO - [wifi_collector.py:270] - Arrêt de la collecte WiFi
