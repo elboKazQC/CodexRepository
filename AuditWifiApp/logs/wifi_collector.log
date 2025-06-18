@@ -8979,3 +8979,25 @@
 2025-05-30 07:27:36,986 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -56dBm
 2025-05-30 07:27:57,145 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -59dBm
 2025-05-30 07:27:57,171 - INFO - [wifi_collector.py:270] - Arrêt de la collecte WiFi
+2025-06-18 15:42:05,774 - INFO - [wifi_collector.py:188] - Démarrage de la collecte WiFi
+2025-06-18 15:42:06,311 - INFO - [wifi_collector.py:194] - Cible de ping utilisée: 10.136.136.1
+2025-06-18 15:42:07,575 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:42:09,437 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -53dBm
+2025-06-18 15:42:11,305 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:13,165 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:15,028 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:16,878 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:18,743 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:20,593 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:22,479 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:24,315 - DEBUG - [wifi_collector.py:235] - 10 échantillons collectés
+2025-06-18 15:42:24,316 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:26,147 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:28,029 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:29,902 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:31,748 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:33,571 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:35,398 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:37,251 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:39,099 - DEBUG - [wifi_collector.py:237] - Échantillon collecté: Noovelia - -54dBm
+2025-06-18 15:42:39,104 - INFO - [wifi_collector.py:270] - Arrêt de la collecte WiFi
